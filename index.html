@@ -568,7 +568,7 @@
 
     .sub-tabs {
       display: grid;
-      grid-template-columns: repeat(4, 1fr);
+      grid-template-columns: repeat(3, 1fr);
       background: var(--bg-input);
       border-bottom: 1px solid var(--border);
       padding: 6px;
@@ -940,6 +940,137 @@
       .doc-table td:first-child { white-space: normal; }
     }
 
+    /* ==========================================================================
+       TAB 3: ACL WORKSPACE
+       ========================================================================== */
+    .acl-page { max-width: 1500px; width: 100%; margin: 0 auto; padding: 18px; display: flex; flex-direction: column; gap: 16px; }
+    .acl-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr); gap: 16px; align-items: start; }
+    .acl-col { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+    .acl-learn-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; align-items: start; }
+    @media (max-width: 1100px) {
+      .acl-grid, .acl-learn-grid { grid-template-columns: minmax(0, 1fr); }
+    }
+    .doc-card h3 .badge { margin-left: 6px; vertical-align: middle; }
+    .doc-list { padding-left: 18px; display: flex; flex-direction: column; gap: 5px; font-size: 13px; line-height: 1.5; }
+    .doc-code {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      background: #070c17;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 8px 10px;
+      overflow-x: auto;
+      white-space: pre;
+      color: #e2e8f0;
+      margin: 0 0 8px;
+    }
+    .acl-preview {
+      margin-top: 10px;
+      background: var(--bg-input);
+      border: 1px dashed var(--border);
+      border-radius: var(--radius-sm);
+      padding: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .acl-preview-title, .acl-step, .acl-leg-title {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--cyan);
+      font-weight: 600;
+    }
+    #aclPreview { display: flex; flex-direction: column; gap: 6px; }
+    .acl-preview-sentence { font-size: 13px; font-weight: 600; }
+    .acl-preview-where { font-family: var(--font-mono); font-size: 11.5px; color: var(--cyan); }
+    .acl-msg { font-size: 12px; line-height: 1.45; }
+    .acl-msg.err { color: var(--rose); }
+    .acl-msg.warn { color: var(--amber); }
+    .acl-msg.note { color: var(--text-secondary); }
+    .acl-rule {
+      background: var(--bg-input);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 8px 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      margin-bottom: 8px;
+    }
+    .acl-rule-head { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+    .acl-rule-head select { width: auto; padding: 2px 6px; font-size: 11.5px; }
+    .acl-router {
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      background: var(--bg-input);
+      margin-bottom: 12px;
+    }
+    .acl-router-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .acl-box { border: 1px solid var(--border); border-radius: var(--radius-sm); background: #0a1122; min-width: 0; }
+    .acl-box-head { display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: center; padding: 8px 10px; border-bottom: 1px solid var(--border); }
+    .acl-id-row { display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: center; padding: 8px 10px; border-bottom: 1px solid var(--border); }
+    .acl-id-row input { width: 150px; padding: 4px 8px; font-size: 12px; }
+    .acl-body { padding: 8px 10px; display: flex; flex-direction: column; gap: 5px; }
+    .acl-why { padding: 8px 10px; border-top: 1px solid var(--border); font-size: 12px; color: var(--text-secondary); line-height: 1.5; }
+    .ace {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      padding: 5px 8px;
+      border-left: 3px solid var(--border);
+      background: rgba(15, 23, 42, 0.6);
+      border-radius: 4px;
+    }
+    .ace.deny { border-left-color: var(--rose); }
+    .ace.permit { border-left-color: var(--emerald); }
+    .ace.cmd { border-left-color: var(--accent); }
+    .ace.cmd .ace-cmd { color: #c7d2fe; }
+    .ace.remark .ace-cmd { color: var(--text-muted); font-style: italic; }
+    .ace.implicit { border-left: 3px dashed var(--rose); opacity: 0.85; }
+    .ace.implicit .ace-cmd { color: #fda4af; }
+    .ace-cmd { font-family: var(--font-mono); font-size: 12px; white-space: pre-wrap; word-break: break-word; }
+    .ace-seq { display: inline-block; min-width: 30px; color: var(--text-muted); font-size: 11px; }
+    .ace-explain { font-size: 11.5px; color: var(--text-secondary); }
+    .tok { border-radius: 3px; cursor: help; }
+    .tok-deny { color: #fda4af; font-weight: 700; }
+    .tok-permit { color: #6ee7b7; font-weight: 700; }
+    .tok-proto { color: #c4b5fd; }
+    .tok-src { color: #7dd3fc; }
+    .tok-dst { color: #fcd34d; }
+    .tok-wc { color: #94a3b8; }
+    .tok-port { color: #f9a8d4; }
+    .tok-kw { color: #a5b4fc; }
+    .acl-legend { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 12px; font-family: var(--font-mono); color: var(--text-secondary); }
+    .ace-anatomy { font-size: 13px; background: #070c17; border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 10px; margin-bottom: 10px; overflow-x: auto; white-space: nowrap; }
+    .acl-tester-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+    @media (max-width: 700px) { .acl-tester-grid { grid-template-columns: minmax(0, 1fr); } }
+    .acl-test-result { margin-top: 10px; display: flex; flex-direction: column; gap: 8px; }
+    .acl-packet { font-size: 12px; color: var(--text-secondary); }
+    .acl-verdict { padding: 10px 12px; border-radius: var(--radius-sm); font-weight: 600; font-size: 13px; line-height: 1.45; }
+    .acl-verdict.ok { background: var(--emerald-soft); color: #a7f3d0; border: 1px solid rgba(52, 211, 153, 0.35); }
+    .acl-verdict.bad { background: var(--rose-soft); color: #fecdd3; border: 1px solid rgba(251, 113, 133, 0.35); }
+    .acl-verdict.warn { background: var(--amber-soft); color: #fde68a; border: 1px solid rgba(251, 191, 36, 0.35); }
+    .acl-steps { list-style: none; display: flex; flex-direction: column; gap: 8px; padding: 0; font-size: 12.5px; line-height: 1.5; }
+    .acl-steps li { border-left: 3px solid var(--border); padding-left: 8px; }
+    .acl-steps li.ok { border-left-color: var(--emerald); }
+    .acl-steps li.bad { border-left-color: var(--rose); }
+    .acl-mini { margin-top: 4px; display: flex; flex-direction: column; gap: 2px; font-size: 11.5px; }
+    .mini-line { padding: 1px 6px; border-radius: 3px; color: var(--text-secondary); }
+    .mini-line .seq { display: inline-block; min-width: 28px; color: var(--text-muted); font-family: var(--font-mono); }
+    .mini-line.hit.deny { background: var(--rose-soft); color: #fecdd3; }
+    .mini-line.hit.permit { background: var(--emerald-soft); color: #a7f3d0; }
+    .acl-diagram { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; font-size: 12.5px; margin-bottom: 10px; }
+    .acl-diagram .node { border: 1px solid var(--border); border-radius: 6px; padding: 6px 10px; background: var(--bg-input); }
+    .acl-diagram .node.port { font-family: var(--font-mono); color: var(--cyan); }
+    .acl-diagram .node.router { border-color: var(--accent); }
+    .acl-diagram .arrow { color: var(--text-secondary); }
+    .wc-out { display: flex; flex-direction: column; gap: 3px; font-size: 12.5px; margin-top: 6px; }
+
     /* Toast */
     .toast {
       position: fixed;
@@ -1018,13 +1149,14 @@
     <nav class="main-nav" role="tablist" aria-label="Primary Workspace">
       <button id="mainTabAddressing" class="nav-tab active" type="button" title="Addressing calculator (IPv4 and IPv6, VLSM)">1. Addressing</button>
       <button id="mainTabTopology" class="nav-tab" type="button" title="Topology and Cisco IOS CLI planner">2. Topology &amp; CLI</button>
-      <button id="mainTabHelp" class="nav-tab" type="button">3. Help</button>
-      <button id="mainTabTrouble" class="nav-tab" type="button">4. Troubleshooting</button>
+      <button id="mainTabAcls" class="nav-tab" type="button" title="Access control lists: rules, explained ACLs, packet tester, lessons">3. ACLs</button>
+      <button id="mainTabHelp" class="nav-tab" type="button">4. Help</button>
+      <button id="mainTabTrouble" class="nav-tab" type="button">5. Troubleshooting</button>
     </nav>
 
     <div class="header-actions">
       <button id="btnLoadSample" class="btn btn-cyan" type="button" title="Load pre-configured dual-stack Cebu-Davao lab">
-        Load Sample Lab (Cebu-Davao)
+        Sample Lab
       </button>
       <button id="btnSaveJson" class="btn" type="button">Save Project (.json)</button>
       <button id="btnLoadJson" class="btn" type="button">Load Project (.json)</button>
@@ -1251,7 +1383,6 @@
           <button class="sub-tab-btn active" data-subtab="init" type="button">Init Config</button>
           <button class="sub-tab-btn" data-subtab="routers" type="button">Routers &amp; LANs</button>
           <button class="sub-tab-btn" data-subtab="routing" type="button">Routing</button>
-          <button class="sub-tab-btn" data-subtab="acls" type="button">ACLs</button>
         </div>
         <div id="leftPaneContent" class="pane-scroll"></div>
       </aside>
@@ -1331,7 +1462,207 @@
   </section>
 
   <!-- =========================================================================
-       TAB 3: HELP (exam workflow, what to type, PuTTY, reset, cables, PCs)
+       TAB 3: ACLs (rules in, explained ACLs out, packet tester, lessons)
+       ========================================================================= -->
+  <section id="viewAcls" class="tab-view hidden">
+    <div class="acl-page">
+      <div class="doc-intro">
+        <h2>ACLs</h2>
+        <p>Write each security task as a rule. The app picks the router, the port and the direction, writes the ACL, and explains every line in plain English. New to ACLs? Read <a href="#acl-learn">Learn the basics</a> first, then try the examples.</p>
+        <nav class="doc-toc" aria-label="ACL sections">
+          <a href="#acl-build">Add a rule</a>
+          <a href="#acl-rules">Rules</a>
+          <a href="#acl-examples">Exam tasks</a>
+          <a href="#acl-generated">Generated ACLs</a>
+          <a href="#acl-tester">Packet tester</a>
+          <a href="#acl-tests">Test plan</a>
+          <a href="#acl-learn">Learn the basics</a>
+        </nav>
+      </div>
+
+      <div id="aclWorkspace"></div>
+
+      <div class="doc-intro" id="acl-learn">
+        <h2>Learn the basics</h2>
+        <p>Everything you need for the exam, short. Click any <code class="cmd">grey command</code> to copy it.</p>
+      </div>
+      <div class="acl-learn-grid">
+        <div class="card doc-card">
+          <h3>1 · What an ACL does</h3>
+          <ul class="doc-list">
+            <li>An ACL is a list of <b>permit</b> and <b>deny</b> lines. The router compares a packet with the lines <b>from the top</b>; the <b>first line that matches decides</b>, the rest are skipped.</li>
+            <li>If no line matches, an invisible <b>deny any</b> at the end drops the packet.</li>
+            <li>An ACL does nothing until you <b>apply</b> it: <code>ip access-group ID in|out</code> on an interface, or <code>access-class ID in</code> on <code>line vty</code> for logins.</li>
+            <li>One ACL per interface <b>per direction</b>. Applying a second one replaces the first, so all rules for that port go in one ACL (the app does this).</li>
+            <li>It cannot filter traffic between two PCs in the same LAN (that never reaches the router).</li>
+          </ul>
+        </div>
+
+        <div class="card doc-card">
+          <h3>2 · Standard vs extended</h3>
+          <div class="doc-table-wrap">
+            <table class="doc-table">
+              <thead><tr><th></th><th>Standard</th><th>Extended</th></tr></thead>
+              <tbody>
+                <tr><td>Checks</td><td>Source address only</td><td>Protocol, source, destination, port</td></tr>
+                <tr><td>Numbers</td><td class="mono">1–99, 1300–1999</td><td class="mono">100–199, 2000–2699</td></tr>
+                <tr><td>Named</td><td class="mono">ip access-list standard NAME</td><td class="mono">ip access-list extended NAME</td></tr>
+                <tr><td>Place it</td><td><b>Near the destination</b> (out)</td><td><b>Near the source</b> (in)</td></tr>
+                <tr><td>Example</td><td class="mono">access-list 10 deny 192.168.1.0 0.0.0.255</td><td class="mono">access-list 100 deny tcp 192.168.1.0 0.0.0.255 host 192.168.2.10 eq 80</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <p class="doc-note">Why the placement: a standard ACL can't see where a packet is going, so near the source it would block that source from <i>everything</i>. Extended can, so put it close to the sender and stop the traffic early.</p>
+        </div>
+
+        <div class="card doc-card">
+          <h3>3 · Reading one extended line</h3>
+          <div class="ace-anatomy mono">
+            <span class="tok tok-kw">access-list 100</span> <span class="tok tok-deny">deny</span> <span class="tok tok-proto">tcp</span> <span class="tok tok-src">192.168.1.0</span> <span class="tok tok-wc">0.0.0.255</span> <span class="tok tok-dst">host 192.168.2.10</span> <span class="tok tok-port">eq 80</span>
+          </div>
+          <div class="doc-table-wrap">
+            <table class="doc-table">
+              <tbody>
+                <tr><td><span class="tok tok-kw">access-list 100</span></td><td>ACL number 100 (100–199 = extended)</td></tr>
+                <tr><td><span class="tok tok-deny">deny</span></td><td>Drop it (<span class="tok tok-permit">permit</span> = let it through)</td></tr>
+                <tr><td><span class="tok tok-proto">tcp</span></td><td>Protocol: <b>ip</b> = everything, <b>tcp/udp</b> = with a port, <b>icmp</b> = ping</td></tr>
+                <tr><td><span class="tok tok-src">192.168.1.0</span> <span class="tok tok-wc">0.0.0.255</span></td><td>Source: the whole 192.168.1.0/24 network</td></tr>
+                <tr><td><span class="tok tok-dst">host 192.168.2.10</span></td><td>Destination: that one device</td></tr>
+                <tr><td><span class="tok tok-port">eq 80</span></td><td>Only destination port 80 (web)</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <p class="doc-note">Read it as: "Block web from the 192.168.1.0/24 network to the server 192.168.2.10."</p>
+        </div>
+
+        <div class="card doc-card">
+          <h3>4 · Wildcard masks</h3>
+          <p class="doc-note" style="margin-top:0;">Wildcard = 255.255.255.255 − subnet mask. A <b>0</b> means "this part must match", <b>255</b> means "any value".</p>
+          <div class="doc-table-wrap">
+            <table class="doc-table">
+              <thead><tr><th>Network</th><th>Subnet mask</th><th>Wildcard</th></tr></thead>
+              <tbody>
+                <tr><td>/24</td><td class="mono">255.255.255.0</td><td class="mono">0.0.0.255</td></tr>
+                <tr><td>/25</td><td class="mono">255.255.255.128</td><td class="mono">0.0.0.127</td></tr>
+                <tr><td>/26</td><td class="mono">255.255.255.192</td><td class="mono">0.0.0.63</td></tr>
+                <tr><td>/27</td><td class="mono">255.255.255.224</td><td class="mono">0.0.0.31</td></tr>
+                <tr><td>/28</td><td class="mono">255.255.255.240</td><td class="mono">0.0.0.15</td></tr>
+                <tr><td>/30</td><td class="mono">255.255.255.252</td><td class="mono">0.0.0.3</td></tr>
+                <tr><td>One host</td><td class="mono">/32</td><td class="mono">host 192.168.1.10</td></tr>
+                <tr><td>Everyone</td><td class="mono">/0</td><td class="mono">any</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="field-group" style="margin-top:10px;">
+            <label class="field-label" for="wcInput">Try it: type a network (192.168.1.64/26), a mask (255.255.255.192) or a prefix (/26)</label>
+            <input type="text" id="wcInput" class="mono" value="192.168.1.64/26" spellcheck="false" />
+            <div id="wcOut" class="wc-out"></div>
+          </div>
+        </div>
+
+        <div class="card doc-card">
+          <h3>5 · In or out?</h3>
+          <div class="acl-diagram">
+            <span class="node">PC in LAN A</span><span class="arrow">→</span>
+            <span class="node port">g0/0 <b>in</b></span><span class="arrow">→</span>
+            <span class="node router">Router</span><span class="arrow">→</span>
+            <span class="node port">g0/1 <b>out</b></span><span class="arrow">→</span>
+            <span class="node">LAN B</span>
+          </div>
+          <ul class="doc-list">
+            <li><b>in</b> = checked as the packet <b>enters</b> the router through that port (before routing).</li>
+            <li><b>out</b> = checked as the packet <b>leaves</b> the router through that port.</li>
+            <li>Extended near the source → the sender's LAN port, <b>in</b>. Standard near the destination → the receiver's LAN port, <b>out</b>.</li>
+            <li>Think from the router's point of view, not the PC's.</li>
+          </ul>
+        </div>
+
+        <div class="card doc-card">
+          <h3>6 · Order and the hidden deny</h3>
+          <p class="doc-note" style="margin-top:0;">Task: only PC 192.168.1.10 may reach LAN B; the rest of LAN A may not.</p>
+          <pre class="doc-code">10 permit ip host 192.168.1.10 192.168.2.0 0.0.0.255
+20 deny ip 192.168.1.0 0.0.0.255 192.168.2.0 0.0.0.255
+30 permit ip any any</pre>
+          <ul class="doc-list">
+            <li>Swap 10 and 20 and the PC is blocked too: line 20 matches it first. <b>Specific lines go on top.</b></li>
+            <li>Without line 30, everything else is dropped by the hidden deny any, even DHCP and ping replies.</li>
+          </ul>
+        </div>
+
+        <div class="card doc-card">
+          <h3>7 · Numbered vs named</h3>
+          <div class="row-2">
+            <pre class="doc-code">access-list 110 remark Block web
+access-list 110 deny tcp 192.168.1.0 0.0.0.255 any eq 80
+access-list 110 permit ip any any
+interface g0/0
+ ip access-group 110 in</pre>
+            <pre class="doc-code">ip access-list extended BLOCK_WEB
+ remark Block web
+ deny tcp 192.168.1.0 0.0.0.255 any eq 80
+ permit ip any any
+ exit
+interface g0/0
+ ip access-group BLOCK_WEB in</pre>
+          </div>
+          <ul class="doc-list">
+            <li><b>Edit a numbered ACL:</b> <code>no access-list 110</code> deletes the whole list; paste it again (the app's scripts do this).</li>
+            <li><b>Edit a named ACL:</b> <code>ip access-list extended BLOCK_WEB</code>, then <code>no 20</code> removes line 20 and <code>15 deny …</code> adds a line between 10 and 20.</li>
+            <li>Same rules, same result. Use what the task asks for (Settings → ACL IDs, or type the name on the ACL).</li>
+          </ul>
+        </div>
+
+        <div class="card doc-card">
+          <h3>8 · Login (VTY) ACL</h3>
+          <pre class="doc-code">access-list 10 permit 192.168.1.0 0.0.0.255
+line vty 0 4
+ access-class 10 in</pre>
+          <ul class="doc-list">
+            <li>Only 192.168.1.0/24 may SSH or Telnet into the router; everyone else is refused by the hidden deny any.</li>
+            <li>Always a <b>standard</b> ACL, applied with <b>access-class</b> on <b>line vty</b> (not access-group).</li>
+            <li>Careful on a real router: if your own PC is not allowed, you lock yourself out of SSH (the console still works).</li>
+          </ul>
+        </div>
+
+        <div class="card doc-card">
+          <h3>9 · Check it on the router</h3>
+          <div class="doc-table-wrap">
+            <table class="doc-table">
+              <tbody>
+                <tr><td><code class="cmd">show access-lists</code></td><td>Every ACL with its lines and how many packets matched each (10 matches)</td></tr>
+                <tr><td><code class="cmd">show ip interface g0/0</code></td><td>Look for "Outgoing/Inbound access list is …"</td></tr>
+                <tr><td><code class="cmd">show running-config | include access</code></td><td>The ACL lines and where they are applied</td></tr>
+                <tr><td><code class="cmd">show running-config | section line vty</code></td><td>The access-class on the VTY lines</td></tr>
+                <tr><td><code class="cmd">clear access-list counters</code></td><td>Reset the match counts before a test</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="card doc-card">
+          <h3>10 · Common mistakes</h3>
+          <div class="doc-table-wrap">
+            <table class="doc-table">
+              <thead><tr><th>Mistake</th><th>What happens</th><th>Fix</th></tr></thead>
+              <tbody>
+                <tr><td>Subnet mask instead of wildcard</td><td>Matches the wrong addresses</td><td>192.168.1.0 <b>0.0.0.255</b>, not 255.255.255.0</td></tr>
+                <tr><td>No permit at the end</td><td>Everything else is blocked</td><td>End with permit ip any any (or permit any)</td></tr>
+                <tr><td>Wrong direction</td><td>The ACL never sees the traffic</td><td>in = entering the router from that LAN</td></tr>
+                <tr><td>Standard ACL near the source</td><td>The source loses every network</td><td>Put standard near the destination</td></tr>
+                <tr><td>Exception below the block</td><td>The exception never matches</td><td>Specific line first</td></tr>
+                <tr><td>ACL written but not applied</td><td>Nothing changes</td><td>ip access-group / access-class</td></tr>
+                <tr><td>deny ip A → B blocks the reply</td><td>B can't ping A either: A's replies are dropped</td><td>Block only the service (e.g. tcp eq 80), or check both ways in the Packet tester</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <p class="doc-note">IPv6 ACLs are not generated here. Syntax for reference: <code>ipv6 access-list NAME</code>, <code>deny ipv6 2001:db8:1::/64 any</code>, then <code>ipv6 traffic-filter NAME in</code> on the interface.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- =========================================================================
+       TAB 4: HELP (exam workflow, what to type, PuTTY, reset, cables, PCs)
        ========================================================================= -->
   <section id="viewHelp" class="tab-view hidden">
     <div class="doc-container">
@@ -1356,7 +1687,7 @@
           <li><b>Reset every router</b> (see <a href="#h-reset">Reset a router</a>). Lab routers keep the last group's config.</li>
           <li><b>Cable it</b> (see <a href="#h-cables">Cables</a>). Write down which router port goes where; <code class="cmd">show cdp neighbors</code> confirms it later.</li>
           <li><b>Addressing page:</b> type the base network and prefix, add the routers (2901 or 2911), then one <b>LAN</b> row per LAN and one <b>WAN</b> row per router-to-router link. Pick the router and port for each row. Check the Generated Subnet Table.</li>
-          <li><b>Topology page:</b> Init Config (passwords, banner, SSH/Telnet) → Routers &amp; LANs (DHCP, DNS, IPv6 for each LAN) → Routing (the protocol the task asks for, per router) → ACLs (only if asked).</li>
+          <li><b>Topology page:</b> Init Config (passwords, banner, SSH/Telnet) → Routers &amp; LANs (DHCP, DNS, IPv6 for each LAN) → Routing (the protocol the task asks for, per router). ACLs (only if the task asks) are on the <b>3. ACLs</b> tab.</li>
           <li><b>CLI pane:</b> pick a router, keep <b>Copy in parts</b> on, then for each part: <b>Copy</b> → right-click in PuTTY → wait for the prompt to come back → next part. Ticks show what you have pasted. Watch for <code>% Invalid input</code>.</li>
           <li><b>PCs:</b> set them to DHCP (or the static values from the subnet table). See <a href="#h-pc">PC setup</a>.</li>
           <li><b>Verify:</b> click <b>Verify</b> in the CLI pane and run those commands. If something fails, open the Troubleshooting tab.</li>
@@ -1395,7 +1726,7 @@
               <tr><td>Exclude First N IPs</td><td class="mono">10</td><td>Kept for the gateway, servers and printers. PCs get addresses after these.</td></tr>
               <tr><td>DNS Server IPv4 / IPv6</td><td class="mono">192.168.10.10</td><td>The DNS server's address, handed out by DHCP. Blank = none.</td></tr>
               <tr><td>IPv6 Host Config</td><td>SLAAC / Stateless / Stateful</td><td>SLAAC: the PC makes its own address. Stateless: SLAAC + DNS from DHCPv6. Stateful: DHCPv6 gives the address.</td></tr>
-              <tr><td>Link-Local</td><td class="mono">fe80::1</td><td>Must start with fe80. The same value on every port of one router is fine; use a different one per router.</td></tr>
+              <tr><td>IPv6 Link-Local</td><td class="mono">fe80::1</td><td>Set once per router (Routers &amp; LANs). Router 1 = fe80::1, router 2 = fe80::2… It goes on every port of that router, so the two ends of a link never clash.</td></tr>
               <tr><td>Loopback</td><td class="mono">1.1.1.1/32</td><td>Any unused address, usually /32. Good as a router ID.</td></tr>
               <tr class="doc-group"><td colspan="3">Topology → Routing</td></tr>
               <tr><td>Routing protocol</td><td>Static / RIPv2 / OSPF / EIGRP</td><td>One per router. A router between two protocols becomes a border router and redistributes automatically.</td></tr>
@@ -1517,7 +1848,7 @@
   </section>
 
   <!-- =========================================================================
-       TAB 4: TROUBLESHOOTING (symptoms, IOS messages, show commands)
+       TAB 5: TROUBLESHOOTING (symptoms, IOS messages, show commands)
        ========================================================================= -->
   <section id="viewTrouble" class="tab-view hidden">
     <div class="doc-container">
@@ -1906,6 +2237,7 @@
             id: rCebuId,
             hostname: 'Cebu',
             model: '2911',
+            linkLocal: 'fe80::1', // used on every port of this router
             lans: [
               {
                 id: 'lan_cebu',
@@ -1938,6 +2270,7 @@
             id: rDavaoId,
             hostname: 'Davao',
             model: '2911',
+            linkLocal: 'fe80::2',
             lans: [
               {
                 id: 'lan_davao',
@@ -2518,6 +2851,7 @@
         id: uid('r'),
         hostname: uniqueHostname(name),
         model: ROUTER_MODELS[model] ? model : '2911',
+        linkLocal: nextFreeLinkLocal(),
         lans: [],
         loopbacks: [],
         routing: { domain: 'static', ipv6Static: true, ripng: false, customStatics: [], stubDefault: true, routerId: '' }
@@ -2717,6 +3051,34 @@
         const peer = getRouterById(peerId);
         return `<span class="port-chip wan" title="WAN link">${escapeHtml(i)} · WAN → ${escapeHtml(peer ? peer.hostname : '?')} · ${escapeHtml(myIp)}</span>`;
       }).join('') + loops.join('');
+    }
+
+    /**
+     * Link-local address a router uses on EVERY port: fe80::1 on the first router, fe80::2 on the
+     * second... One per router means the two ends of a router-to-router link can never clash.
+     */
+    function routerLinkLocal(router) {
+      const v = String((router && router.linkLocal) || '').trim();
+      return IPv6.isLinkLocal(v) ? IPv6.compress(IPv6.expand(v)) : 'fe80::1';
+    }
+
+    /** First fe80::N that no other router uses yet. */
+    function nextFreeLinkLocal(exceptId) {
+      const used = new Set(appState.routers
+        .filter(r => r.id !== exceptId && IPv6.isLinkLocal(String(r.linkLocal || '')))
+        .map(r => routerLinkLocal(r)));
+      let n = 1;
+      while (used.has(IPv6.compress(IPv6.expand(`fe80::${n}`)))) n++;
+      return `fe80::${n}`;
+    }
+
+    /** Why a router's link-local is not usable ('' when it is fine). */
+    function linkLocalProblem(router) {
+      const v = String(router.linkLocal || '').trim();
+      if (!IPv6.isLinkLocal(v)) return `"${v || '(blank)'}" is not a link-local address. Use fe80::1, fe80::2 and so on.`;
+      const mine = routerLinkLocal(router);
+      const twin = appState.routers.find(r => r.id !== router.id && IPv6.isLinkLocal(String(r.linkLocal || '')) && routerLinkLocal(r) === mine);
+      return twin ? `${sanitizeHostname(twin.hostname)} already uses ${mine}. Each router needs its own link-local.` : '';
     }
 
     /** A router's loopbacks with their addresses parsed (invalid addresses come back as null). */
@@ -3371,9 +3733,17 @@
     function getSecurity() {
       if (!appState.security) appState.security = { mode: 'extended', permitRest: true, rules: [] };
       const s = appState.security;
-      if (s.mode !== 'standard') s.mode = 'extended';
+      if (s.mode !== 'standard') s.mode = 'extended';          // type for NEW rules
       if (s.permitRest === undefined) s.permitRest = true;
+      if (s.naming !== 'named') s.naming = 'numbered';          // automatic IDs: 100 / 10 or EXT_G0_0_IN
+      if (!s.aclIds || typeof s.aclIds !== 'object') s.aclIds = {}; // typed ACL numbers/names, by port
       if (!Array.isArray(s.rules)) s.rules = [];
+      s.rules.forEach(r => {
+        // Older projects had one type for every rule
+        if (r.aclType !== 'standard' && r.aclType !== 'extended') {
+          r.aclType = r.dstType === 'router' || s.mode === 'standard' ? 'standard' : 'extended';
+        }
+      });
       return s;
     }
 
@@ -3484,31 +3854,123 @@
       }
     }
 
-    function compileSecurityRules() {
-      const sec = getSecurity();
-      const standard = sec.mode === 'standard';
-      const info = {};
-      const placeKey = w => `${w.router.id}|${w.iface}|${w.direction}`;
+    const ACL_PORT_NAMES = { 20: 'FTP data', 21: 'FTP', 22: 'SSH', 23: 'Telnet', 25: 'SMTP email', 53: 'DNS', 80: 'HTTP web', 110: 'POP3 email', 443: 'HTTPS web' };
+    const ANY_ENDPOINT = { kind: 'any', acl: 'any', label: 'any', lo: 0, hi: 0xffffffff };
 
-      const items = sec.rules.map((rule, idx) => {
+    function aclKey(routerId, iface, direction) {
+      return `${routerId}|${iface}|${direction}`;
+    }
+
+    function vtyAclKey(routerId) {
+      return `vty|${routerId}`;
+    }
+
+    /** '' when id is a usable ACL number or name for that type, else the reason. */
+    function aclIdProblem(id, type) {
+      const v = String(id || '').trim();
+      if (/^\d+$/.test(v)) {
+        const n = Number(v);
+        const ok = type === 'standard'
+          ? (n >= 1 && n <= 99) || (n >= 1300 && n <= 1999)
+          : (n >= 100 && n <= 199) || (n >= 2000 && n <= 2699);
+        return ok ? '' : (type === 'standard' ? 'Standard ACL numbers are 1-99 or 1300-1999.' : 'Extended ACL numbers are 100-199 or 2000-2699.');
+      }
+      return /^[A-Za-z][A-Za-z0-9_-]{0,63}$/.test(v) ? '' : 'A name starts with a letter and uses only letters, digits, _ and -.';
+    }
+
+    function epText(ep) {
+      if (ep.kind === 'any') return 'anyone';
+      if (ep.kind === 'host') return `host ${ep.label}`;
+      if (ep.kind === 'lan') return `${ep.label} (${ep.lan.netIp}/${ep.lan.cidr})`;
+      return ep.label;
+    }
+
+    function lineServiceText(line) {
+      if (line.proto === 'ip') return 'all traffic';
+      if (line.proto === 'icmp') return line.icmpType === 'echo' ? 'ping (ICMP echo)' : 'all ICMP';
+      const name = ACL_PORT_NAMES[line.port];
+      return line.port ? `${line.proto.toUpperCase()} port ${line.port}${name ? ` (${name})` : ''}` : `all ${line.proto.toUpperCase()}`;
+    }
+
+    /** One ACL line as labelled tokens (action, protocol, source, wildcard, destination, port). */
+    function aceTokens(type, action, line, src, dst) {
+      const ep = (e, role) => e.kind === 'any' ? [{ t: 'any', r: role }]
+        : e.kind === 'host' ? [{ t: 'host', r: role }, { t: e.label, r: role }]
+        : [{ t: e.lan.netIp, r: role }, { t: IPv4.cidrToWildcard(e.lan.cidr), r: 'wc' }];
+      const toks = [{ t: action, r: action }];
+      if (type === 'standard') return toks.concat(ep(src, 'src'));
+      toks.push({ t: line.proto, r: 'proto' }, ...ep(src, 'src'), ...ep(dst, 'dst'));
+      if (line.proto === 'icmp' && line.icmpType) toks.push({ t: line.icmpType, r: 'port' });
+      if ((line.proto === 'tcp' || line.proto === 'udp') && line.port) toks.push({ t: 'eq', r: 'port' }, { t: line.port, r: 'port' });
+      return toks;
+    }
+
+    function explainAce(type, action, line, src, dst) {
+      const verb = action === 'deny' ? 'Block' : 'Allow';
+      if (type === 'standard') return `${verb} everything from ${epText(src)} (a standard ACL looks at the source only)`;
+      return `${verb} ${lineServiceText(line)} from ${epText(src)} to ${epText(dst)}`;
+    }
+
+    /** Fills in an ACL's IOS lines (numbered or named style) from its entries. */
+    function finishAcl(g) {
+      g.named = !/^\d+$/.test(String(g.id));
+      g.number = g.id;
+      const body = g.entries.map(e => (e.kind === 'remark' ? `remark ${e.text}` : e.text));
+      g.lines = g.named
+        ? [`ip access-list ${g.type} ${g.id}`, ...body.map(b => ` ${b}`), ' exit']
+        : body.map(b => `access-list ${g.id} ${b}`);
+      g.removeLine = g.named ? `no ip access-list ${g.type} ${g.id}` : `no access-list ${g.id}`;
+    }
+
+    /** Commands that replace one ACL on its router: take it off the port, delete it, write it, put it back. */
+    function aclGroupCli(g) {
+      const vtyRange = `0 ${appState.initConfig.vtyLast === '15' ? '15' : '4'}`;
+      if (g.vty) return [g.removeLine, ...g.lines, `line vty ${vtyRange}`, ` access-class ${g.id} in`, ' exit'];
+      return [
+        `interface ${g.iface}`, ` no ip access-group ${g.id} ${g.direction}`, ' exit',
+        g.removeLine, ...g.lines,
+        `interface ${g.iface}`, ` ip access-group ${g.id} ${g.direction}`, ' exit'
+      ];
+    }
+
+    function aclWhereText(g) {
+      const host = sanitizeHostname(getRouterById(g.routerId)?.hostname || '?');
+      if (g.vty) return `${host} · line vty 0 ${appState.initConfig.vtyLast === '15' ? '15' : '4'} · access-class in`;
+      return `${host} · ${g.iface} ${g.direction} · near the ${g.side}`;
+    }
+
+    // Packet-tester service for each rule service
+    const RULE_TO_TESTER = { ip: 'ping', web: 'http', http: 'http', https: 'https', ftp: 'ftp', smtp: 'smtp', pop3: 'pop3', dns: 'dns', ping: 'ping', ssh: 'ssh', telnet: 'telnet', custom: 'custom' };
+
+    /**
+     * Turns the security rules into ACLs. rulesOverride (optional) compiles another rule list,
+     * e.g. the saved rules plus the one being typed, for the live preview.
+     */
+    function compileSecurityRules(rulesOverride) {
+      const sec = getSecurity();
+      const rules = rulesOverride || sec.rules;
+      const info = {};
+      const placeKey = w => aclKey(w.router.id, w.iface, w.direction);
+      const vtyLast = appState.initConfig.vtyLast === '15' ? '15' : '4';
+
+      const items = rules.map((rule, idx) => {
         const src = resolveRuleEndpoint(rule.srcType, rule.srcLanId, rule.srcHost);
         const isVty = rule.dstType === 'router';
         const dstRouter = isVty ? getRouterById(rule.dstRouterId) : null;
         const dst = isVty
           ? { kind: 'router', router: dstRouter, label: dstRouter ? `${dstRouter.hostname} (SSH/Telnet login)` : 'a deleted router' }
           : resolveRuleEndpoint(rule.dstType, rule.dstLanId, rule.dstHost);
+        const std = isVty || (rule.aclType ? rule.aclType === 'standard' : sec.mode === 'standard');
         const verb = rule.action === 'deny' ? 'Block' : (isVty ? 'Allow only' : 'Allow');
-        const svc = isVty ? 'remote login' : (standard ? 'all traffic (standard ACL)' : serviceLabel(rule));
+        const svc = isVty ? 'remote login' : (std ? 'all traffic (standard ACL)' : serviceLabel(rule));
         info[rule.id] = {
           index: idx + 1,
           sentence: `${verb} ${src.label} → ${dst.label}${isVty ? '' : ` · ${svc}`}`,
           plain: `${verb} ${src.label} -> ${dst.label}${isVty ? '' : `, ${svc}`}`,
-          placeText: '', errors: [], warnings: [], notes: [], aclNumber: null
+          placeText: '', errors: [], warnings: [], notes: [], aclNumber: null,
+          aclType: std ? 'standard' : 'extended', aclKeys: []
         };
-        return {
-          rule, idx, src, dst, isVty, where: null,
-          lines: isVty || standard ? [{ proto: 'ip' }] : serviceLines(rule)
-        };
+        return { rule, idx, src, dst, isVty, std, where: null, lines: std ? [{ proto: 'ip' }] : serviceLines(rule) };
       });
 
       // A "host" that is really a LAN's network ID or broadcast address is almost always a typo
@@ -3533,7 +3995,7 @@
         }
         if (it.dst.kind === 'missing') inf.errors.push('The destination LAN was deleted. Remove this rule or pick another destination.');
         if (it.dst.kind === 'invalid') inf.errors.push(`Destination "${it.dst.label}" is not a valid IPv4 address.`);
-        if (it.rule.service === 'custom' && !standard && String(it.rule.customPort || '').trim() && !/^\d+$/.test(String(it.rule.customPort).trim())) {
+        if (it.rule.service === 'custom' && !it.std && String(it.rule.customPort || '').trim() && !/^\d+$/.test(String(it.rule.customPort).trim())) {
           inf.errors.push('The custom port must be a number.');
         }
         if (inf.errors.length) return;
@@ -3543,7 +4005,7 @@
         }
         const want = it.rule.placement === 'source' ? 'source'
           : it.rule.placement === 'destination' ? 'destination'
-          : (standard ? 'destination' : 'source');
+          : (it.std ? 'destination' : 'source');
         const atSource = it.src.lan ? { router: it.src.router, iface: it.src.lan.iface, direction: 'in', side: 'source' } : null;
         const atDest = it.dst.lan ? { router: it.dst.router, iface: it.dst.lan.iface, direction: 'out', side: 'destination' } : null;
         it.where = want === 'source' ? (atSource || atDest) : (atDest || atSource);
@@ -3552,10 +4014,10 @@
           return;
         }
         if (it.where.side !== want) inf.notes.push(`Placed near the ${it.where.side}, because the ${want} is not a LAN in this network.`);
-        if (standard && it.rule.service && it.rule.service !== 'ip') {
+        if (it.std && it.rule.service && it.rule.service !== 'ip') {
           inf.warnings.push(`Standard ACLs only check the source address, so this affects ALL traffic from ${it.src.label} here, not only ${serviceLabel(it.rule)}.`);
         }
-        if (standard && it.where.side === 'source' && it.rule.action === 'deny') {
+        if (it.std && it.where.side === 'source' && it.rule.action === 'deny') {
           inf.warnings.push('A standard ACL near the source blocks this source from every destination behind this port. Cisco places standard ACLs near the destination.');
         }
       });
@@ -3591,7 +4053,7 @@
         if (info[it.rule.id].errors.length) return;
         if (it.isVty) {
           const rid = it.dst.router.id;
-          if (!vty[rid]) vty[rid] = { routerId: rid, items: [], number: 10 };
+          if (!vty[rid]) vty[rid] = { key: vtyAclKey(rid), vty: true, routerId: rid, type: 'standard', side: 'router', items: [] };
           vty[rid].items.push(it);
           return;
         }
@@ -3599,9 +4061,8 @@
           const k = placeKey(where);
           if (!groupMap.has(k)) {
             const g = {
-              routerId: where.router.id, iface: where.iface, direction: where.direction,
-              side: where.direction === 'in' ? 'source' : 'destination',
-              type: standard ? 'standard' : 'extended', items: []
+              key: k, routerId: where.router.id, iface: where.iface, direction: where.direction,
+              side: where.direction === 'in' ? 'source' : 'destination', items: []
             };
             groupMap.set(k, g);
             groups.push(g);
@@ -3609,35 +4070,78 @@
           groupMap.get(k).items.push(it);
         });
       });
+      // An extended rule on a port makes that port's whole ACL extended
+      groups.forEach(g => { g.type = g.items.some(it => !it.std) ? 'extended' : 'standard'; });
 
-      // 4. Number per router (extended 100+, standard 20+, router login 10)
-      const counters = {};
-      groups.forEach(g => {
-        const c = counters[g.routerId] = counters[g.routerId] || { ext: 100, std: 20 };
-        g.number = g.type === 'standard' ? c.std++ : c.ext++;
+      // 4. Numbers or names: typed ones first, then automatic ones that are still free on that router
+      const allAcls = [...groups, ...Object.values(vty)];
+      const used = {};
+      const usedOn = rid => (used[rid] = used[rid] || new Set());
+      const typedIds = sec.aclIds || {};
+      allAcls.forEach(g => {
+        const want = String(typedIds[g.key] || '').trim();
+        if (!want) return;
+        const problem = aclIdProblem(want, g.type);
+        if (problem) { g.idError = problem; return; }
+        if (usedOn(g.routerId).has(want.toLowerCase())) { g.idError = `${want} is already used by another ACL on this router.`; return; }
+        g.id = want;
+        g.idTyped = true;
+        usedOn(g.routerId).add(want.toLowerCase());
+      });
+      const nextNumber = (rid, start, end) => {
+        for (let n = start; n <= end; n++) {
+          if (!usedOn(rid).has(String(n))) { usedOn(rid).add(String(n)); return String(n); }
+        }
+        return String(start);
+      };
+      allAcls.forEach(g => {
+        if (g.id) return;
+        if (sec.naming === 'named') {
+          const base = g.vty ? 'VTY_ACCESS'
+            : `${g.type === 'standard' ? 'STD' : 'EXT'}_${g.iface.toUpperCase().replace(/[^A-Z0-9]+/g, '_')}_${g.direction.toUpperCase()}`;
+          let name = base;
+          let n = 2;
+          while (usedOn(g.routerId).has(name.toLowerCase())) name = `${base}_${n++}`;
+          usedOn(g.routerId).add(name.toLowerCase());
+          g.id = name;
+        } else {
+          g.id = g.vty ? nextNumber(g.routerId, 10, 99)
+            : g.type === 'standard' ? nextNumber(g.routerId, 20, 99)
+            : nextNumber(g.routerId, 100, 199);
+        }
       });
 
-      const remark = (n, text) => `access-list ${n} remark ${text}`.slice(0, 118);
-      const aceText = (type, it, line) => {
-        if (type === 'standard') return `${it.rule.action} ${it.src.acl}`;
-        let s = `${it.rule.action} ${line.proto} ${it.src.acl} ${it.dst.acl}`;
-        if (line.proto === 'icmp' && line.icmpType) s += ` ${line.icmpType}`;
-        if ((line.proto === 'tcp' || line.proto === 'udp') && line.port) s += ` eq ${line.port}`;
-        return s;
+      const remarkFor = it => `R${it.idx + 1} ${it.rule.note ? `${it.rule.note} - ` : ''}${info[it.rule.id].plain}`.slice(0, 100);
+      const permitAnyEntry = type => {
+        const toks = type === 'standard'
+          ? [{ t: 'permit', r: 'permit' }, { t: 'any', r: 'src' }]
+          : [{ t: 'permit', r: 'permit' }, { t: 'ip', r: 'proto' }, { t: 'any', r: 'src' }, { t: 'any', r: 'dst' }];
+        return {
+          kind: 'ace', tokens: toks, text: toks.map(x => x.t).join(' '), action: 'permit', ruleIdx: -1, auto: true,
+          explain: 'Allow everything the lines above did not block. Without it, the hidden "deny any" drops all other traffic.',
+          match: { std: type === 'standard', proto: 'ip', srcLo: 0, srcHi: 0xffffffff, dstLo: 0, dstHi: 0xffffffff, port: '', icmpType: '' }
+        };
       };
 
       // 5. Write the lines; warn when an earlier line already matches a later rule
       groups.forEach(g => {
         const host = getRouterById(g.routerId)?.hostname || '?';
-        g.lines = [];
+        const asStd = g.type === 'standard';
+        g.entries = [];
         const written = [];
         g.items.forEach(it => {
           const inf = info[it.rule.id];
-          inf.aclNumber = g.number;
-          const placeText = `ACL ${g.number} · ${host} ${g.iface} ${g.direction} (near the ${g.side})`;
+          inf.aclNumber = g.id;
+          inf.aclKeys.push(g.key);
+          const placeText = `ACL ${g.id} · ${host} ${g.iface} ${g.direction} (near the ${g.side})`;
           inf.placeText = inf.placeText ? `${inf.placeText}; ${placeText}` : placeText;
+          const stdInExt = it.std && !asStd;
+          if (stdInExt) {
+            inf.notes.push(`Written as an extended line (ip … any): ${host} ${g.iface} ${g.direction} already has an extended ACL, and a port takes only one ACL per direction.`);
+          }
+          const dstUsed = asStd || stdInExt ? ANY_ENDPOINT : it.dst;
           const shadow = written.find(e => e.ruleIdx !== it.idx && it.lines.every(bl =>
-            written.some(w => w.ruleIdx === e.ruleIdx && entryCovers(w, { src: it.src, dst: it.dst, line: bl }, standard))));
+            written.some(w => w.ruleIdx === e.ruleIdx && entryCovers(w, { src: it.src, dst: dstUsed, line: bl }, asStd))));
           if (shadow) {
             const same = shadow.action === it.rule.action;
             const msg = same
@@ -3645,35 +4149,60 @@
               : `Never used: rule #${shadow.ruleIdx + 1} above matches this traffic first (first match wins). Move this rule above it.`;
             if (!inf.warnings.includes(msg)) inf.warnings.push(msg);
           }
-          g.lines.push(remark(g.number, `R${it.idx + 1} ${it.rule.note ? it.rule.note + ' - ' : ''}${inf.plain}`));
+          g.entries.push({ kind: 'remark', text: remarkFor(it), ruleIdx: it.idx });
           it.lines.forEach(line => {
-            g.lines.push(`access-list ${g.number} ${aceText(g.type, it, line)}`);
-            written.push({ ruleIdx: it.idx, action: it.rule.action, src: it.src, dst: it.dst, line });
+            const toks = aceTokens(g.type, it.rule.action, line, it.src, dstUsed);
+            g.entries.push({
+              kind: 'ace', tokens: toks, text: toks.map(x => x.t).join(' '), action: it.rule.action, ruleIdx: it.idx,
+              explain: explainAce(g.type, it.rule.action, line, it.src, dstUsed),
+              match: {
+                std: asStd, proto: line.proto, srcLo: it.src.lo, srcHi: it.src.hi,
+                dstLo: dstUsed.lo, dstHi: dstUsed.hi, port: line.port || '', icmpType: line.icmpType || ''
+              }
+            });
+            written.push({ ruleIdx: it.idx, action: it.rule.action, src: it.src, dst: dstUsed, line });
           });
         });
         if (sec.permitRest) {
-          g.lines.push(remark(g.number, 'allow all other traffic'));
-          g.lines.push(`access-list ${g.number} ${g.type === 'standard' ? 'permit any' : 'permit ip any any'}`);
+          g.entries.push({ kind: 'remark', text: 'allow all other traffic', ruleIdx: -1 });
+          g.entries.push(permitAnyEntry(g.type));
         }
+        finishAcl(g);
       });
 
       Object.values(vty).forEach(v => {
         const host = getRouterById(v.routerId)?.hostname || '?';
-        v.lines = [];
+        v.entries = [];
         const whitelist = v.items.some(it => it.rule.action === 'permit');
         v.items.forEach(it => {
           const inf = info[it.rule.id];
-          inf.aclNumber = v.number;
-          inf.placeText = `ACL ${v.number} · ${host} line vty 0 ${appState.initConfig.vtyLast === '15' ? '15' : '4'} (access-class in)`;
-          if (it.rule.action === 'permit') inf.notes.push(`Only the "Allow" sources may log in to ${host}. Everyone else is refused (implicit deny).`);
-          v.lines.push(remark(v.number, `R${it.idx + 1} ${it.rule.note ? it.rule.note + ' - ' : ''}${inf.plain}`));
-          v.lines.push(`access-list ${v.number} ${it.rule.action} ${it.src.acl}`);
+          inf.aclNumber = v.id;
+          inf.aclKeys.push(v.key);
+          inf.placeText = `ACL ${v.id} · ${host} line vty 0 ${vtyLast} (access-class in)`;
+          if (it.rule.action === 'permit') inf.notes.push(`Only the "Allow" sources may log in to ${host}. Everyone else is refused (hidden deny any).`);
+          v.entries.push({ kind: 'remark', text: remarkFor(it), ruleIdx: it.idx });
+          const toks = aceTokens('standard', it.rule.action, { proto: 'ip' }, it.src, ANY_ENDPOINT);
+          v.entries.push({
+            kind: 'ace', tokens: toks, text: toks.map(x => x.t).join(' '), action: it.rule.action, ruleIdx: it.idx,
+            explain: `${it.rule.action === 'deny' ? 'Refuse' : 'Accept'} SSH/Telnet logins from ${epText(it.src)}`,
+            match: { std: true, proto: 'ip', srcLo: it.src.lo, srcHi: it.src.hi, dstLo: 0, dstHi: 0xffffffff, port: '', icmpType: '' }
+          });
         });
-        if (!whitelist) v.lines.push(`access-list ${v.number} permit any`);
+        if (!whitelist) {
+          const e = permitAnyEntry('standard');
+          e.explain = 'Everyone else may still log in (with the password).';
+          v.entries.push(e);
+        }
+        finishAcl(v);
       });
 
-      // 6. Test plan
+      // 6. Test plan (each test can also be loaded into the packet tester)
       const tests = [];
+      const lanChoice = ep => (ep.kind === 'lan' ? { v: `lan:${ep.lan.id}`, host: '' } : ep.kind === 'host' ? { v: 'host', host: ep.label } : null);
+      const otherLanChoice = exceptLanId => {
+        const o = getAllLans().find(x => x.lan.id !== exceptLanId);
+        return o ? { v: `lan:${o.lan.id}`, host: '' } : { v: 'host', host: '8.8.8.8' };
+      };
       const firstOtherLan = exceptId => getAllLans().find(x => !exceptId || x.lan.id !== exceptId);
       items.forEach(it => {
         const inf = info[it.rule.id];
@@ -3681,30 +4210,168 @@
         const from = it.src.kind === 'lan' ? `a PC in ${it.src.label}`
           : it.src.kind === 'host' ? `host ${it.src.label}`
           : 'any PC (e.g. one in another LAN)';
+        const s = lanChoice(it.src) || otherLanChoice(it.dst.lan ? it.dst.lan.id : '');
         if (it.isVty) {
           const ip = routerMgmtIp(it.dst.router);
-          const cmd = appState.initConfig.vtyMode === 'telnet' ? `telnet ${ip}` : `ssh -l ${appState.initConfig.sshUser || 'admin'} ${ip}`;
-          tests.push({ rule: it.idx + 1, from, cmd, expect: it.rule.action === 'permit' ? 'asks for the password (allowed)' : 'refused (blocked)' });
+          const telnet = appState.initConfig.vtyMode === 'telnet';
+          const cmd = telnet ? `telnet ${ip}` : `ssh -l ${appState.initConfig.sshUser || 'admin'} ${ip}`;
+          tests.push({
+            rule: it.idx + 1, from, cmd, expect: it.rule.action === 'permit' ? 'asks for the password (allowed)' : 'refused (blocked)',
+            tester: { src: s.v, srcHost: s.host, dst: 'router', dstHost: '', dstRouterId: it.dst.router.id, svc: telnet ? 'telnet' : 'ssh', customProto: 'tcp', customPort: '' }
+          });
           return;
         }
         let target;
         if (it.dst.kind === 'host') target = it.dst.label;
         else if (it.dst.kind === 'lan') target = aclSampleHost(it.dst.lan);
         else { const o = firstOtherLan(it.src.lan && it.src.lan.id); target = o ? aclSampleHost(o.lan) : '8.8.8.8'; }
+        const d = lanChoice(it.dst) || { v: 'host', host: target };
         const where = inf.placeText.split(' (')[0];
         tests.push({
           rule: it.idx + 1, from,
-          cmd: standard ? `ping ${target}` : aclTestCommand(it.rule, target),
-          expect: it.rule.action === 'deny' ? `fails, blocked by ${where}` : 'works'
+          cmd: it.std ? `ping ${target}` : aclTestCommand(it.rule, target),
+          expect: it.rule.action === 'deny' ? `fails, blocked by ${where}` : 'works',
+          tester: {
+            src: s.v, srcHost: s.host, dst: d.v, dstHost: d.host, dstRouterId: '',
+            svc: it.std ? 'ping' : (RULE_TO_TESTER[it.rule.service] || 'ping'),
+            customProto: it.rule.customProto === 'udp' ? 'udp' : 'tcp', customPort: String(it.rule.customPort || '')
+          }
         });
       });
       Object.values(vty).forEach(v => {
         if (!v.items.some(it => it.rule.action === 'permit')) return;
         const r = getRouterById(v.routerId);
-        tests.push({ rule: '-', from: 'any other PC', cmd: `ssh -l ${appState.initConfig.sshUser || 'admin'} ${routerMgmtIp(r)}`, expect: 'refused (not on the allow list)' });
+        tests.push({ rule: '-', from: 'any other PC', cmd: `ssh -l ${appState.initConfig.sshUser || 'admin'} ${routerMgmtIp(r)}`, expect: 'refused (not on the allow list)', tester: null });
       });
 
-      return { standard, groups, vty, info, tests };
+      return { standard: sec.mode === 'standard', groups, vty, info, tests };
+    }
+
+    /* ---- Packet tester: follow one packet (and its reply) through the ACLs ---- */
+    const TESTER_SERVICES = {
+      ping: { label: 'Ping', proto: 'icmp' },
+      http: { label: 'Web HTTP (TCP 80)', proto: 'tcp', port: '80' },
+      https: { label: 'Web HTTPS (TCP 443)', proto: 'tcp', port: '443' },
+      ftp: { label: 'FTP (TCP 21)', proto: 'tcp', port: '21' },
+      smtp: { label: 'Email SMTP (TCP 25)', proto: 'tcp', port: '25' },
+      pop3: { label: 'Email POP3 (TCP 110)', proto: 'tcp', port: '110' },
+      dns: { label: 'DNS (UDP 53)', proto: 'udp', port: '53' },
+      ssh: { label: 'SSH (TCP 22)', proto: 'tcp', port: '22' },
+      telnet: { label: 'Telnet (TCP 23)', proto: 'tcp', port: '23' },
+      custom: { label: 'Other TCP/UDP port', proto: 'tcp', port: '' }
+    };
+
+    function aceMatches(m, p) {
+      if (p.src < m.srcLo || p.src > m.srcHi) return false;
+      if (m.std) return true;
+      if (p.dst < m.dstLo || p.dst > m.dstHi) return false;
+      if (m.proto === 'ip') return true;
+      if (m.proto !== p.proto) return false;
+      if (m.proto === 'icmp') return !m.icmpType || m.icmpType === p.icmpType;
+      return !m.port || String(m.port) === String(p.dport || '');
+    }
+
+    /** The first matching line decides; no match = the hidden deny any. */
+    function runAcl(acl, p) {
+      for (let i = 0; i < acl.entries.length; i++) {
+        const e = acl.entries[i];
+        if (e.kind === 'ace' && aceMatches(e.match, p)) return { hit: i, action: e.action };
+      }
+      return { hit: -1, action: 'deny' };
+    }
+
+    /**
+     * ACLs sit on LAN ports: "in" where the sender's LAN enters its router, "out" where the
+     * receiver's LAN leaves its router, plus access-class on line vty for a login to a router.
+     * The reply comes back the other way: in on the receiver's port, out on the sender's.
+     */
+    function simulateAclTest(comp, t) {
+      const side = (val, hostVal, role) => {
+        if (val && val.startsWith('lan:')) {
+          const m = getAllLans().find(x => `lan:${x.lan.id}` === val);
+          if (!m) return { error: `The ${role} LAN no longer exists.` };
+          const ip = aclSampleHost(m.lan);
+          return { ip: IPv4.toInt(ip), ipText: ip, label: `a PC in ${m.lan.name} (${ip})` };
+        }
+        if (val === 'host') {
+          const txt = String(hostVal || '').trim();
+          const n = IPv4.toInt(txt);
+          if (n === null) return { error: `Type the ${role} IP address.` };
+          return { ip: n, ipText: txt, label: `host ${txt}` };
+        }
+        return { error: `Pick a ${role}.` };
+      };
+      const src = side(t.src, t.srcHost, 'source');
+      if (src.error) return { error: src.error };
+      let dst;
+      let router = null;
+      if (t.dst === 'router') {
+        router = getRouterById(t.dstRouterId);
+        if (!router) return { error: 'Pick the router.' };
+        const ip = routerMgmtIp(router);
+        dst = { ip: IPv4.toInt(ip), ipText: ip, label: `${sanitizeHostname(router.hostname)} itself (${ip})` };
+        if (dst.ip === null) return { error: `${sanitizeHostname(router.hostname)} has no IPv4 address yet.` };
+      } else {
+        dst = side(t.dst, t.dstHost, 'destination');
+        if (dst.error) return { error: dst.error };
+      }
+      const svc = TESTER_SERVICES[t.svc] || TESTER_SERVICES.ping;
+      const proto = t.svc === 'custom' ? (t.customProto === 'udp' ? 'udp' : 'tcp') : svc.proto;
+      const port = t.svc === 'custom' ? String(t.customPort || '').trim() : (svc.port || '');
+      if (t.svc === 'custom' && !/^\d+$/.test(port)) return { error: 'Type the port number.' };
+      const pkt = { proto, src: src.ip, dst: dst.ip, dport: port, icmpType: proto === 'icmp' ? 'echo' : '' };
+      const sLan = findLanForIp(src.ip);
+      const dLan = router ? null : findLanForIp(dst.ip);
+      if (!router && sLan && dLan && sLan.lan.id === dLan.lan.id) {
+        return { error: 'Both are in the same LAN: the packet only goes through the switch, so no router ACL ever sees it.' };
+      }
+      const byKey = new Map(comp.groups.map(g => [g.key, g]));
+      const portCheck = (m, dir) => {
+        const host = sanitizeHostname(m.router.hostname);
+        return {
+          label: dir === 'in' ? `enters ${host} ${m.lan.iface} (in), coming from ${m.lan.name}` : `leaves ${host} ${m.lan.iface} (out), going into ${m.lan.name}`,
+          acl: byKey.get(aclKey(m.router.id, m.lan.iface, dir)) || null
+        };
+      };
+      const runLeg = (p, checks) => {
+        const steps = [];
+        let allowed = true;
+        for (const c of checks) {
+          if (!c.acl) { steps.push({ label: c.label, acl: null, action: 'permit' }); continue; }
+          const r = runAcl(c.acl, p);
+          steps.push({ label: c.label, acl: c.acl, hit: r.hit, action: r.action });
+          if (r.action === 'deny') { allowed = false; break; }
+        }
+        return { steps, allowed };
+      };
+      const reqChecks = [];
+      if (sLan) reqChecks.push(portCheck(sLan, 'in'));
+      let loginNote = '';
+      if (router) {
+        const login = proto === 'tcp' && (port === '22' || port === '23');
+        if (login) {
+          reqChecks.push({ label: `asks ${sanitizeHostname(router.hostname)} for a login (line vty, access-class in)`, acl: comp.vty[router.id] || null });
+          const mode = appState.initConfig.vtyMode;
+          if (mode === 'none' || (port === '22' && mode === 'telnet') || (port === '23' && mode === 'ssh')) {
+            loginNote = `Even if the ACL allows it, ${sanitizeHostname(router.hostname)} refuses: its VTY lines do not accept ${port === '22' ? 'SSH' : 'Telnet'} (Init Config → Remote Access).`;
+          }
+        }
+      } else if (dLan) {
+        reqChecks.push(portCheck(dLan, 'out'));
+      }
+      const request = runLeg(pkt, reqChecks);
+      let reply = null;
+      if (!router && request.allowed) {
+        const rp = { proto, src: dst.ip, dst: src.ip, dport: '', icmpType: proto === 'icmp' ? 'echo-reply' : '' };
+        const back = [];
+        if (dLan) back.push(portCheck(dLan, 'in'));
+        if (sLan) back.push(portCheck(sLan, 'out'));
+        reply = runLeg(rp, back);
+      }
+      return {
+        src, dst, pkt, request, reply, router, loginNote,
+        svcLabel: t.svc === 'custom' ? `${proto.toUpperCase()} port ${port}` : svc.label
+      };
     }
 
     /** Older projects stored ACLs per interface; turn their rules into security rules. */
@@ -3780,7 +4447,7 @@
       icn.rsaModulus = String(icn.rsaModulus);
       ['clockRate', 'dhcpDomain', 'dhcpLease', 'ospfPid', 'ospfArea', 'eigrpAs', 'ripngName'].forEach(k => { icn[k] = clean(icn[k]); });
       appState.ui = Object.assign({}, d.ui, { selectedRouterId: '', selectedRoutingRouterId: '', selectedAclRouterId: '' }, appState.ui || {});
-      if (!['init', 'routers', 'routing', 'acls'].includes(appState.ui.leftTab)) appState.ui.leftTab = 'routers';
+      if (!['init', 'routers', 'routing'].includes(appState.ui.leftTab)) appState.ui.leftTab = 'routers';
       if (!['all', 'initial', 'interfaces', 'dhcp', 'routing', 'acls', 'verify'].includes(appState.ui.cliFilter)) appState.ui.cliFilter = 'all';
       if (appState.ui.cliComments === undefined) appState.ui.cliComments = true;
       if (appState.ui.cliChunks === undefined) appState.ui.cliChunks = true;
@@ -3807,6 +4474,10 @@
           ['name', 'ip', 'ipv6'].forEach(k => { lo[k] = clean(lo[k]); });
           if (!lo.name) lo.name = 'lo0';
         });
+      });
+      appState.routers.forEach(r => {
+        r.linkLocal = clean(r.linkLocal);
+        if (!r.linkLocal) r.linkLocal = nextFreeLinkLocal(r.id);
       });
       appState.links = appState.links.filter(l => l && typeof l === 'object' && getRouterById(l.r1Id) && getRouterById(l.r2Id));
       appState.links.forEach(l => {
@@ -3996,7 +4667,7 @@
 
         if (dualStack && lan.ipv6Prefix) {
           interfaces.push(` ipv6 address ${lan.ipv6Ip}/${v6Len(lan.ipv6Prefix)}`);
-          interfaces.push(` ipv6 address ${lan.ipv6LinkLocal || 'fe80::1'} link-local`);
+          interfaces.push(` ipv6 address ${routerLinkLocal(router)} link-local`);
           // DHCPv6 is served by this router and bound to this LAN port, whatever the DHCPv4 mode is
           const v6 = v6Pools.find(x => x.lan === lan);
           if (lan.ipv6Mode === 'stateless') {
@@ -4019,7 +4690,7 @@
         const lnk = m.lnk;
         const isR1 = lnk.r1Id === router.id;
         const myV6 = isR1 ? lnk.ipv6Ip1 : lnk.ipv6Ip2;
-        const myLL = (isR1 ? lnk.ll1 : lnk.ll2) || (isR1 ? 'fe80::1' : 'fe80::2');
+        const myLL = routerLinkLocal(router);
 
         interfaces.push(`interface ${m.myIf}`);
         interfaces.push(` description WAN Link to ${m.peer ? sanitizeHostname(m.peer.hostname) : 'Peer'} (${PROTO_LABEL[m.proto]})`);
@@ -4037,6 +4708,16 @@
         interfaces.push(` no shutdown`);
         interfaces.push(` exit`);
       });
+      // The two ends of a link must not share a link-local address
+      const llProblem = linkLocalProblem(router);
+      if (dualStack && llProblem) warn(`Link-local: ${llProblem}`);
+      if (dualStack) {
+        plan.myLinks.forEach(m => {
+          if (m.peer && m.lnk.ipv6Prefix && routerLinkLocal(m.peer) === routerLinkLocal(router)) {
+            warn(`${m.myIf} and ${sanitizeHostname(m.peer.hostname)} ${m.peerIf} both use ${routerLinkLocal(router)} on the same link. Give each router its own link-local in Routers & LANs.`);
+          }
+        });
+      }
       if (hasSerial) note(`Serial ports get "clock rate ${clock}" on both ends. Only the DCE end (clock icon on the cable in Packet Tracer) uses it; the DTE end may print a harmless message.`);
 
       // Loopbacks
@@ -4293,26 +4974,17 @@
       } else {
         acls.push(`! Paste this part only after every ping, DHCP and web test passes`);
       }
+      // Cisco: take the ACL off the port, delete it, write it again, put it back (safe to re-paste)
       myGroups.forEach(g => {
-        acls.push(`! ACL ${g.number} (${g.type}) on ${g.iface} ${g.direction}, near the ${g.side}`);
-        // Cisco: take the ACL off the interface before changing it, then put it back
-        acls.push(`interface ${g.iface}`);
-        acls.push(` no ip access-group ${g.number} ${g.direction}`);
-        acls.push(` exit`);
-        acls.push(`no access-list ${g.number}`);
-        g.lines.forEach(l => acls.push(l));
-        acls.push(`interface ${g.iface}`);
-        acls.push(` ip access-group ${g.number} ${g.direction}`);
-        acls.push(` exit`);
+        acls.push(`! ACL ${g.id} (${g.type}) on ${g.iface} ${g.direction}, near the ${g.side}`);
+        aclGroupCli(g).forEach(l => acls.push(l));
+        if (g.idError) warn(`ACL on ${g.iface} ${g.direction}: ${g.idError} Using ${g.id}.`);
       });
       if (myVty) {
-        acls.push(`! ACL ${myVty.number} (standard) - who may log in to ${safeHost} by SSH/Telnet`);
-        acls.push(`no access-list ${myVty.number}`);
-        myVty.lines.forEach(l => acls.push(l));
-        acls.push(`line vty ${vtyRange}`);
-        acls.push(` access-class ${myVty.number} in`);
-        acls.push(` exit`);
-        if (ic.vtyMode === 'none') note(`The login ACL ${myVty.number} does nothing while remote access is off (transport input none).`);
+        acls.push(`! ACL ${myVty.id} (standard) - who may log in to ${safeHost} by SSH/Telnet`);
+        aclGroupCli(myVty).forEach(l => acls.push(l));
+        if (myVty.idError) warn(`Login ACL: ${myVty.idError} Using ${myVty.id}.`);
+        if (ic.vtyMode === 'none') note(`The login ACL ${myVty.id} does nothing while remote access is off (transport input none).`);
       }
 
       // ---- SECTION 6: SAVE ----
@@ -4928,7 +5600,6 @@
       if (tab === 'init') renderLeftInit(container);
       else if (tab === 'routers') renderLeftRouters(container);
       else if (tab === 'routing') renderLeftRouting(container);
-      else if (tab === 'acls') renderLeftAcls(container);
     }
 
     function renderLeftInit(container) {
@@ -5188,6 +5859,14 @@
               ${hasSpaces ? `<div class="text-muted" style="color:var(--amber); font-size:11px;">CLI hostname auto-sanitized to <span class="mono">${sanitizeHostname(r.hostname)}</span></div>` : ''}
             </div>
 
+            ${appState.initConfig.dualStack ? `
+              <div class="field-group">
+                <label class="field-label">IPv6 Link-Local (used on every port of ${escapeHtml(sanitizeHostname(r.hostname))})</label>
+                <input type="text" class="router-ll-input mono" data-rid="${r.id}" value="${escapeHtml(r.linkLocal || '')}" placeholder="fe80::1" style="${linkLocalProblem(r) ? 'border-color:var(--rose);' : ''}" />
+                <div class="text-muted" data-ll-hint style="font-size:11px; ${linkLocalProblem(r) ? 'color:var(--rose);' : ''}">${escapeHtml(linkLocalProblem(r) || 'One per router (fe80::1, fe80::2…), so both ends of every link differ.')}</div>
+              </div>
+            ` : ''}
+
             <!-- Attached LANs for Selected Router -->
             ${r.lans.map(lan => renderLanEditorHtml(r, lan, pool)).join('')}
 
@@ -5255,6 +5934,24 @@
             if (opt) opt.textContent = `${rt.hostname} (${routerModel(rt)})`;
           }
         });
+      });
+
+      container.querySelectorAll('.router-ll-input').forEach(inp => {
+        inp.addEventListener('input', e => {
+          const rt = getRouterById(inp.dataset.rid);
+          if (!rt) return;
+          rt.linkLocal = e.target.value.trim();
+          const problem = linkLocalProblem(rt);
+          inp.style.borderColor = problem ? 'var(--rose)' : '';
+          const hint = inp.parentElement.querySelector('[data-ll-hint]');
+          if (hint) {
+            hint.textContent = problem || 'One per router (fe80::1, fe80::2…), so both ends of every link differ.';
+            hint.style.color = problem ? 'var(--rose)' : '';
+          }
+          renderCliPane();
+        });
+        // Redraw the LAN boxes that show the router-wide value
+        inp.addEventListener('change', () => renderLeftPane());
       });
 
       container.querySelectorAll('.router-model-select').forEach(sel => {
@@ -5575,7 +6272,7 @@
             <div class="row-2">
               <div class="field-group">
                 <label class="field-label">Link-Local</label>
-                <input type="text" class="lan-field mono" data-rid="${router.id}" data-lanid="${lan.id}" data-field="ipv6LinkLocal" value="${escapeHtml(lan.ipv6LinkLocal || 'fe80::1')}" />
+                <div class="mono" title="Set once per router, above" style="padding:8px 10px; border:1px dashed var(--border); border-radius:var(--radius-sm); font-size:12px; color:var(--text-secondary);">${escapeHtml(routerLinkLocal(router))} (router-wide)</div>
               </div>
               <div class="field-group">
                 <label class="field-label">DNS Server IPv6</label>
@@ -5974,295 +6671,665 @@
       });
     }
 
-    /* ---- ACL tab: security rules in, ACLs out ---- */
-    let aclDraft = null;
+    /* =========================================================================
+       7b. ACL WORKSPACE (main tab 3): rules in, explained ACLs out, packet tester
+       ========================================================================= */
+    let aclDraft = null;   // the rule being typed in "Add a rule"
+    let aclTester = null;  // the packet in the packet tester
+
+    const TOKEN_HELP = {
+      deny: 'deny = drop the packet',
+      permit: 'permit = let the packet through',
+      proto: 'Protocol: ip = everything, tcp/udp = with a port, icmp = ping',
+      src: 'Source: who sends the packet (host X = one device, any = everyone)',
+      dst: 'Destination: where the packet is going',
+      wc: 'Wildcard mask: 0 = this part must match, 255 = any value',
+      port: 'Destination port (eq 80 = web) or ICMP type (echo = ping)',
+      kw: 'The ACL this line belongs to'
+    };
 
     function getAclDraft() {
       const lans = getAllLans();
+      const sec = getSecurity();
       const lanVal = i => (lans[i] ? `lan:${lans[i].lan.id}` : 'any');
       if (!aclDraft) {
         aclDraft = {
           action: 'deny', src: lanVal(0), srcHost: '', dst: lanVal(1), dstHost: '',
           dstRouterId: appState.routers[0]?.id || '', service: 'web',
+          aclType: sec.mode === 'standard' ? 'standard' : 'extended',
           customProto: 'tcp', customPort: '', placement: 'auto', note: ''
         };
       }
-      const valid = v => v === 'any' || v === 'host' || v === 'router' || (v.startsWith('lan:') && lans.some(x => `lan:${x.lan.id}` === v));
+      const valid = v => v === 'any' || v === 'host' || v === 'router' || (String(v).startsWith('lan:') && lans.some(x => `lan:${x.lan.id}` === v));
       if (!valid(aclDraft.src) || aclDraft.src === 'router') aclDraft.src = lanVal(0);
       if (!valid(aclDraft.dst)) aclDraft.dst = lanVal(1);
       if (!getRouterById(aclDraft.dstRouterId)) aclDraft.dstRouterId = appState.routers[0]?.id || '';
+      if (aclDraft.aclType !== 'standard' && aclDraft.aclType !== 'extended') aclDraft.aclType = 'extended';
       return aclDraft;
     }
 
-    function renderLeftAcls(container) {
+    function getAclTester() {
+      const lans = getAllLans();
+      const lanVal = i => (lans[i] ? `lan:${lans[i].lan.id}` : 'host');
+      if (!aclTester) {
+        aclTester = {
+          src: lanVal(0), srcHost: '', dst: lanVal(1), dstHost: '', dstRouterId: appState.routers[0]?.id || '',
+          svc: 'ping', customProto: 'tcp', customPort: ''
+        };
+      }
+      const valid = v => v === 'host' || v === 'router' || (String(v).startsWith('lan:') && lans.some(x => `lan:${x.lan.id}` === v));
+      if (!valid(aclTester.src) || aclTester.src === 'router') aclTester.src = lanVal(0);
+      if (!valid(aclTester.dst)) aclTester.dst = lanVal(1);
+      if (!getRouterById(aclTester.dstRouterId)) aclTester.dstRouterId = appState.routers[0]?.id || '';
+      if (!TESTER_SERVICES[aclTester.svc]) aclTester.svc = 'ping';
+      return aclTester;
+    }
+
+    /** The draft as a rule object (id "draft"), ready to compile or to save. */
+    function draftToRule(d) {
+      const end = (val, hostVal) => {
+        if (String(val).startsWith('lan:')) return { type: 'lan', lanId: val.slice(4), host: '' };
+        if (val === 'host') return { type: 'host', lanId: '', host: String(hostVal || '').trim() };
+        return { type: val, lanId: '', host: '' };
+      };
+      const s = end(d.src, d.srcHost);
+      const t = end(d.dst, d.dstHost);
+      const vty = t.type === 'router';
+      const std = vty || d.aclType === 'standard';
+      return {
+        id: 'draft', action: d.action,
+        srcType: s.type, srcLanId: s.lanId, srcHost: s.host,
+        dstType: t.type, dstLanId: t.lanId, dstHost: t.host,
+        dstRouterId: vty ? d.dstRouterId : '',
+        aclType: std ? 'standard' : 'extended',
+        service: std ? 'ip' : d.service,  // a standard ACL cannot pick a service
+        customProto: d.customProto === 'udp' ? 'udp' : 'tcp', customPort: String(d.customPort || '').trim(),
+        placement: vty ? 'auto' : d.placement,
+        note: String(d.note || '').trim()
+      };
+    }
+
+    function draftProblem(rule) {
+      if (rule.srcType === 'host' && IPv4.toInt(rule.srcHost) === null) return 'Type the source host IP (for example 192.168.1.10).';
+      if (rule.dstType === 'host' && IPv4.toInt(rule.dstHost) === null) return 'Type the destination host IP.';
+      if (rule.dstType === 'router' && !getRouterById(rule.dstRouterId)) return 'Pick the router.';
+      if (rule.srcType === 'any' && rule.dstType === 'any') return 'Pick a LAN or a host for the source or the destination.';
+      if (rule.aclType === 'extended' && rule.service === 'custom' && rule.customPort && !/^\d+$/.test(rule.customPort)) return 'The port must be a number.';
+      return '';
+    }
+
+    function aclEndpointOptions(selected, { any = true, router = false } = {}) {
+      return getAllLans().map(x =>
+        `<option value="lan:${x.lan.id}" ${selected === `lan:${x.lan.id}` ? 'selected' : ''}>${escapeHtml(x.lan.name)} (${escapeHtml(sanitizeHostname(x.router.hostname))} · ${x.lan.netIp}/${x.lan.cidr})</option>`
+      ).join('')
+        + `<option value="host" ${selected === 'host' ? 'selected' : ''}>One host (type its IP)…</option>`
+        + (any ? `<option value="any" ${selected === 'any' ? 'selected' : ''}>Any (everyone)</option>` : '')
+        + (router ? `<option value="router" ${selected === 'router' ? 'selected' : ''}>A router itself (SSH / Telnet login)</option>` : '');
+    }
+
+    function tokensHtml(tokens) {
+      return tokens.map(t => `<span class="tok tok-${t.r}" title="${escapeHtml(TOKEN_HELP[t.r] || '')}">${escapeHtml(t.t)}</span>`).join(' ');
+    }
+
+    /** One ACL line: the command (coloured by part) and what it means. */
+    function aceHtml(g, e, seq) {
+      const prefix = g.named ? '' : `<span class="tok tok-kw" title="${TOKEN_HELP.kw}">access-list ${escapeHtml(g.id)}</span> `;
+      if (e.kind === 'remark') {
+        return `<div class="ace remark"><div class="ace-cmd">${g.named ? ' ' : ''}${prefix}remark ${escapeHtml(e.text)}</div><div class="ace-explain">A note for people. The router ignores it.</div></div>`;
+      }
+      return `
+        <div class="ace ${e.action}">
+          <div class="ace-cmd">${seq ? `<span class="ace-seq" title="Line number in show access-lists">${seq}</span>` : ''}${g.named ? ' ' : ''}${prefix}${tokensHtml(e.tokens)}</div>
+          <div class="ace-explain">${escapeHtml(e.explain)}</div>
+        </div>`;
+    }
+
+    function cmdLineHtml(cmd, explain) {
+      return `<div class="ace cmd"><div class="ace-cmd">${escapeHtml(cmd)}</div><div class="ace-explain">${escapeHtml(explain)}</div></div>`;
+    }
+
+    /** A generated ACL, step by step: clear the old copy, write it, turn it on. */
+    function aclBoxHtml(g) {
       const sec = getSecurity();
-      const allLans = getAllLans();
-      const compiled = compileSecurityRules();
-      const d = getAclDraft();
-      const std = sec.mode === 'standard';
-      const lanOptions = selected => allLans.map(x => `
-        <option value="lan:${x.lan.id}" ${selected === `lan:${x.lan.id}` ? 'selected' : ''}>${escapeHtml(x.lan.name)} (${escapeHtml(x.router.hostname)} · ${x.lan.netIp}/${x.lan.cidr})</option>
-      `).join('');
-      const isVtyDraft = d.dst === 'router';
-      const generated = [
-        ...compiled.groups.map(g => ({ routerId: g.routerId, text: `ACL ${g.number} · ${g.iface} ${g.direction}`, sub: `${g.type}, ${g.lines.filter(l => !/ remark /.test(l)).length} lines` })),
-        ...Object.values(compiled.vty).map(v => ({ routerId: v.routerId, text: `ACL ${v.number} · line vty`, sub: 'standard, router login' }))
+      const host = sanitizeHostname(getRouterById(g.routerId)?.hostname || '?');
+      const typed = String((sec.aclIds || {})[g.key] || '');
+      const lan = g.vty ? null : getAllLans().find(x => x.router.id === g.routerId && x.lan.iface === g.iface);
+      const lanName = lan ? lan.lan.name : g.iface;
+      const vtyRange = `0 ${appState.initConfig.vtyLast === '15' ? '15' : '4'}`;
+      let seq = 0;
+      const why = g.vty
+        ? 'A login ACL is always standard and goes on the VTY lines with access-class (not access-group). It checks who is trying to SSH or Telnet into the router.'
+        : g.direction === 'in'
+          ? `Extended ACLs go near the source, so unwanted traffic is dropped before it crosses the network. "in" on ${g.iface} = packets coming from ${lanName} into ${host}.`
+          : `A standard ACL only looks at the source, so it goes near the destination; near the source it would cut that source off from every network. "out" on ${g.iface} = packets leaving ${host} into ${lanName}.`;
+      return `
+        <div class="acl-box">
+          <div class="acl-box-head">
+            <span class="badge ${g.type === 'standard' ? 'badge-cyan' : 'badge-indigo'}">${g.type}</span>
+            <b class="mono">ACL ${escapeHtml(g.id)}</b>
+            <span class="text-muted" style="font-size:12px;">${escapeHtml(aclWhereText(g))}</span>
+            <button class="btn btn-xs acl-copy" data-key="${escapeHtml(g.key)}" type="button" style="margin-left:auto;" title="Copy these commands (paste at ${host}(config)#)">Copy</button>
+          </div>
+          <div class="acl-id-row">
+            <label class="field-label" style="margin:0;">Number or name</label>
+            <input type="text" class="acl-id-input mono" data-key="${escapeHtml(g.key)}" data-type="${g.type}" value="${escapeHtml(typed)}" placeholder="${escapeHtml(g.idTyped ? '' : String(g.id))}" title="Leave blank for ${escapeHtml(String(g.id))}. Type the number or name your task asks for." />
+            <span class="text-muted" style="font-size:11px;">${g.type === 'standard' ? '1-99, 1300-1999' : '100-199, 2000-2699'} or a name</span>
+            ${g.idError ? `<span class="acl-msg err">${escapeHtml(g.idError)} Using ${escapeHtml(String(g.id))}.</span>` : ''}
+          </div>
+          <div class="acl-body">
+            <div class="acl-step">1 · Delete the old copy (safe to re-paste)</div>
+            ${g.vty ? '' : cmdLineHtml(`interface ${g.iface}`, `Go to the port`)}
+            ${g.vty ? '' : cmdLineHtml(` no ip access-group ${g.id} ${g.direction}`, 'Take the ACL off the port while it is rewritten')}
+            ${cmdLineHtml(g.removeLine, 'Delete the old list, so re-pasting does not add the lines twice')}
+            <div class="acl-step">2 · Write the ACL (top line is checked first)</div>
+            ${g.named ? cmdLineHtml(`ip access-list ${g.type} ${g.id}`, 'Open the named ACL; the lines below go inside it') : ''}
+            ${g.entries.map(e => aceHtml(g, e, e.kind === 'ace' ? (seq += 10) : 0)).join('')}
+            <div class="ace implicit"><div class="ace-cmd"><span class="ace-seq">—</span>(hidden) deny any</div><div class="ace-explain">Every ACL ends with this invisible line: whatever matched nothing above is dropped.</div></div>
+            ${g.named ? cmdLineHtml(' exit', 'Leave the ACL') : ''}
+            <div class="acl-step">3 · Turn it on</div>
+            ${g.vty
+              ? `${cmdLineHtml(`line vty ${vtyRange}`, 'Go to the remote-login lines')}${cmdLineHtml(` access-class ${g.id} in`, 'Only logins this ACL permits are accepted')}`
+              : `${cmdLineHtml(`interface ${g.iface}`, `Go to ${g.iface} (${lanName})`)}${cmdLineHtml(` ip access-group ${g.id} ${g.direction}`, g.direction === 'in' ? `Check packets coming in from ${lanName}` : `Check packets going out to ${lanName}`)}`}
+          </div>
+          <div class="acl-why"><b>Why here:</b> ${escapeHtml(why)}</div>
+        </div>`;
+    }
+
+    /** "This rule becomes…" box under the rule form. */
+    function aclPreviewHtml() {
+      const sec = getSecurity();
+      const rule = draftToRule(getAclDraft());
+      const problem = draftProblem(rule);
+      if (problem) return `<div class="acl-msg note">${escapeHtml(problem)}</div>`;
+      const comp = compileSecurityRules([...sec.rules, rule]);
+      const inf = comp.info.draft;
+      const idx = sec.rules.length;
+      const acls = [...comp.groups, ...Object.values(comp.vty)].filter(g => g.entries.some(e => e.ruleIdx === idx));
+      return `
+        <div class="acl-preview-sentence">#${idx + 1} ${escapeHtml(inf.sentence)}</div>
+        ${inf.errors.map(e => `<div class="acl-msg err">✕ ${escapeHtml(e)}</div>`).join('')}
+        ${acls.map(g => {
+          let seq = 0;
+          const lines = g.entries.map(e => {
+            if (e.kind === 'ace') seq += 10;
+            return e.kind === 'ace' && e.ruleIdx === idx ? aceHtml(g, e, seq) : '';
+          }).join('');
+          return `<div class="acl-preview-where">→ ACL ${escapeHtml(g.id)} (${g.type}) · ${escapeHtml(aclWhereText(g))}</div>${lines}`;
+        }).join('')}
+        ${inf.warnings.map(w => `<div class="acl-msg warn">⚠ ${escapeHtml(w)}</div>`).join('')}
+        ${inf.notes.map(n => `<div class="acl-msg note">${escapeHtml(n)}</div>`).join('')}`;
+    }
+
+    function aclTesterResultHtml(comp) {
+      const r = simulateAclTest(comp, getAclTester());
+      if (r.error) return `<div class="acl-msg warn">${escapeHtml(r.error)}</div>`;
+      const pktText = `${r.svcLabel}: ${r.src.ipText} → ${r.dst.ipText}`;
+      const stepHtml = s => {
+        if (!s.acl) return `<li class="ok">Packet ${escapeHtml(s.label)}: <b>no ACL here</b>, it passes.</li>`;
+        const aces = s.acl.entries.filter(e => e.kind === 'ace');
+        const hitAce = s.hit >= 0 ? s.acl.entries[s.hit] : null;
+        const hitNo = hitAce ? (aces.indexOf(hitAce) + 1) * 10 : null;
+        return `
+          <li class="${s.action === 'permit' ? 'ok' : 'bad'}">
+            Packet ${escapeHtml(s.label)}: <b>ACL ${escapeHtml(s.acl.id)}</b> checks its lines from the top.
+            ${hitAce ? `Line ${hitNo} matches first → <b>${s.action === 'permit' ? 'PERMIT' : 'DENY'}</b>.` : 'No line matches → the hidden <b>deny any</b> drops it.'}
+            <div class="acl-mini">
+              ${aces.map((e, k) => `<div class="mini-line ${e === hitAce ? `hit ${e.action}` : ''}"><span class="seq">${(k + 1) * 10}</span><span class="mono">${escapeHtml(e.text)}</span>${e === hitAce ? ' ← match' : ''}</div>`).join('')}
+              ${hitAce ? '' : '<div class="mini-line hit deny"><span class="seq">—</span><span class="mono">(hidden) deny any</span> ← match</div>'}
+            </div>
+          </li>`;
+      };
+      const reqStop = r.request.steps.find(s => s.action === 'deny');
+      const repStop = r.reply ? r.reply.steps.find(s => s.action === 'deny') : null;
+      let verdict;
+      if (reqStop) {
+        verdict = `<div class="acl-verdict bad">✕ Blocked by ACL ${escapeHtml(reqStop.acl.id)} when the packet ${escapeHtml(reqStop.label.split(',')[0])}.</div>`;
+      } else if (repStop) {
+        verdict = `<div class="acl-verdict warn">⚠ The request gets through, but the reply is blocked by ACL ${escapeHtml(repStop.acl.id)} (it ${escapeHtml(repStop.label.split(',')[0])}). So it still fails: ping times out, web or Telnet hangs.</div>`;
+      } else if (r.loginNote) {
+        verdict = `<div class="acl-verdict warn">⚠ The ACLs allow it. ${escapeHtml(r.loginNote)}</div>`;
+      } else {
+        verdict = `<div class="acl-verdict ok">✓ Works: ${r.router ? 'the login is allowed' : 'the request and the reply both get through'}.</div>`;
+      }
+      return `
+        <div class="acl-packet mono">${escapeHtml(pktText)}</div>
+        ${verdict}
+        <div class="acl-leg-title">Request: from ${escapeHtml(r.src.label)} to ${escapeHtml(r.dst.label)}</div>
+        <ol class="acl-steps">${r.request.steps.map(stepHtml).join('') || '<li class="ok">No router port with an ACL on the way.</li>'}</ol>
+        ${r.reply ? `
+          <div class="acl-leg-title">Reply: back from ${escapeHtml(r.dst.ipText)} to ${escapeHtml(r.src.ipText)} (${r.pkt.proto === 'icmp' ? 'echo-reply' : 'from the server port'})</div>
+          <ol class="acl-steps">${r.reply.steps.map(stepHtml).join('') || '<li class="ok">No router port with an ACL on the way back.</li>'}</ol>
+        ` : ''}
+        <div class="text-muted" style="font-size:11px;">Assumes routing works. Router ACLs only see traffic that passes through a router port.</div>`;
+    }
+
+    /** Typical exam tasks, written with this project's LANs and routers. */
+    function aclExamples() {
+      const lans = getAllLans();
+      if (lans.length < 2) return [];
+      const a = lans[0];
+      const b = lans[1];
+      const A = a.lan.name;
+      const B = b.lan.name;
+      const srvB = aclSampleHost(b.lan);
+      const pcA = aclSampleHost(a.lan);
+      const r = b.router;
+      return [
+        {
+          task: `PCs in ${A} must not open web pages on the server ${srvB} in ${B}. Everything else is allowed.`,
+          how: 'Block · from the LAN · to one host · Web · Extended. Extended goes near the source.',
+          draft: { action: 'deny', src: `lan:${a.lan.id}`, dst: 'host', dstHost: srvB, service: 'web', aclType: 'extended' }
+        },
+        {
+          task: `${A} must not be able to ping ${B}.`,
+          how: 'Block · LAN → LAN · Ping · Extended.',
+          draft: { action: 'deny', src: `lan:${a.lan.id}`, dst: `lan:${b.lan.id}`, service: 'ping', aclType: 'extended' }
+        },
+        {
+          task: `Use a STANDARD ACL so ${A} cannot reach ${B}.`,
+          how: 'Block · LAN → LAN · Standard. Standard checks the source only, so it goes near the destination.',
+          draft: { action: 'deny', src: `lan:${a.lan.id}`, dst: `lan:${b.lan.id}`, aclType: 'standard' }
+        },
+        {
+          task: `Only ${A} may SSH or Telnet into ${sanitizeHostname(r.hostname)}.`,
+          how: 'Allow · from the LAN · to "A router itself". Becomes a login ACL with access-class on line vty.',
+          draft: { action: 'permit', src: `lan:${a.lan.id}`, dst: 'router', dstRouterId: r.id }
+        },
+        {
+          task: `Block Telnet from ${B} to anywhere. Allow everything else.`,
+          how: 'Block · LAN → Any · Telnet · Extended.',
+          draft: { action: 'deny', src: `lan:${b.lan.id}`, dst: 'any', service: 'telnet', aclType: 'extended' }
+        },
+        {
+          task: `Only PC ${pcA} in ${A} may reach ${B}; the rest of ${A} may not.`,
+          how: 'Two rules in this order: Allow the host first, then Block the LAN. First match wins, so the exception must be on top.',
+          rules: [
+            { action: 'permit', src: 'host', srcHost: pcA, dst: `lan:${b.lan.id}`, service: 'ip', aclType: 'extended' },
+            { action: 'deny', src: `lan:${a.lan.id}`, dst: `lan:${b.lan.id}`, service: 'ip', aclType: 'extended' }
+          ]
+        }
       ];
-      const testText = compiled.tests.map(t => `R${t.rule} | From ${t.from} | ${t.cmd} | Expected: ${t.expect}`).join('\n');
+    }
 
-      container.innerHTML = `
-        <div class="sub-card">
-          <div class="sub-card-header">
-            <span>How ACLs Are Built</span>
-            <span class="badge badge-emerald">Automatic</span>
-          </div>
-          <div class="text-muted" style="font-size:11.5px;">
-            Write each security rule as a sentence. The app picks the router, the port and the direction
-            (Cisco: <strong>extended near the source</strong>, <strong>standard near the destination</strong>), puts every rule
-            for the same port into one ACL, and writes a test plan.
-          </div>
-          <div class="field-label">ACL type</div>
-          <div class="seg-control" style="display:grid; grid-template-columns:1fr 1fr;">
-            <button type="button" class="seg-btn acl-mode ${!std ? 'active' : ''}" data-mode="extended">Extended (recommended)</button>
-            <button type="button" class="seg-btn acl-mode ${std ? 'active' : ''}" data-mode="standard">Standard only</button>
-          </div>
-          <label class="checkbox-row" style="font-size:12px;">
-            <input type="checkbox" id="aclPermitRest" ${sec.permitRest ? 'checked' : ''} />
-            <span>End each ACL with <span class="mono">${std ? 'permit any' : 'permit ip any any'}</span> (allow everything else)</span>
-          </label>
-          ${!sec.permitRest ? `<div class="alert alert-warn" style="margin-top:0;">Without it, the hidden <strong>deny any</strong> at the end of every ACL blocks everything you did not allow, including DHCP, DNS and ping.</div>` : ''}
-        </div>
+    function renderAclWorkspace() {
+      const root = document.getElementById('aclWorkspace');
+      if (!root) return;
+      const sec = getSecurity();
+      const comp = compileSecurityRules();
+      const d = getAclDraft();
+      const t = getAclTester();
+      const lans = getAllLans();
+      const isVtyDraft = d.dst === 'router';
+      const stdDraft = !isVtyDraft && d.aclType === 'standard';
+      const examples = aclExamples();
+      const byRouter = appState.routers
+        .map(r => ({ r, acls: [...comp.groups.filter(g => g.routerId === r.id), ...(comp.vty[r.id] ? [comp.vty[r.id]] : [])] }))
+        .filter(x => x.acls.length);
 
-        <div class="sub-card">
-          <div class="sub-card-header"><span>Add Security Rule</span></div>
-          <div class="seg-control" style="display:grid; grid-template-columns:1fr 1fr;">
-            <button type="button" class="seg-btn sr-action ${d.action === 'deny' ? 'active' : ''}" data-action="deny">Block</button>
-            <button type="button" class="seg-btn sr-action ${d.action === 'permit' ? 'active' : ''}" data-action="permit">Allow</button>
-          </div>
-          <div class="field-group">
-            <label class="field-label" for="srSrc">From (source)</label>
-            <select id="srSrc" class="sr-field" data-key="src">
-              ${lanOptions(d.src)}
-              <option value="host" ${d.src === 'host' ? 'selected' : ''}>A specific host IP…</option>
-              <option value="any" ${d.src === 'any' ? 'selected' : ''}>Any</option>
-            </select>
-            <input type="text" id="srSrcHost" class="mono sr-text ${d.src === 'host' ? '' : 'hidden'}" data-key="srcHost" value="${escapeHtml(d.srcHost)}" placeholder="Host IP, e.g. 198.15.224.10" />
-          </div>
-          <div class="field-group">
-            <label class="field-label" for="srDst">To (destination)</label>
-            <select id="srDst" class="sr-field" data-key="dst">
-              ${lanOptions(d.dst)}
-              <option value="host" ${d.dst === 'host' ? 'selected' : ''}>A specific host IP…</option>
-              <option value="any" ${d.dst === 'any' ? 'selected' : ''}>Any</option>
-              <option value="router" ${d.dst === 'router' ? 'selected' : ''}>A router itself (SSH / Telnet login)</option>
-            </select>
-            <input type="text" id="srDstHost" class="mono sr-text ${d.dst === 'host' ? '' : 'hidden'}" data-key="dstHost" value="${escapeHtml(d.dstHost)}" placeholder="Host IP, e.g. 198.15.224.82" />
-            <select id="srDstRouter" class="sr-field ${isVtyDraft ? '' : 'hidden'}" data-key="dstRouterId">
-              ${appState.routers.map(x => `<option value="${x.id}" ${d.dstRouterId === x.id ? 'selected' : ''}>${escapeHtml(x.hostname)}</option>`).join('')}
-            </select>
-          </div>
-          ${isVtyDraft ? `
-            <div class="text-muted" style="font-size:11px;">
-              Router login rules become a standard ACL on <span class="mono">line vty 0 ${appState.initConfig.vtyLast === '15' ? '15' : '4'}</span> with
-              <span class="mono">access-class</span>. With "Allow", only those sources may log in.
-            </div>
-          ` : `
-            <div class="row-2">
-              <div class="field-group">
-                <label class="field-label" for="srService">Service</label>
-                <select id="srService" class="sr-field" data-key="service" ${std ? 'disabled title="Standard ACLs cannot match services"' : ''}>
-                  ${ACL_SERVICE_ORDER.map(k => `<option value="${k}" ${(std ? 'ip' : d.service) === k ? 'selected' : ''}>${ACL_SERVICES[k].label}</option>`).join('')}
-                </select>
-              </div>
-              <div class="field-group">
-                <label class="field-label" for="srPlacement">Placement</label>
-                <select id="srPlacement" class="sr-field" data-key="placement">
-                  <option value="auto" ${d.placement === 'auto' ? 'selected' : ''}>Auto (recommended)</option>
-                  <option value="source" ${d.placement === 'source' ? 'selected' : ''}>Near the source (in)</option>
-                  <option value="destination" ${d.placement === 'destination' ? 'selected' : ''}>Near the destination (out)</option>
-                </select>
-              </div>
-            </div>
-            ${!std && d.service === 'custom' ? `
+      root.innerHTML = `
+        <div class="acl-grid">
+          <div class="acl-col">
+            <div class="card doc-card" id="acl-settings">
+              <h3>Settings</h3>
               <div class="row-2">
-                <select id="srCustomProto" class="sr-field" data-key="customProto">
-                  <option value="tcp" ${d.customProto !== 'udp' ? 'selected' : ''}>TCP</option>
-                  <option value="udp" ${d.customProto === 'udp' ? 'selected' : ''}>UDP</option>
-                </select>
-                <input type="text" id="srCustomPort" class="mono sr-text" data-key="customPort" value="${escapeHtml(d.customPort)}" placeholder="Port, e.g. 8080 (blank = any)" />
-              </div>
-            ` : ''}
-          `}
-          <input type="text" id="srNote" class="sr-text" data-key="note" value="${escapeHtml(d.note)}" placeholder="Note for the report (optional), e.g. Objective (a)" />
-          <button id="btnAddSecRule" class="btn btn-primary btn-sm" type="button">+ Add Rule</button>
-          ${!allLans.length ? `<div class="text-muted" style="font-size:11px;">Tip: attach LANs to routers first so you can pick them here.</div>` : ''}
-        </div>
-
-        <div class="sub-card">
-          <div class="sub-card-header">
-            <span>Security Rules</span>
-            <span class="badge badge-indigo">${sec.rules.length}</span>
-          </div>
-          <div class="text-muted" style="font-size:11px;">Order matters: inside one ACL the first matching line wins. Put specific rules first.</div>
-          ${sec.rules.length ? sec.rules.map((rule, i) => {
-            const inf = compiled.info[rule.id];
-            return `
-              <div class="item-box" style="padding:8px; gap:5px;">
-                <div style="display:flex; justify-content:space-between; align-items:center; gap:6px;">
-                  <span class="badge ${rule.action === 'deny' ? 'badge-rose' : 'badge-emerald'}">#${i + 1} ${rule.action === 'deny' ? 'BLOCK' : 'ALLOW'}</span>
-                  <div style="display:flex; gap:4px;">
-                    <button class="btn btn-xs sr-move" data-idx="${i}" data-dir="-1" type="button" ${i === 0 ? 'disabled' : ''} aria-label="Move up">↑</button>
-                    <button class="btn btn-xs sr-move" data-idx="${i}" data-dir="1" type="button" ${i === sec.rules.length - 1 ? 'disabled' : ''} aria-label="Move down">↓</button>
-                    <button class="btn btn-danger btn-xs sr-del" data-idx="${i}" type="button" aria-label="Delete rule">✕</button>
+                <div class="field-group">
+                  <label class="field-label">New rules use</label>
+                  <div class="seg-control" style="display:grid; grid-template-columns:1fr 1fr;">
+                    <button type="button" class="seg-btn acl-default-type ${sec.mode !== 'standard' ? 'active' : ''}" data-type="extended">Extended</button>
+                    <button type="button" class="seg-btn acl-default-type ${sec.mode === 'standard' ? 'active' : ''}" data-type="standard">Standard</button>
                   </div>
                 </div>
-                <div style="font-size:12.5px;">${escapeHtml(inf.sentence)}</div>
-                ${rule.note ? `<div class="text-muted" style="font-size:11px;">${escapeHtml(rule.note)}</div>` : ''}
-                ${inf.placeText ? `<div class="mono" style="font-size:11px; color:var(--cyan);">→ ${escapeHtml(inf.placeText)}</div>` : ''}
-                ${inf.notes.map(n => `<div style="font-size:11px; color:var(--text-secondary);">${escapeHtml(n)}</div>`).join('')}
-                ${inf.warnings.map(w => `<div style="font-size:11px; color:var(--amber);">⚠ ${escapeHtml(w)}</div>`).join('')}
-                ${inf.errors.map(e => `<div style="font-size:11px; color:var(--rose);">✕ ${escapeHtml(e)}</div>`).join('')}
-              </div>
-            `;
-          }).join('') : `<div class="text-muted" style="font-size:11.5px;">No rules yet. Example: Block FirstFloor LAN → ISP Google LAN, Web.</div>`}
-        </div>
-
-        <div class="sub-card">
-          <div class="sub-card-header">
-            <span>Generated ACLs</span>
-            <span class="badge badge-indigo">${generated.length}</span>
-          </div>
-          ${generated.length ? `
-            <div class="plan-list">
-              ${generated.map(g => `
-                <button type="button" class="plan-row" data-view-acl="${g.routerId}">
-                  <span class="plan-name">${escapeHtml(getRouterById(g.routerId)?.hostname || '?')}</span>
-                  <span class="mono" style="font-size:11.5px; flex:1;">${escapeHtml(g.text)}</span>
-                  <span class="text-muted" style="font-size:10.5px;">${escapeHtml(g.sub)}</span>
-                </button>
-              `).join('')}
-            </div>
-            <div class="text-muted" style="font-size:11px;">Click one to see its commands on the right.</div>
-          ` : `<div class="text-muted" style="font-size:11.5px;">Nothing yet.</div>`}
-        </div>
-
-        <div class="sub-card">
-          <div class="sub-card-header">
-            <span>Test Plan</span>
-            <button id="btnCopyTests" class="btn btn-xs" type="button" ${compiled.tests.length ? '' : 'disabled'}>Copy</button>
-          </div>
-          ${compiled.tests.length ? `
-            <div class="test-list">
-              ${compiled.tests.map(t => `
-                <div class="test-row">
-                  <span class="badge badge-indigo">R${t.rule}</span>
-                  <div>
-                    <div style="font-size:11.5px;">From ${escapeHtml(t.from)}</div>
-                    <div class="mono" style="font-size:11px; color:var(--cyan);">${escapeHtml(t.cmd)}</div>
-                    <div style="font-size:11px; color:${/^fails|^refused/.test(t.expect) ? 'var(--rose)' : 'var(--emerald)'};">Expected: ${escapeHtml(t.expect)}</div>
+                <div class="field-group">
+                  <label class="field-label">ACL IDs</label>
+                  <div class="seg-control" style="display:grid; grid-template-columns:1fr 1fr;">
+                    <button type="button" class="seg-btn acl-naming ${sec.naming !== 'named' ? 'active' : ''}" data-naming="numbered" title="access-list 100 …">Numbered</button>
+                    <button type="button" class="seg-btn acl-naming ${sec.naming === 'named' ? 'active' : ''}" data-naming="named" title="ip access-list extended NAME">Named</button>
                   </div>
                 </div>
-              `).join('')}
+              </div>
+              <label class="checkbox-row" style="font-size:12.5px;">
+                <input type="checkbox" id="aclPermitRest" ${sec.permitRest ? 'checked' : ''} />
+                <span>End every ACL with <span class="mono">permit any</span> / <span class="mono">permit ip any any</span> (allow everything else)</span>
+              </label>
+              ${!sec.permitRest ? '<div class="acl-msg warn">⚠ Without it, the hidden deny any at the end of every ACL blocks everything you did not allow, including DHCP, DNS and ping replies.</div>' : ''}
+              <div class="text-muted" style="font-size:11.5px;">Each rule can still be switched between standard and extended in the list below. If the task gives an ACL number or name, type it on the ACL itself (Generated ACLs).</div>
             </div>
-            <div class="text-muted" style="font-size:11px;">
-              Proof: <span class="mono">clear access-list counters</span>, run the test, then
-              <span class="mono">show access-lists</span> (the matching line's count goes up).
+
+            <div class="card doc-card" id="acl-build">
+              <h3>Add a rule</h3>
+              <p class="doc-note" style="margin:0 0 10px;">Say the task as one sentence: <b>Block/Allow</b> · <b>who</b> · <b>to where</b> · <b>what</b>. The box at the bottom shows the ACL line it turns into, before you add it.</p>
+              <div class="seg-control" style="display:grid; grid-template-columns:1fr 1fr; margin-bottom:10px;">
+                <button type="button" class="seg-btn acl-draft-action ${d.action === 'deny' ? 'active' : ''}" data-action="deny">Block (deny)</button>
+                <button type="button" class="seg-btn acl-draft-action ${d.action === 'permit' ? 'active' : ''}" data-action="permit">Allow (permit)</button>
+              </div>
+              <div class="row-2">
+                <div class="field-group">
+                  <label class="field-label">From (source)</label>
+                  <select class="acl-draft" data-key="src">${aclEndpointOptions(d.src)}</select>
+                  ${d.src === 'host' ? `<input type="text" class="acl-draft-text mono" data-key="srcHost" value="${escapeHtml(d.srcHost)}" placeholder="Source IP, e.g. 192.168.1.10" />` : ''}
+                </div>
+                <div class="field-group">
+                  <label class="field-label">To (destination)</label>
+                  <select class="acl-draft" data-key="dst">${aclEndpointOptions(d.dst, { router: true })}</select>
+                  ${d.dst === 'host' ? `<input type="text" class="acl-draft-text mono" data-key="dstHost" value="${escapeHtml(d.dstHost)}" placeholder="Destination IP, e.g. 192.168.2.10" />` : ''}
+                  ${isVtyDraft ? `<select class="acl-draft" data-key="dstRouterId">${appState.routers.map(x => `<option value="${x.id}" ${d.dstRouterId === x.id ? 'selected' : ''}>${escapeHtml(sanitizeHostname(x.hostname))}</option>`).join('')}</select>` : ''}
+                </div>
+              </div>
+              ${isVtyDraft ? `
+                <div class="text-muted" style="font-size:12px; margin-top:6px;">A login rule becomes a standard ACL on <span class="mono">line vty</span> with <span class="mono">access-class</span>. With Allow, only those sources may log in; everyone else is refused.</div>
+              ` : `
+                <div class="row-3" style="margin-top:6px;">
+                  <div class="field-group">
+                    <label class="field-label">ACL type</label>
+                    <select class="acl-draft" data-key="aclType">
+                      <option value="extended" ${!stdDraft ? 'selected' : ''}>Extended</option>
+                      <option value="standard" ${stdDraft ? 'selected' : ''}>Standard</option>
+                    </select>
+                  </div>
+                  <div class="field-group">
+                    <label class="field-label">What (service)</label>
+                    <select class="acl-draft" data-key="service" ${stdDraft ? 'disabled title="A standard ACL cannot pick a service: it blocks or allows all traffic from the source"' : ''}>
+                      ${ACL_SERVICE_ORDER.map(k => `<option value="${k}" ${(stdDraft ? 'ip' : d.service) === k ? 'selected' : ''}>${ACL_SERVICES[k].label}</option>`).join('')}
+                    </select>
+                  </div>
+                  <div class="field-group">
+                    <label class="field-label">Placement</label>
+                    <select class="acl-draft" data-key="placement">
+                      <option value="auto" ${d.placement === 'auto' ? 'selected' : ''}>Auto (Cisco rule)</option>
+                      <option value="source" ${d.placement === 'source' ? 'selected' : ''}>Near the source (in)</option>
+                      <option value="destination" ${d.placement === 'destination' ? 'selected' : ''}>Near the destination (out)</option>
+                    </select>
+                  </div>
+                </div>
+                ${!stdDraft && d.service === 'custom' ? `
+                  <div class="row-2" style="margin-top:6px;">
+                    <select class="acl-draft" data-key="customProto">
+                      <option value="tcp" ${d.customProto !== 'udp' ? 'selected' : ''}>TCP</option>
+                      <option value="udp" ${d.customProto === 'udp' ? 'selected' : ''}>UDP</option>
+                    </select>
+                    <input type="text" class="acl-draft-text mono" data-key="customPort" value="${escapeHtml(d.customPort)}" placeholder="Port, e.g. 8080 (blank = any)" />
+                  </div>
+                ` : ''}
+              `}
+              <input type="text" class="acl-draft-text" data-key="note" value="${escapeHtml(d.note)}" placeholder="Note for the report (optional), e.g. Objective (a)" style="margin-top:8px;" />
+              <div class="acl-preview">
+                <div class="acl-preview-title">This rule becomes</div>
+                <div id="aclPreview">${aclPreviewHtml()}</div>
+              </div>
+              <button id="btnAclAddRule" class="btn btn-primary btn-sm" type="button" style="margin-top:8px;">+ Add rule</button>
+              ${!lans.length ? '<div class="acl-msg note">Attach LANs to routers first, so you can pick them here.</div>' : ''}
             </div>
-          ` : `<div class="text-muted" style="font-size:11.5px;">Add a rule to get test steps.</div>`}
-        </div>
-      `;
+
+            <div class="card doc-card" id="acl-rules">
+              <h3>Rules <span class="badge badge-indigo">${sec.rules.length}</span></h3>
+              <p class="doc-note" style="margin:0 0 8px;">Top to bottom = the order the router checks them. Put exceptions (Allow one host) above the bigger Block.</p>
+              ${sec.rules.length ? sec.rules.map((rule, i) => {
+                const inf = comp.info[rule.id];
+                const vtyRule = rule.dstType === 'router';
+                const hasTest = comp.tests.some(x => x.rule === i + 1 && x.tester);
+                return `
+                  <div class="acl-rule">
+                    <div class="acl-rule-head">
+                      <span class="badge ${rule.action === 'deny' ? 'badge-rose' : 'badge-emerald'}">#${i + 1} ${rule.action === 'deny' ? 'BLOCK' : 'ALLOW'}</span>
+                      ${vtyRule ? '<span class="badge badge-cyan">login</span>' : `
+                        <select class="acl-rule-type" data-idx="${i}" title="Standard or extended">
+                          <option value="extended" ${rule.aclType !== 'standard' ? 'selected' : ''}>Extended</option>
+                          <option value="standard" ${rule.aclType === 'standard' ? 'selected' : ''}>Standard</option>
+                        </select>`}
+                      <span style="margin-left:auto; display:flex; gap:4px;">
+                        ${hasTest ? `<button class="btn btn-xs acl-rule-test" data-idx="${i}" type="button" title="Load this rule into the packet tester">Test</button>` : ''}
+                        <button class="btn btn-xs acl-rule-move" data-idx="${i}" data-dir="-1" type="button" ${i === 0 ? 'disabled' : ''} aria-label="Move up">↑</button>
+                        <button class="btn btn-xs acl-rule-move" data-idx="${i}" data-dir="1" type="button" ${i === sec.rules.length - 1 ? 'disabled' : ''} aria-label="Move down">↓</button>
+                        <button class="btn btn-danger btn-xs acl-rule-del" data-idx="${i}" type="button" aria-label="Delete rule">✕</button>
+                      </span>
+                    </div>
+                    <div style="font-size:13px;">${escapeHtml(inf.sentence)}</div>
+                    ${rule.note ? `<div class="text-muted" style="font-size:11.5px;">${escapeHtml(rule.note)}</div>` : ''}
+                    ${inf.placeText ? `<div class="mono" style="font-size:11.5px; color:var(--cyan);">→ ${escapeHtml(inf.placeText)}</div>` : ''}
+                    ${inf.notes.map(n => `<div class="acl-msg note">${escapeHtml(n)}</div>`).join('')}
+                    ${inf.warnings.map(w => `<div class="acl-msg warn">⚠ ${escapeHtml(w)}</div>`).join('')}
+                    ${inf.errors.map(e => `<div class="acl-msg err">✕ ${escapeHtml(e)}</div>`).join('')}
+                  </div>`;
+              }).join('') : '<div class="text-muted" style="font-size:12px;">No rules yet. Add one above, or start from an example below.</div>'}
+            </div>
+
+            <div class="card doc-card" id="acl-examples">
+              <h3>Exam tasks → rules</h3>
+              <p class="doc-note" style="margin:0 0 8px;">Typical objectives, written with your LANs. "Fill the form" puts it in Add a rule, so you see the ACL before adding it.</p>
+              ${examples.length ? `
+                <div class="doc-table-wrap">
+                  <table class="doc-table">
+                    <thead><tr><th>Task says</th><th>Rule</th><th></th></tr></thead>
+                    <tbody>
+                      ${examples.map((ex, i) => `
+                        <tr>
+                          <td style="white-space:normal; font-weight:400;">${escapeHtml(ex.task)}</td>
+                          <td>${escapeHtml(ex.how)}</td>
+                          <td><button class="btn btn-xs acl-example" data-ex="${i}" type="button">${ex.rules ? 'Add both rules' : 'Fill the form'}</button></td>
+                        </tr>`).join('')}
+                    </tbody>
+                  </table>
+                </div>
+              ` : '<div class="text-muted" style="font-size:12px;">Add at least two LANs to see examples.</div>'}
+            </div>
+          </div>
+
+          <div class="acl-col">
+            <div class="card doc-card" id="acl-generated">
+              <h3>Generated ACLs <span class="badge badge-indigo">${comp.groups.length + Object.keys(comp.vty).length}</span></h3>
+              <div class="acl-legend">
+                <span><span class="tok tok-deny">deny</span>/<span class="tok tok-permit">permit</span> action</span>
+                <span><span class="tok tok-proto">tcp</span> protocol</span>
+                <span><span class="tok tok-src">source</span></span>
+                <span><span class="tok tok-wc">0.0.0.255</span> wildcard</span>
+                <span><span class="tok tok-dst">destination</span></span>
+                <span><span class="tok tok-port">eq 80</span> port</span>
+              </div>
+              <div class="text-muted" style="font-size:11.5px; margin:6px 0 10px;">Hover a coloured word for what it means. The same commands are in the Topology tab's CLI pane under ACLs. Paste them only after every ping, DHCP and web test passes.</div>
+              ${byRouter.length ? byRouter.map(x => `
+                <div class="acl-router">
+                  <div class="acl-router-head">
+                    <b>${escapeHtml(sanitizeHostname(x.r.hostname))}</b>
+                    <span class="text-muted" style="font-size:12px;">${x.acls.length} ACL${x.acls.length === 1 ? '' : 's'}</span>
+                    <button class="btn btn-xs btn-cyan acl-copy-router" data-rid="${x.r.id}" type="button" style="margin-left:auto;">Copy all for ${escapeHtml(sanitizeHostname(x.r.hostname))}</button>
+                  </div>
+                  ${x.acls.map(aclBoxHtml).join('')}
+                </div>
+              `).join('') : '<div class="text-muted" style="font-size:12px;">Nothing yet. Add a rule on the left.</div>'}
+            </div>
+
+            <div class="card doc-card" id="acl-tester">
+              <h3>Packet tester</h3>
+              <p class="doc-note" style="margin:0 0 8px;">Pick a packet. It follows the ACLs on its way, line by line, and back again for the reply. Use it to check a rule before the exam checker does.</p>
+              <div class="acl-tester-grid">
+                <div class="field-group">
+                  <label class="field-label">From</label>
+                  <select class="acl-test" data-key="src">${aclEndpointOptions(t.src, { any: false })}</select>
+                  ${t.src === 'host' ? `<input type="text" class="acl-test-text mono" data-key="srcHost" value="${escapeHtml(t.srcHost)}" placeholder="Source IP" />` : ''}
+                </div>
+                <div class="field-group">
+                  <label class="field-label">To</label>
+                  <select class="acl-test" data-key="dst">${aclEndpointOptions(t.dst, { any: false, router: true })}</select>
+                  ${t.dst === 'host' ? `<input type="text" class="acl-test-text mono" data-key="dstHost" value="${escapeHtml(t.dstHost)}" placeholder="Destination IP" />` : ''}
+                  ${t.dst === 'router' ? `<select class="acl-test" data-key="dstRouterId">${appState.routers.map(x => `<option value="${x.id}" ${t.dstRouterId === x.id ? 'selected' : ''}>${escapeHtml(sanitizeHostname(x.hostname))}</option>`).join('')}</select>` : ''}
+                </div>
+                <div class="field-group">
+                  <label class="field-label">Service</label>
+                  <select class="acl-test" data-key="svc">${Object.entries(TESTER_SERVICES).map(([k, v]) => `<option value="${k}" ${t.svc === k ? 'selected' : ''}>${v.label}</option>`).join('')}</select>
+                  ${t.svc === 'custom' ? `
+                    <div style="display:flex; gap:6px;">
+                      <select class="acl-test" data-key="customProto" style="width:auto;"><option value="tcp" ${t.customProto !== 'udp' ? 'selected' : ''}>TCP</option><option value="udp" ${t.customProto === 'udp' ? 'selected' : ''}>UDP</option></select>
+                      <input type="text" class="acl-test-text mono" data-key="customPort" value="${escapeHtml(t.customPort)}" placeholder="Port" />
+                    </div>` : ''}
+                </div>
+              </div>
+              <div id="aclTestResult" class="acl-test-result">${aclTesterResultHtml(comp)}</div>
+            </div>
+
+            <div class="card doc-card" id="acl-tests">
+              <h3>Test plan <button id="btnAclCopyTests" class="btn btn-xs" type="button" ${comp.tests.length ? '' : 'disabled'} style="margin-left:8px;">Copy</button></h3>
+              ${comp.tests.length ? `
+                <div class="doc-table-wrap">
+                  <table class="doc-table">
+                    <thead><tr><th>Rule</th><th>From</th><th>Run</th><th>Expected</th><th></th></tr></thead>
+                    <tbody>
+                      ${comp.tests.map((x, i) => `
+                        <tr>
+                          <td>R${x.rule}</td>
+                          <td style="white-space:normal; font-weight:400;">${escapeHtml(x.from)}</td>
+                          <td><code class="cmd">${escapeHtml(x.cmd)}</code></td>
+                          <td style="color:${/^fails|^refused/.test(x.expect) ? 'var(--rose)' : 'var(--emerald)'};">${escapeHtml(x.expect)}</td>
+                          <td>${x.tester ? `<button class="btn btn-xs acl-test-try" data-test="${i}" type="button">Try</button>` : ''}</td>
+                        </tr>`).join('')}
+                    </tbody>
+                  </table>
+                </div>
+                <p class="doc-note">Proof on the router: <code class="cmd">clear access-list counters</code>, run the test, then <code class="cmd">show access-lists</code>. The matching line's count goes up.</p>
+              ` : '<div class="text-muted" style="font-size:12px;">Add a rule to get test steps.</div>'}
+            </div>
+          </div>
+        </div>`;
 
       // ---- events ----
-      container.querySelectorAll('.acl-mode').forEach(btn => {
-        btn.addEventListener('click', () => {
-          sec.mode = btn.dataset.mode;
-          renderTopologyWorkspace();
-        });
-      });
+      const rerender = () => renderAclWorkspace();
+      const refreshPreview = () => { const el = document.getElementById('aclPreview'); if (el) el.innerHTML = aclPreviewHtml(); };
+      const refreshTester = () => { const el = document.getElementById('aclTestResult'); if (el) el.innerHTML = aclTesterResultHtml(compileSecurityRules()); };
+
+      root.querySelectorAll('.acl-default-type').forEach(btn => btn.addEventListener('click', () => {
+        sec.mode = btn.dataset.type;
+        d.aclType = btn.dataset.type;
+        rerender();
+      }));
+      root.querySelectorAll('.acl-naming').forEach(btn => btn.addEventListener('click', () => {
+        sec.naming = btn.dataset.naming;
+        rerender();
+      }));
       document.getElementById('aclPermitRest').addEventListener('change', e => {
         sec.permitRest = e.target.checked;
-        renderTopologyWorkspace();
-      });
-      container.querySelectorAll('.sr-action').forEach(btn => {
-        btn.addEventListener('click', () => {
-          d.action = btn.dataset.action;
-          renderLeftPane();
-        });
-      });
-      // Dropdowns change which fields show, so re-render; text boxes just update the draft
-      container.querySelectorAll('.sr-field').forEach(el => {
-        el.addEventListener('change', e => {
-          d[el.dataset.key] = e.target.value;
-          renderLeftPane();
-        });
-      });
-      container.querySelectorAll('.sr-text').forEach(el => {
-        el.addEventListener('input', e => { d[el.dataset.key] = e.target.value; });
+        rerender();
       });
 
-      document.getElementById('btnAddSecRule').addEventListener('click', () => {
-        const parseEnd = (val, hostVal) => {
-          if (val.startsWith('lan:')) return { type: 'lan', lanId: val.slice(4), host: '' };
-          if (val === 'host') return { type: 'host', lanId: '', host: hostVal.trim() };
-          return { type: val, lanId: '', host: '' };
-        };
-        const s = parseEnd(d.src, d.srcHost);
-        const t = parseEnd(d.dst, d.dstHost);
-        if (s.type === 'host' && IPv4.toInt(s.host) === null) return showToast('Enter a valid source host IP.');
-        if (t.type === 'host' && IPv4.toInt(t.host) === null) return showToast('Enter a valid destination host IP.');
-        if (t.type === 'router' && !getRouterById(d.dstRouterId)) return showToast('Pick the router.');
-        if (s.type === 'any' && t.type === 'any') return showToast('Pick a LAN or host for the source or the destination.');
-        if (d.service === 'custom' && t.type !== 'router' && d.customPort.trim() && !/^\d+$/.test(d.customPort.trim())) {
-          return showToast('The port must be a number.');
-        }
-        sec.rules.push({
-          id: uid('sr'),
-          action: d.action,
-          srcType: s.type, srcLanId: s.lanId, srcHost: s.host,
-          dstType: t.type, dstLanId: t.lanId, dstHost: t.host,
-          dstRouterId: t.type === 'router' ? d.dstRouterId : '',
-          service: t.type === 'router' ? 'ip' : (std ? 'ip' : d.service),
-          customProto: d.customProto, customPort: d.customPort.trim(),
-          placement: t.type === 'router' ? 'auto' : d.placement,
-          note: d.note.trim()
-        });
+      root.querySelectorAll('.acl-draft-action').forEach(btn => btn.addEventListener('click', () => {
+        d.action = btn.dataset.action;
+        rerender();
+      }));
+      root.querySelectorAll('.acl-draft').forEach(el => el.addEventListener('change', e => {
+        d[el.dataset.key] = e.target.value;
+        rerender();
+      }));
+      root.querySelectorAll('.acl-draft-text').forEach(el => el.addEventListener('input', e => {
+        d[el.dataset.key] = e.target.value;
+        refreshPreview();
+      }));
+      document.getElementById('btnAclAddRule').addEventListener('click', () => {
+        const rule = draftToRule(d);
+        const problem = draftProblem(rule);
+        if (problem) return showToast(problem);
+        rule.id = uid('sr');
+        sec.rules.push(rule);
         d.note = '';
-        renderTopologyWorkspace();
-        showToast('Security rule added');
+        rerender();
+        showToast(`Rule #${sec.rules.length} added`);
       });
 
-      container.querySelectorAll('.sr-move').forEach(btn => {
-        btn.addEventListener('click', () => {
-          const i = Number(btn.dataset.idx);
-          const j = i + Number(btn.dataset.dir);
-          if (j < 0 || j >= sec.rules.length) return;
-          [sec.rules[i], sec.rules[j]] = [sec.rules[j], sec.rules[i]];
-          renderTopologyWorkspace();
+      root.querySelectorAll('.acl-rule-type').forEach(sel => sel.addEventListener('change', e => {
+        const rule = sec.rules[Number(sel.dataset.idx)];
+        if (rule) rule.aclType = e.target.value === 'standard' ? 'standard' : 'extended';
+        rerender();
+      }));
+      root.querySelectorAll('.acl-rule-move').forEach(btn => btn.addEventListener('click', () => {
+        const i = Number(btn.dataset.idx);
+        const j = i + Number(btn.dataset.dir);
+        if (j < 0 || j >= sec.rules.length) return;
+        [sec.rules[i], sec.rules[j]] = [sec.rules[j], sec.rules[i]];
+        rerender();
+      }));
+      root.querySelectorAll('.acl-rule-del').forEach(btn => btn.addEventListener('click', () => {
+        sec.rules.splice(Number(btn.dataset.idx), 1);
+        rerender();
+      }));
+      const loadTester = spec => {
+        aclTester = Object.assign(getAclTester(), spec);
+        rerender();
+        document.getElementById('acl-tester')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      };
+      root.querySelectorAll('.acl-rule-test').forEach(btn => btn.addEventListener('click', () => {
+        const test = comp.tests.find(x => x.rule === Number(btn.dataset.idx) + 1 && x.tester);
+        if (test) loadTester(test.tester);
+      }));
+      root.querySelectorAll('.acl-test-try').forEach(btn => btn.addEventListener('click', () => {
+        const test = comp.tests[Number(btn.dataset.test)];
+        if (test && test.tester) loadTester(test.tester);
+      }));
+
+      root.querySelectorAll('.acl-example').forEach(btn => btn.addEventListener('click', () => {
+        const ex = examples[Number(btn.dataset.ex)];
+        if (!ex) return;
+        if (ex.rules) {
+          ex.rules.forEach(rd => {
+            const rule = draftToRule(Object.assign({}, getAclDraft(), { placement: 'auto', note: '', srcHost: '', dstHost: '' }, rd));
+            rule.id = uid('sr');
+            sec.rules.push(rule);
+          });
+          rerender();
+          showToast(`Added ${ex.rules.length} rules: the Allow is above the Block`);
+          return;
+        }
+        Object.assign(d, { placement: 'auto', note: '', srcHost: '', dstHost: '', service: d.service }, ex.draft);
+        rerender();
+        document.getElementById('acl-build')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        showToast('Form filled: check the preview, then click + Add rule');
+      }));
+
+      root.querySelectorAll('.acl-id-input').forEach(inp => {
+        inp.addEventListener('input', () => {
+          const v = inp.value.trim();
+          inp.style.borderColor = v && aclIdProblem(v, inp.dataset.type) ? 'var(--rose)' : '';
         });
-      });
-      container.querySelectorAll('.sr-del').forEach(btn => {
-        btn.addEventListener('click', () => {
-          sec.rules.splice(Number(btn.dataset.idx), 1);
-          renderTopologyWorkspace();
+        inp.addEventListener('change', () => {
+          const v = inp.value.trim();
+          if (v) sec.aclIds[inp.dataset.key] = v;
+          else delete sec.aclIds[inp.dataset.key];
+          rerender();
         });
       });
 
-      container.querySelectorAll('[data-view-acl]').forEach(btn => {
-        btn.addEventListener('click', () => {
-          appState.ui.selectedRouterId = btn.dataset.viewAcl;
-          appState.ui.cliFilter = 'acls';
-          document.querySelectorAll('#cliFilterPills .pill-btn').forEach(p => p.classList.toggle('active', p.dataset.filter === 'acls'));
-          renderTopologyWorkspace();
+      const findAcl = key => {
+        const c = compileSecurityRules();
+        return [...c.groups, ...Object.values(c.vty)].find(g => g.key === key);
+      };
+      root.querySelectorAll('.acl-copy').forEach(btn => btn.addEventListener('click', () => {
+        const g = findAcl(btn.dataset.key);
+        if (!g) return;
+        copyTextToClipboard(`${aclGroupCli(g).join('\n')}\n`, `ACL ${g.id} copied: paste it at the router's (config)# prompt`);
+      }));
+      root.querySelectorAll('.acl-copy-router').forEach(btn => btn.addEventListener('click', () => {
+        const c = compileSecurityRules();
+        const r = getRouterById(btn.dataset.rid);
+        const list = [...c.groups.filter(g => g.routerId === btn.dataset.rid), ...(c.vty[btn.dataset.rid] ? [c.vty[btn.dataset.rid]] : [])];
+        const lines = ['enable', 'configure terminal'];
+        list.forEach(g => {
+          lines.push(`! ACL ${g.id} (${g.type}) ${aclWhereText(g)}`);
+          aclGroupCli(g).forEach(l => lines.push(l));
         });
-      });
+        lines.push('end');
+        copyTextToClipboard(`${lines.join('\n')}\n`, `All ACLs for ${sanitizeHostname(r ? r.hostname : '')} copied`);
+      }));
 
-      const copyBtn = document.getElementById('btnCopyTests');
-      if (copyBtn) {
-        copyBtn.addEventListener('click', () => {
-          copyTextToClipboard(
-            `${testText}\n\nVerify: clear access-list counters -> run the test -> show access-lists`,
-            'Test plan copied!'
-          );
+      root.querySelectorAll('.acl-test').forEach(el => el.addEventListener('change', e => {
+        t[el.dataset.key] = e.target.value;
+        rerender();
+      }));
+      root.querySelectorAll('.acl-test-text').forEach(el => el.addEventListener('input', e => {
+        t[el.dataset.key] = e.target.value;
+        refreshTester();
+      }));
+
+      const copyTests = document.getElementById('btnAclCopyTests');
+      if (copyTests) {
+        copyTests.addEventListener('click', () => {
+          const text = comp.tests.map(x => `R${x.rule} | From ${x.from} | ${x.cmd} | Expected: ${x.expect}`).join('\n');
+          copyTextToClipboard(`${text}\n\nVerify: clear access-list counters -> run the test -> show access-lists`, 'Test plan copied!');
         });
       }
     }
@@ -6282,6 +7349,45 @@
       sel.innerHTML = appState.routers.map(r =>
         `<option value="${r.id}" ${r.id === appState.ui.selectedRouterId ? 'selected' : ''}>${escapeHtml(r.hostname)} (${routerModel(r)})</option>`
       ).join('');
+    }
+
+    /* ---- Wildcard helper (ACL page, Learn the basics) ---- */
+    function wildcardHelperHtml(input) {
+      const s = String(input || '').trim();
+      if (!s) return '';
+      const row = (label, value) => `<div><span class="text-muted">${label}</span> <b class="mono">${escapeHtml(value)}</b></div>`;
+      let m = /^\/?(\d{1,2})$/.exec(s);
+      let cidr = null;
+      let ip = null;
+      if (m) cidr = Number(m[1]);
+      else if (/^(255|0\.0\.0\.0$)/.test(s) && IPv4.maskToCidr(s) !== null) cidr = IPv4.maskToCidr(s);
+      else {
+        const v = parseIfaceV4(s);
+        if (!v) {
+          return IPv4.toInt(s) !== null
+            ? '<div class="acl-msg note">Add the prefix too, for example 192.168.1.64/26.</div>'
+            : '<div class="acl-msg warn">Type a network (192.168.1.64/26), a mask (255.255.255.192) or a prefix (/26).</div>';
+        }
+        cidr = v.cidr;
+        ip = v;
+      }
+      if (cidr === null || cidr > 32) return '<div class="acl-msg warn">A prefix goes from /0 to /32.</div>';
+      const mask = IPv4.cidrToMask(cidr);
+      const wc = IPv4.cidrToWildcard(cidr);
+      let html = row('Prefix', `/${cidr}`) + row('Subnet mask', mask) + row('Wildcard (255.255.255.255 − mask)', wc);
+      if (ip) {
+        const net = IPv4.toInt(ip.netIp);
+        const last = IPv4.fromInt((net + IPv4.totalAddresses(cidr) - 1) >>> 0);
+        const inAcl = cidr === 32 ? `host ${ip.ip}` : cidr === 0 ? 'any' : `${ip.netIp} ${wc}`;
+        html += row('In an ACL', inAcl);
+        if (cidr < 32) html += row('Matches', `${ip.netIp} – ${last}`);
+        if (ip.ip !== ip.netIp && cidr < 32) html += `<div class="acl-msg note">${escapeHtml(ip.ip)} is a host inside ${escapeHtml(ip.netIp)}/${cidr}. ACLs use the network ID, or host ${escapeHtml(ip.ip)} for that one device.</div>`;
+      } else if (cidr === 32) {
+        html += row('In an ACL', 'host <IP>');
+      } else if (cidr === 0) {
+        html += row('In an ACL', 'any');
+      }
+      return html;
     }
 
     /* ---- Copy in parts: small blocks for a slow (9600 baud) console paste ---- */
@@ -6428,6 +7534,8 @@
       renderLeftPane();
       renderTopologySvg();
       renderCliPane();
+      const aclView = document.getElementById('viewAcls');
+      if (aclView && !aclView.classList.contains('hidden')) renderAclWorkspace();
     }
 
     /** Red border + tooltip on a hostname box while another router already uses that name. */
@@ -6551,14 +7659,14 @@
         r.lans.forEach(l => rows.push({
           router: host, interface: l.iface, ipv4: `${l.gatewayIp}/${l.cidr}`,
           ipv6: ds && l.ipv6Prefix && l.ipv6Ip ? `${l.ipv6Ip}/${v6Len(l.ipv6Prefix)}` : '',
-          link_local: ds && l.ipv6Prefix ? (l.ipv6LinkLocal || 'fe80::1') : ''
+          link_local: ds && l.ipv6Prefix ? routerLinkLocal(r) : ''
         }));
         routerLinks(r.id).forEach(l => {
           const isR1 = l.r1Id === r.id;
           rows.push({
             router: host, interface: isR1 ? l.r1If : l.r2If, ipv4: `${isR1 ? l.ip1 : l.ip2}/${l.cidr}`,
             ipv6: ds && l.ipv6Prefix ? `${isR1 ? l.ipv6Ip1 : l.ipv6Ip2}/${v6Len(l.ipv6Prefix)}` : '',
-            link_local: ds && l.ipv6Prefix ? ((isR1 ? l.ll1 : l.ll2) || '') : ''
+            link_local: ds && l.ipv6Prefix ? routerLinkLocal(r) : ''
           });
         });
         routerLoopbacks(r).forEach(l => rows.push({
@@ -6654,6 +7762,22 @@
         rec.router = byName.get(k);
       });
 
+      // One link-local per router: the first one in its rows, unless another router already has it
+      // Pass 1: the value from the CSV (if no earlier router took it). Pass 2: the next free fe80::N.
+      byName.forEach(router => { router.linkLocal = ''; });
+      const clashes = [];
+      byName.forEach(router => {
+        const lls = [...new Set(recs.filter(x => x.router === router && x.ll).map(x => x.ll))];
+        const host = sanitizeHostname(router.hostname);
+        if (lls.length > 1) warns.push(`${host} has different link-locals (${lls.join(', ')}). Each router uses one on every port, so it gets ${lls[0]}.`);
+        const wanted = lls[0];
+        if (!wanted) return;
+        if (appState.routers.some(o => o !== router && o.linkLocal && routerLinkLocal(o) === wanted)) clashes.push({ host, wanted, router });
+        else router.linkLocal = wanted;
+      });
+      byName.forEach(router => { if (!router.linkLocal) router.linkLocal = nextFreeLinkLocal(router.id); });
+      clashes.forEach(c => warns.push(`${c.wanted} is already used by another router, so ${c.host} gets ${c.router.linkLocal}.`));
+
       let lanCount = 0;
       let linkCount = 0;
       let loopCount = 0;
@@ -6734,6 +7858,7 @@
     const MAIN_TABS = {
       addressing: ['mainTabAddressing', 'viewAddressing'],
       topology: ['mainTabTopology', 'viewTopology'],
+      acls: ['mainTabAcls', 'viewAcls'],
       help: ['mainTabHelp', 'viewHelp'],
       trouble: ['mainTabTrouble', 'viewTrouble']
     };
@@ -6753,6 +7878,7 @@
         renderTopologyWorkspace();
         requestAnimationFrame(fitTopologyToViewport);
       } else {
+        if (tabName === 'acls') renderAclWorkspace();
         window.scrollTo(0, 0);
       }
     }
@@ -6800,6 +7926,12 @@
       // Main Tab Switchers
       document.getElementById('mainTabAddressing').addEventListener('click', () => switchMainTab('addressing'));
       document.getElementById('mainTabTopology').addEventListener('click', () => switchMainTab('topology'));
+      document.getElementById('mainTabAcls').addEventListener('click', () => switchMainTab('acls'));
+      const wcIn = document.getElementById('wcInput');
+      const wcOut = document.getElementById('wcOut');
+      const wcUpdate = () => { wcOut.innerHTML = wildcardHelperHtml(wcIn.value); };
+      wcIn.addEventListener('input', wcUpdate);
+      wcUpdate();
       document.getElementById('mainTabHelp').addEventListener('click', () => switchMainTab('help'));
       document.getElementById('mainTabTrouble').addEventListener('click', () => switchMainTab('trouble'));
 
@@ -6810,7 +7942,7 @@
           copyTextToClipboard(cmd.textContent.trim(), `Copied: ${cmd.textContent.trim()}`);
           return;
         }
-        const link = e.target.closest('#viewHelp a[href^="#"], #viewTrouble a[href^="#"]');
+        const link = e.target.closest('#viewHelp a[href^="#"], #viewTrouble a[href^="#"], #viewAcls a[href^="#"]');
         if (link) {
           const target = document.getElementById(link.getAttribute('href').slice(1));
           if (target) {

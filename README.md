@@ -9,17 +9,18 @@ Open `index.html` in any browser. No install, no internet needed.
 | Tab | Use it for |
 |---|---|
 | 1. Addressing | Base network + host counts → VLSM subnet table, paired IPv6 /64s, LAN and WAN rows linked to router ports |
-| 2. Topology & CLI | Live diagram, per-router config: passwords, SSH/Telnet, interfaces, DHCPv4/DHCPv6, routing, ACLs |
-| 3. Help | Exam workflow, what to type in each field, PuTTY console, router reset, password recovery, cables, PC setup |
-| 4. Troubleshooting | Symptom → check → fix, IOS messages, show commands by topic (click to copy) |
+| 2. Topology & CLI | Live diagram, per-router config: passwords, SSH/Telnet, interfaces, DHCPv4/DHCPv6, routing |
+| 3. ACLs | Security rules → standard/extended ACLs (numbered or named), every line explained, packet tester, ACL lessons |
+| 4. Help | Exam workflow, what to type in each field, PuTTY console, router reset, password recovery, cables, PC setup |
+| 5. Troubleshooting | Symptom → check → fix, IOS messages, show commands by topic (click to copy) |
 
 ## Features
 
 - Routers: Cisco 2901 (g0/0–g0/1) and 2911 (g0/0–g0/2), serial ports s0/0/0–s0/1/1 with clock rate, loopbacks
 - Routing: static, RIPv2, OSPF, EIGRP per router; border routers redistribute with seed metrics; router IDs; floating and IPv6 static routes
-- IPv6: auto static routes, RIPng, or the same protocol as IPv4 (OSPFv3, EIGRP for IPv6)
+- IPv6: auto static routes, RIPng, or the same protocol as IPv4 (OSPFv3, EIGRP for IPv6); one link-local per router (fe80::1, fe80::2…) so both ends of a link differ
 - DHCP: local or relayed (ip helper-address), exclusions, DNS, domain name, lease; DHCPv6 stateless/stateful
-- ACLs written as plain rules ("block LAN A from Telnet to LAN B"), placed and numbered automatically
+- ACLs written as plain rules ("block LAN A from Telnet to LAN B"), placed automatically (extended near the source, standard near the destination), with your own ACL numbers or names, a line-by-line explanation and a packet tester that also checks the reply
 - **Copy in parts**: the script split into small blocks with Copy buttons and ticks, so a 9600-baud console paste does not drop characters
 - **Verify**: show and ping commands for the selected router
 - Router CSV import/export (`router,interface,ipv4,ipv6,link_local`)
