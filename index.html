@@ -1909,6 +1909,7 @@ line vty 0 4
           <li><b>Reset every router</b> (see <a href="#h-reset">Reset a router</a>). Lab routers keep the last group's config.</li>
           <li><b>Cable it</b> (see <a href="#h-cables">Cables</a>). Write down which router port goes where; <code class="cmd">show cdp neighbors</code> confirms it later.</li>
           <li><b>CPE 3105 final assessment?</b> Click <b>Exam preset</b> (top right), type your group and student numbers and the host counts, pick the routing scenario. It builds steps 3 to 5 for you; then follow the <b>7. Checklist</b> tab from A to G and tick each step. If the topology on the day is different, change it in the Addressing and Configure tabs: the scripts and the checklist follow.</li>
+          <li><b>Your work is kept in this browser:</b> close or reload the page and it opens where you left off (the first time it opens the exam for G1 S1). To move work to another PC, or keep a copy, use <b>Save project</b>.</li>
           <li><b>Addressing page:</b> type the base network and prefix, add the routers (1941, 2901 or 2911), then one <b>LAN</b> row per LAN and one <b>WAN</b> row per router-to-router link. Pick the router and port for each row. Check the Generated Subnet Table.</li>
           <li><b>Topology tab:</b> check the drawing: every router, LAN and link where you expect it, with its addresses. Click a router, then <b>Show CLI</b>.</li>
           <li><b>Configure &amp; CLI tab:</b> Init Config (passwords, banner, SSH/Telnet) → Routers &amp; LANs (DHCP, DNS, IPv6 for each LAN) → Routing (the protocol the task asks for, per router). ACLs (only if the task asks) are on the <b>4. ACLs</b> tab.</li>
@@ -10141,6 +10142,67 @@ line vty 0 4
         downloadFile(fname, txt, 'text/plain');
         showToast(`Downloaded ${fname}`);
       });
+
+      // Open the last project from this browser, or the PDF exam the first time
+      startupProject();
+      startAutosave();
+    }
+
+    /* =========================================================================
+       AUTOSAVE: the project is kept in this browser, so a reload loses nothing
+       ========================================================================= */
+    const AUTOSAVE_KEY = 'netplanner.project.v1';
+    let autosaveLast = '';
+
+    function autosaveNow() {
+      if (!appState) return;
+      let json;
+      try { json = JSON.stringify(appState); } catch (e) { return; }
+      if (json === autosaveLast) return;
+      try {
+        localStorage.setItem(AUTOSAVE_KEY, json);
+        autosaveLast = json;
+      } catch (e) { /* storage blocked or full: the Save project button still works */ }
+    }
+
+    function startAutosave() {
+      setInterval(autosaveNow, 1500);
+      document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') autosaveNow(); });
+      window.addEventListener('pagehide', autosaveNow);
+    }
+
+    function readAutosave() {
+      try {
+        const raw = localStorage.getItem(AUTOSAVE_KEY);
+        if (!raw) return null;
+        const parsed = JSON.parse(raw);
+        return parsed && typeof parsed === 'object' && Array.isArray(parsed.routers) ? parsed : null;
+      } catch (e) { return null; }
+    }
+
+    function startupProject() {
+      const saved = readAutosave();
+      if (saved) {
+        const fallback = appState;
+        try {
+          appState = saved;
+          normalizeState();
+          refreshAddressingUI();
+          switchMainTab(['topology', 'diagram', 'checklist'].includes(appState.activeTab) ? appState.activeTab : 'addressing');
+          renderTopologyWorkspace();
+          showToast('Restored your last project from this browser');
+          return;
+        } catch (err) {
+          appState = fallback; // unreadable: start from the exam instead
+        }
+      }
+      try {
+        applyExamPreset(defaultExamOptions());
+        showToast('CPE 3105 exam loaded (G1 S1). Click Exam preset to type your own numbers.');
+      } catch (err) {
+        refreshAddressingUI();
+        renderTopologyWorkspace();
+      }
     }
 
     document.addEventListener('DOMContentLoaded', initApp);
