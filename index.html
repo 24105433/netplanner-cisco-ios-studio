@@ -1303,11 +1303,18 @@
       .ck-item { break-inside: avoid; }
       .ck-bar span { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
       .exam-dialog { display: none !important; }
-      body.print-addr-sheet #viewAddressing .addr-container > :not(#addrSheetCard) { display: none !important; }
+      body.print-addr-sheet #viewAddressing .addr-container > :not(#addrSheetCard):not(#cidrWorkCard) { display: none !important; }
+      body.print-addr-sheet #cidrWorkCard { border: none; break-inside: avoid; }
       body.print-addr-sheet #addrSheetCard { border: none; }
       body.print-addr-sheet .addr-sheet { font-size: 10pt; }
       body.print-addr-sheet .addr-sheet td, body.print-addr-sheet .addr-sheet th { border: 1px solid #777; padding: 4px 6px; }
     }
+    .cidr-work { padding: 14px 16px 16px; display: grid; gap: 12px; }
+    .cidr-work .cw-step { line-height: 1.6; }
+    .cidr-work .cw-step b.cw-n { display: inline-block; min-width: 1.6em; color: var(--accent-ink); }
+    .cidr-work .cw-note { font-size: 14px; color: var(--text-secondary); }
+    .cidr-work .table-scroll-wrap { border: 1px solid var(--border); border-radius: 8px; max-height: none; }
+    .cidr-work td.mono, .cidr-work .mono { font-family: var(--font-mono); }
   </style>
 </head>
 <body>
@@ -1373,7 +1380,7 @@
           <div class="card-title">
             <span>IPv4 Base Network &amp; Mode</span>
             <div class="seg-control">
-              <button id="btnModeFlsm" class="seg-btn" type="button">CIDR / FLSM</button>
+              <button id="btnModeFlsm" class="seg-btn" type="button">FLSM (equal size)</button>
               <button id="btnModeVlsm" class="seg-btn active" type="button">VLSM</button>
             </div>
           </div>
@@ -1451,7 +1458,7 @@
       <!-- Mode Specific Controls -->
       <div id="panelFlsm" class="card hidden">
         <div class="card-title">
-          <span>CIDR / FLSM Equal-Sized Subnets</span>
+          <span>FLSM: equal-size subnets</span>
           <div class="seg-control">
             <button id="btnFlsmSubnets" class="seg-btn active" type="button">Required Subnets</button>
             <button id="btnFlsmHosts" class="seg-btn" type="button">Required Hosts / Subnet</button>
@@ -1564,6 +1571,18 @@
             <tbody id="subnetTableBody"></tbody>
           </table>
         </div>
+      </div>
+
+      <!-- CIDR working: the /20 block and how each VLSM subnet's /prefix is found (scoring B) -->
+      <div class="table-card hidden" id="cidrWorkCard">
+        <div class="table-toolbar">
+          <div style="display:flex; align-items:center; gap:10px;">
+            <strong style="font-size:16px;">CIDR working</strong>
+            <span class="text-muted" style="font-size:14px;">how each /prefix is computed, for your answer sheet</span>
+          </div>
+          <button id="btnCopyCidrWork" class="btn btn-sm" type="button">Copy working</button>
+        </div>
+        <div id="cidrWorkBody" class="cidr-work"></div>
       </div>
 
       <!-- Addressing table in the exam's Section II layout (one row per port and PC) -->
@@ -1937,7 +1956,7 @@ line vty 0 4
               <tr class="doc-group"><td colspan="3">Addressing page</td></tr>
               <tr><td>Base Network IP</td><td class="mono">192.168.10.0</td><td>The block the task gives. Any address inside it works; the app shows the real network ID.</td></tr>
               <tr><td>Base Prefix</td><td class="mono">/24</td><td>Size of that block. Every subnet must fit inside it.</td></tr>
-              <tr><td>Mode</td><td>VLSM</td><td>VLSM sizes each subnet to its host count (largest first). CIDR/FLSM makes equal-size subnets.</td></tr>
+              <tr><td>Mode</td><td>VLSM</td><td>VLSM sizes each subnet to its host count (largest first); FLSM makes equal-size subnets. Both are CIDR (classless /prefix). The <b>CIDR working</b> card under the subnet table shows the computation.</td></tr>
               <tr><td>Hosts (LAN row)</td><td class="mono">50</td><td>Usable addresses the LAN needs, <b>router gateway included</b>. If the task's count leaves out the router, add 1. The app picks the smallest block where hosts + 2 fits (e.g. 50 → /26, 62 usable).</td></tr>
               <tr><td>Hosts (WAN row)</td><td class="mono">2</td><td>A link between two routers is always a /30 (2 usable).</td></tr>
               <tr><td>Router · Port</td><td class="mono">Main · g0/0</td><td>LAN: the port facing the switch (gets the first usable IP). WAN: Router A gets the first IP, Router B the second. 2901 has g0/0–g0/1, 2911 has g0/0–g0/2; serial ports s0/x/x need an HWIC-2T card.</td></tr>
@@ -2995,8 +3014,66 @@ line vty 0 4
       }).join('') : `<tr><td colspan="7" style="text-align:center; padding:22px; color:var(--text-muted);">No routers yet. Add routers and attach subnets to their ports.</td></tr>`;
     }
 
+    /** Rows of the CIDR working: hosts -> 2^h - 2 -> /prefix -> mask -> block -> range (VLSM order, largest first). */
+    function cidrWorkRows() {
+      return appState.addressing.generatedSubnets.map(s => {
+        const h = 32 - Number(s.cidr);
+        const block = Math.pow(2, h);
+        return { name: s.name, hosts: s.reqHosts, h, fit: block - 2, cidr: s.cidr, mask: s.mask, block, net: s.netIp, bcast: s.broadcast };
+      });
+    }
+
+    function cidrWorkBlock() {
+      const a = appState.addressing;
+      const baseInt = IPv4.toInt(a.baseIp);
+      if (baseInt === null) return null;
+      const cidr = Number(a.baseCidr);
+      const net = IPv4.normalize(baseInt, cidr);
+      const total = IPv4.totalAddresses(cidr);
+      return { cidr, net: IPv4.fromInt(net), mask: IPv4.cidrToMask(cidr), total, last: IPv4.fromInt((net + total - 1) >>> 0), netInt: net };
+    }
+
+    function renderCidrWork() {
+      const card = document.getElementById('cidrWorkCard');
+      const body = document.getElementById('cidrWorkBody');
+      if (!card || !body) return;
+      const a = appState.addressing;
+      const rows = cidrWorkRows();
+      const blk = cidrWorkBlock();
+      card.classList.toggle('hidden', a.mode !== 'vlsm' || !rows.length || !blk);
+      if (a.mode !== 'vlsm' || !rows.length || !blk) return;
+      const firstOctet = Number(blk.net.split('.')[0]);
+      const cls = firstOctet < 128 ? ['A', 8] : firstOctet < 192 ? ['B', 16] : firstOctet < 224 ? ['C', 24] : null;
+      const used = rows.reduce((n, r) => n + r.block, 0);
+      const lastB = IPv4.toInt(rows[rows.length - 1].bcast);
+      const nextFree = lastB !== null && used < blk.total ? IPv4.fromInt((lastB + 1) >>> 0) : '';
+      const v6 = String(a.ipv6Base || '').replace(/\/\d+$/, '').replace(/::$/, '');
+      const pow = n => `2<sup>${n}</sup>`;
+      body.innerHTML = `
+        <div class="cw-step"><b class="cw-n">1.</b> The block: <b class="mono">${escapeHtml(blk.net)}/${blk.cidr}</b> → mask <span class="mono">${blk.mask}</span>
+          → ${pow(32 - blk.cidr)} = <b>${blk.total.toLocaleString()}</b> addresses → <span class="mono">${escapeHtml(blk.net)}</span> to <span class="mono">${escapeHtml(blk.last)}</span>.
+          ${cls && cls[1] !== blk.cidr ? `<div class="cw-note">CIDR is classless: ${firstOctet}.x is class ${cls[0]} (/${cls[1]}), but the prefix you were given is /${blk.cidr}, and only the prefix counts.</div>` : ''}</div>
+        <div class="cw-step"><b class="cw-n">2.</b> VLSM, largest first: for each subnet find the smallest <i>h</i> with ${pow('h')} − 2 ≥ hosts. Then prefix = 32 − <i>h</i> and block size = ${pow('h')}.</div>
+        <div class="table-scroll-wrap"><table class="data-table">
+          <thead><tr><th>Subnet</th><th>Hosts needed</th><th>${pow('h')} − 2 ≥ hosts</th><th>Prefix</th><th>Mask</th><th>Block</th><th>Network – broadcast</th></tr></thead>
+          <tbody>${rows.map(r => `<tr>
+            <td class="name-col">${escapeHtml(r.name)}</td>
+            <td>${Number(r.hosts).toLocaleString()}</td>
+            <td>${pow(r.h)} − 2 = <b>${r.fit.toLocaleString()}</b></td>
+            <td class="mono"><b>/${r.cidr}</b> <span class="text-muted">(32 − ${r.h})</span></td>
+            <td class="mono">${r.mask}</td>
+            <td>${r.block.toLocaleString()}</td>
+            <td class="mono">${escapeHtml(r.net)} – ${escapeHtml(r.bcast)}</td>
+          </tr>`).join('')}</tbody>
+        </table></div>
+        <div class="cw-note">Each network starts right after the previous broadcast.</div>
+        <div class="cw-step"><b class="cw-n">3.</b> Used <b>${used.toLocaleString()}</b> of ${blk.total.toLocaleString()} addresses${nextFree ? `; free space starts at <span class="mono">${nextFree}</span>` : ''}.</div>
+        ${v6 ? `<div class="cw-step"><b class="cw-n">4.</b> IPv6: <span class="mono">${escapeHtml(a.ipv6Base)}</span> → every LAN and link gets its own /64, in the same order: <span class="mono">${escapeHtml(v6)}:${escapeHtml(a.ipv6StartHex || '1')}::/64</span>, then the next number, and so on (last column of the subnet table).</div>` : ''}`;
+    }
+
     function renderSubnetTable() {
       renderAddrSheet();
+      renderCidrWork();
       const tbody = document.getElementById('subnetTableBody');
       const subs = appState.addressing.generatedSubnets;
       document.getElementById('subnetCountBadge').textContent = `${subs.length} subnet${subs.length === 1 ? '' : 's'}`;
@@ -3039,7 +3116,7 @@ line vty 0 4
       let lanCount = 0;
       let linkCount = 0;
       // VLSM mode: a linked LAN/link follows its VLSM row (not the sorted subnet position).
-      // CIDR / FLSM mode has no rows, so everything matches by subnet number instead.
+      // FLSM (equal size) mode has no rows, so everything matches by subnet number instead.
       const findFor = item => (vlsm && item.vlsmReqId)
         ? pool.find(s => s.reqId === item.vlsmReqId)
         : (item.subnetId ? pool.find(s => s.id === item.subnetId) : null);
@@ -3467,7 +3544,7 @@ line vty 0 4
       if (help) {
         help.textContent = appState.addressing.mode === 'vlsm'
           ? 'These are the same routers shown in the Topology and Configure & CLI tabs. Attach subnets to their ports in the VLSM table below.'
-          : 'These are the same routers shown in the Topology and Configure & CLI tabs. Linking subnets to router ports works in VLSM mode; in CIDR / FLSM mode, attach LANs in the Configure & CLI tab.';
+          : 'These are the same routers shown in the Topology and Configure & CLI tabs. Linking subnets to router ports works in VLSM mode; in FLSM (equal size) mode, attach LANs in the Configure & CLI tab.';
       }
       if (!list) return;
       const n = appState.routers.length;
@@ -9442,7 +9519,7 @@ line vty 0 4
         items: [
           {
             id: 'B-plan', title: 'Write the addressing table',
-            detail: `${b && b.ok ? `Working: 12<b>G</b>.2<b>S</b>.224.0/20 with G${escapeHtml(exG)}, S${escapeHtml(exS)} = <b class="mono">${b.ipv4}/20</b>; 200<b>G</b>:DB<b>S</b>:ACAD::/64 = <b class="mono">${b.ipv6}/64</b>. ` : ''}VLSM gives the biggest LAN its subnet first, then the next, then the /30 WAN links. Copy the subnet table (Addressing tab) into your answer sheet.`,
+            detail: `${b && b.ok ? `Working: 12<b>G</b>.2<b>S</b>.224.0/20 with G${escapeHtml(exG)}, S${escapeHtml(exS)} = <b class="mono">${b.ipv4}/20</b>; 200<b>G</b>:DB<b>S</b>:ACAD::/64 = <b class="mono">${b.ipv6}/64</b>. ` : ''}VLSM gives the biggest LAN its subnet first, then the next, then the /30 WAN links. Copy the subnet table (Addressing tab) into your answer sheet, and show the <b>CIDR working</b> card under it (block → 2<sup>h</sup> − 2 → /prefix → range).`,
             tab: 'addressing'
           },
           ...routers.map((r, i) => ({
@@ -10006,6 +10083,16 @@ line vty 0 4
         const head = ['Device', 'Interface', 'IPv4 address', 'Subnet mask', 'Default gateway', 'IPv6 address / prefix', 'IPv6 link-local / gateway'];
         const lines = [head, ...addrSheetRows().map(x => [x.device, x.iface, x.ipv4, x.mask, x.gw, x.ipv6, x.ll])].map(r => r.join('\t'));
         copyTextToClipboard(lines.join('\n'), 'Addressing table copied (paste into Word or Excel)');
+      });
+      document.getElementById('btnCopyCidrWork').addEventListener('click', () => {
+        const blk = cidrWorkBlock();
+        if (!blk) return;
+        const lines = [
+          `Block\t${blk.net}/${blk.cidr}\tmask ${blk.mask}\t2^${32 - blk.cidr} = ${blk.total} addresses\t${blk.net} - ${blk.last}`,
+          ['Subnet', 'Hosts needed', '2^h - 2 >= hosts', 'Prefix', 'Mask', 'Block', 'Network', 'Broadcast'].join('\t'),
+          ...cidrWorkRows().map(r => [r.name, r.hosts, `2^${r.h} - 2 = ${r.fit}`, `/${r.cidr}`, r.mask, r.block, r.net, r.bcast].join('\t'))
+        ];
+        copyTextToClipboard(lines.join('\n'), 'CIDR working copied (paste into Word or Excel)');
       });
       ['addrExamG', 'addrExamS'].forEach(id => document.getElementById(id).addEventListener('input', e => {
         appState.addressing[id === 'addrExamG' ? 'examG' : 'examS'] = e.target.value.trim();
