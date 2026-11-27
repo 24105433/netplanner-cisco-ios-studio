@@ -1,0 +1,9 @@
+# Exam paper and any other PDFs stay local
+*.pdf
+# macOS / tool output
+.DS_Store
+.playwright-mcp/
+# Locally installed agent skills (reinstall from skills-lock.json)
+.agents/
+.claude/
+.impeccable/
