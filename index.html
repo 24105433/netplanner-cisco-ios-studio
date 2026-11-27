@@ -467,7 +467,7 @@
     .vlsm-hint.ok-wan { color: var(--amber); }
     .vlsm-hint.bad { color: var(--rose); }
 
-    /* Network Devices (Routers) on the Addressing page */
+    /* Network Devices (Routers) on the Planner tab */
     .device-list { display: flex; flex-direction: column; gap: 7px; }
     .device-row {
       display: grid;
@@ -1332,7 +1332,7 @@
     </div>
 
     <nav class="main-nav" role="tablist" aria-label="Primary Workspace">
-      <button id="mainTabAddressing" class="nav-tab active" type="button" title="Addressing calculator (IPv4 and IPv6, VLSM)">1. Addressing</button>
+      <button id="mainTabAddressing" class="nav-tab active" type="button" title="Exam setup and addressing (IPv4/IPv6, VLSM, CIDR working)">1. Planner</button>
       <button id="mainTabDiagram" class="nav-tab" type="button" title="The network drawing: routers, links, LANs and their addresses">2. Topology</button>
       <button id="mainTabTopology" class="nav-tab" type="button" title="Router settings and the Cisco IOS script for each router">3. Configure &amp; CLI</button>
       <button id="mainTabAcls" class="nav-tab" type="button" title="Access control lists: rules, explained ACLs, packet tester, lessons">4. ACLs</button>
@@ -1934,9 +1934,9 @@ line vty 0 4
         <ol class="doc-steps">
           <li><b>Reset every router</b> (see <a href="#h-reset">Reset a router</a>). Lab routers keep the last group's config.</li>
           <li><b>Cable it</b> (see <a href="#h-cables">Cables</a>). Write down which router port goes where; <code class="cmd">show cdp neighbors</code> confirms it later.</li>
-          <li><b>CPE 3105 final assessment?</b> Click <b>Exam preset</b> (top right), type your group and student numbers and the host counts, pick the routing scenario. It builds steps 3 to 5 for you; then follow the <b>7. Checklist</b> tab from A to G and tick each step. If the topology on the day is different, change it in the Addressing and Configure tabs: the scripts and the checklist follow. Click <b>Exam preset</b> again to change the numbers, host counts, routing scenario, ISP or the ACL statements (a) to (d): <b>Update this project</b> keeps everything else you did.</li>
+          <li><b>CPE 3105 final assessment?</b> Click <b>Exam preset</b> (top right), type your group and student numbers and the host counts, pick the routing scenario. It builds steps 3 to 5 for you; then follow the <b>7. Checklist</b> tab from A to G and tick each step. If the topology on the day is different, change it in the Planner and Configure tabs: the scripts and the checklist follow. Click <b>Exam preset</b> again to change the numbers, host counts, routing scenario, ISP or the ACL statements (a) to (d): <b>Update this project</b> keeps everything else you did.</li>
           <li><b>Your work is kept in this browser:</b> close or reload the page and it opens where you left off (the first time it opens the exam for G1 S1). To move work to another PC, or keep a copy, use <b>Save project</b>.</li>
-          <li><b>Addressing page:</b> type the base network and prefix, add the routers (1941, 2901 or 2911), then one <b>LAN</b> row per LAN and one <b>WAN</b> row per router-to-router link. Pick the router and port for each row. Check the Generated Subnet Table.</li>
+          <li><b>Planner tab:</b> type the base network and prefix, add the routers (1941, 2901 or 2911), then one <b>LAN</b> row per LAN and one <b>WAN</b> row per router-to-router link. Pick the router and port for each row. Check the Generated Subnet Table.</li>
           <li><b>Topology tab:</b> check the drawing: every router, LAN and link where you expect it, with its addresses. Click a router, then <b>Show CLI</b>.</li>
           <li><b>Configure &amp; CLI tab:</b> Init Config (passwords, banner, SSH/Telnet) → Routers &amp; LANs (DHCP, DNS, IPv6 for each LAN) → Routing (the protocol the task asks for, per router). ACLs (only if the task asks) are on the <b>4. ACLs</b> tab.</li>
           <li><b>CLI pane:</b> pick a router, keep <b>Copy in parts</b> on, then for each part: <b>Copy</b> → right-click in PuTTY → wait for the prompt to come back → next part. Ticks show what you have pasted. Watch for <code>% Invalid input</code>.</li>
@@ -1953,7 +1953,7 @@ line vty 0 4
           <table class="doc-table">
             <thead><tr><th>Field</th><th>Example</th><th>Notes</th></tr></thead>
             <tbody>
-              <tr class="doc-group"><td colspan="3">Addressing page</td></tr>
+              <tr class="doc-group"><td colspan="3">Planner tab</td></tr>
               <tr><td>Base Network IP</td><td class="mono">192.168.10.0</td><td>The block the task gives. Any address inside it works; the app shows the real network ID.</td></tr>
               <tr><td>Base Prefix</td><td class="mono">/24</td><td>Size of that block. Every subnet must fit inside it.</td></tr>
               <tr><td>Mode</td><td>VLSM</td><td>VLSM sizes each subnet to its host count (largest first); FLSM makes equal-size subnets. Both are CIDR (classless /prefix). The <b>CIDR working</b> card under the subnet table shows the computation.</td></tr>
@@ -5945,7 +5945,7 @@ line vty 0 4
       if (!routers.length) {
         if (autoBtn) autoBtn.disabled = true;
         topoLastPositions = {};
-        svg.innerHTML = `${TOPO_BG}<g id="topoContent"><text x="350" y="190" text-anchor="middle" fill="#5c6573" font-size="15" font-family="sans-serif">No routers yet. Add one on the Addressing tab or in Configure &amp; CLI.</text></g>`;
+        svg.innerHTML = `${TOPO_BG}<g id="topoContent"><text x="350" y="190" text-anchor="middle" fill="#5c6573" font-size="15" font-family="sans-serif">No routers yet. Add one on the Planner tab or in Configure &amp; CLI.</text></g>`;
         applyTopologyView();
         return;
       }
@@ -6893,7 +6893,7 @@ line vty 0 4
           }
 
           lan[field] = e.target.value;
-          // Keep the VLSM row on the Addressing page in sync (two-way)
+          // Keep the VLSM row on the Planner tab in sync (two-way)
           if (lan.vlsmReqId && (field === 'name' || field === 'iface')) {
             const req = appState.addressing.vlsmReqs.find(x => x.id === lan.vlsmReqId);
             if (req) req[field] = e.target.value;
@@ -7035,7 +7035,7 @@ line vty 0 4
             <div class="field-group">
               <label class="field-label">Subnet Source</label>
               ${lan.vlsmReqId ? `
-                <div class="mono" title="Linked to a VLSM row. Change it on the Addressing page." style="padding:8px 10px; border:1px dashed color-mix(in srgb, var(--cyan) 45%, transparent); border-radius:var(--radius-sm); font-size:14px; color:var(--cyan);">VLSM · ${escapeHtml(lan.netIp)}/${escapeHtml(lan.cidr)}</div>
+                <div class="mono" title="Linked to a VLSM row. Change it on the Planner tab." style="padding:8px 10px; border:1px dashed color-mix(in srgb, var(--cyan) 45%, transparent); border-radius:var(--radius-sm); font-size:14px; color:var(--cyan);">VLSM · ${escapeHtml(lan.netIp)}/${escapeHtml(lan.cidr)}</div>
               ` : `
                 <select class="lan-field mono" data-rid="${router.id}" data-lanid="${lan.id}" data-field="subnetPick">
                   ${pool.map(s => `<option value="${s.id}" ${lan.subnetSource === 'pool' && lan.subnetId === s.id ? 'selected' : ''}>#${s.index} ${escapeHtml(s.name)} (${s.netIp}/${s.cidr})</option>`).join('')}
@@ -7319,7 +7319,7 @@ line vty 0 4
                 <div class="text-muted" style="font-size:13px;">${escapeHtml(m.lnk.netIp)}/${escapeHtml(m.lnk.cidr)}${isSerialIf(m.myIf) ? ' · serial' : ''} · ${manual ? 'set by hand' : escapeHtml(auto.reason)}</div>
               </div>
             `;
-          }).join('') : `<div class="text-muted" style="font-size:13.5px;">No WAN links on ${name} yet. Add WAN rows in the VLSM table on the Addressing page.</div>`}
+          }).join('') : `<div class="text-muted" style="font-size:13.5px;">No WAN links on ${name} yet. Add WAN rows in the VLSM table on the Planner tab.</div>`}
         </div>
 
         ${plan.dynamic.length ? `
@@ -9519,7 +9519,7 @@ line vty 0 4
         items: [
           {
             id: 'B-plan', title: 'Write the addressing table',
-            detail: `${b && b.ok ? `Working: 12<b>G</b>.2<b>S</b>.224.0/20 with G${escapeHtml(exG)}, S${escapeHtml(exS)} = <b class="mono">${b.ipv4}/20</b>; 200<b>G</b>:DB<b>S</b>:ACAD::/64 = <b class="mono">${b.ipv6}/64</b>. ` : ''}VLSM gives the biggest LAN its subnet first, then the next, then the /30 WAN links. Copy the subnet table (Addressing tab) into your answer sheet, and show the <b>CIDR working</b> card under it (block → 2<sup>h</sup> − 2 → /prefix → range).`,
+            detail: `${b && b.ok ? `Working: 12<b>G</b>.2<b>S</b>.224.0/20 with G${escapeHtml(exG)}, S${escapeHtml(exS)} = <b class="mono">${b.ipv4}/20</b>; 200<b>G</b>:DB<b>S</b>:ACAD::/64 = <b class="mono">${b.ipv6}/64</b>. ` : ''}VLSM gives the biggest LAN its subnet first, then the next, then the /30 WAN links. Copy the subnet table (Planner tab) into your answer sheet, and show the <b>CIDR working</b> card under it (block → 2<sup>h</sup> − 2 → /prefix → range).`,
             tab: 'addressing'
           },
           ...routers.map((r, i) => ({
@@ -9698,7 +9698,7 @@ line vty 0 4
                   <div class="ck-body">
                     ${it.detail ? `<p class="ck-detail">${it.detail}</p>` : ''}
                     ${it.open || ''}
-                    ${it.tab ? `<button class="btn btn-sm ck-tab" type="button" data-tab="${it.tab}">Open the ${it.tab === 'acls' ? 'ACLs' : 'Addressing'} tab</button>` : ''}
+                    ${it.tab ? `<button class="btn btn-sm ck-tab" type="button" data-tab="${it.tab}">Open the ${it.tab === 'acls' ? 'ACLs' : 'Planner'} tab</button>` : ''}
                     ${it.help ? `<button class="btn btn-sm ck-help" type="button" data-help="${it.help}">Full steps: Help · Wireshark</button>` : ''}
                     ${cmdsHtml('Check on the router', it.cmds)}
                     ${cmdsHtml('On the PC (Command Prompt)', it.pc)}
@@ -10213,7 +10213,7 @@ line vty 0 4
         computeAddressingSubnets();
       });
 
-      // Network Devices (routers) on the Addressing page
+      // Network Devices (routers) on the Planner tab
       const addRouterFromAddressing = () => {
         const inp = document.getElementById('addrNewRouterName');
         const wanted = inp.value.trim() || `Router${appState.routers.length + 1}`;
