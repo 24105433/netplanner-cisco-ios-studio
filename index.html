@@ -1082,6 +1082,9 @@
     .pc-row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.6fr) auto; gap: 6px; align-items: center; }
     .pc-hint { font-size: 13px; color: var(--text-secondary); margin: 0 0 4px 2px; }
     .pc-hint.bad { color: var(--rose); }
+    .addr-sheet tr.sheet-first td { border-top: 2px solid var(--border-strong, #9aa3ae); }
+    .addr-sheet tr.sheet-pc td:first-child b, .addr-sheet tr.sheet-dhcp td:first-child b { color: var(--cyan-ink); }
+    .addr-sheet-note { margin: 0; padding: 10px 14px; font-size: 14px; }
     .redist-summary { display: flex; flex-direction: column; gap: 6px; padding: 8px 10px; border: 1px solid var(--border); border-radius: 6px; background: var(--amber-soft); }
     .redist-router { font-size: 14px; }
     .redist-line { font-size: 13px; margin: 2px 0 0 10px; line-height: 1.45; overflow-wrap: anywhere; }
@@ -1290,6 +1293,10 @@
       .ck-item { break-inside: avoid; }
       .ck-bar span { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
       .exam-dialog { display: none !important; }
+      body.print-addr-sheet #viewAddressing .addr-container > :not(#addrSheetCard) { display: none !important; }
+      body.print-addr-sheet #addrSheetCard { border: none; }
+      body.print-addr-sheet .addr-sheet { font-size: 10pt; }
+      body.print-addr-sheet .addr-sheet td, body.print-addr-sheet .addr-sheet th { border: 1px solid #777; padding: 4px 6px; }
     }
   </style>
 </head>
@@ -1405,14 +1412,15 @@
       <!-- Network Devices (Routers) — same routers used by the Topology tab -->
       <div id="panelDevices" class="card">
         <div class="card-title">
-          <span>Network Devices (Cisco 2901 / 2911 Routers)</span>
+          <span>Network Devices (Cisco 1941 / 2901 / 2911 Routers)</span>
           <span id="deviceCountBadge" class="badge badge-indigo">0 routers</span>
         </div>
         <div style="display:flex; gap:8px; margin-bottom:10px; flex-wrap:wrap;">
           <input type="text" id="addrNewRouterName" placeholder="Router hostname (e.g. Main, Cebu, Davao)" style="flex:1; min-width:180px;" />
-          <select id="addrNewRouterModel" class="mono" title="Router model: 2901 has g0/0-g0/1, 2911 has g0/0-g0/2" style="width:auto;">
+          <select id="addrNewRouterModel" class="mono" title="Router model: 1941 and 2901 have g0/0-g0/1, 2911 has g0/0-g0/2" style="width:auto;">
             <option value="2911">2911</option>
             <option value="2901">2901</option>
+            <option value="1941">1941</option>
           </select>
           <button id="btnAddrAddRouter" class="btn btn-primary btn-sm" type="button">+ Add Router</button>
         </div>
@@ -1546,6 +1554,29 @@
             <tbody id="subnetTableBody"></tbody>
           </table>
         </div>
+      </div>
+
+      <!-- Addressing table in the exam's Section II layout (one row per port and PC) -->
+      <div class="table-card" id="addrSheetCard">
+        <div class="table-toolbar">
+          <div style="display:flex; align-items:center; gap:10px;">
+            <strong style="font-size:16px;">Addressing Table (Section II)</strong>
+            <span id="addrSheetBadge" class="badge badge-indigo">0 rows</span>
+          </div>
+          <div style="display:flex; gap:8px; flex-wrap:wrap;">
+            <button id="btnCopyAddrSheet" class="btn btn-sm" type="button">Copy TSV</button>
+            <button id="btnPrintAddrSheet" class="btn btn-primary btn-sm" type="button">Print this table</button>
+          </div>
+        </div>
+        <div class="table-scroll-wrap">
+          <table class="data-table addr-sheet">
+            <thead>
+              <tr><th>Device</th><th>Interface</th><th>IPv4 address</th><th>Subnet mask</th><th>Default gateway</th><th>IPv6 address / prefix</th><th>IPv6 link-local / gateway</th></tr>
+            </thead>
+            <tbody id="addrSheetBody"></tbody>
+          </table>
+        </div>
+        <p class="text-muted addr-sheet-note">PCs with a fixed IP are from the PC tables (Configure &amp; CLI → Routers &amp; LANs). Other PCs take an address from DHCP. Switches stay unconfigured (no IP).</p>
       </div>
 
     </div>
@@ -1874,7 +1905,7 @@ line vty 0 4
           <li><b>Reset every router</b> (see <a href="#h-reset">Reset a router</a>). Lab routers keep the last group's config.</li>
           <li><b>Cable it</b> (see <a href="#h-cables">Cables</a>). Write down which router port goes where; <code class="cmd">show cdp neighbors</code> confirms it later.</li>
           <li><b>CPE 3105 final assessment?</b> Click <b>Exam preset</b> (top right), type your group and student numbers and the host counts, pick the routing scenario. It builds steps 3 to 5 for you; then follow the <b>7. Checklist</b> tab from A to G and tick each step. If the topology on the day is different, change it in the Addressing and Configure tabs: the scripts and the checklist follow.</li>
-          <li><b>Addressing page:</b> type the base network and prefix, add the routers (2901 or 2911), then one <b>LAN</b> row per LAN and one <b>WAN</b> row per router-to-router link. Pick the router and port for each row. Check the Generated Subnet Table.</li>
+          <li><b>Addressing page:</b> type the base network and prefix, add the routers (1941, 2901 or 2911), then one <b>LAN</b> row per LAN and one <b>WAN</b> row per router-to-router link. Pick the router and port for each row. Check the Generated Subnet Table.</li>
           <li><b>Topology tab:</b> check the drawing: every router, LAN and link where you expect it, with its addresses. Click a router, then <b>Show CLI</b>.</li>
           <li><b>Configure &amp; CLI tab:</b> Init Config (passwords, banner, SSH/Telnet) → Routers &amp; LANs (DHCP, DNS, IPv6 for each LAN) → Routing (the protocol the task asks for, per router). ACLs (only if the task asks) are on the <b>4. ACLs</b> tab.</li>
           <li><b>CLI pane:</b> pick a router, keep <b>Copy in parts</b> on, then for each part: <b>Copy</b> → right-click in PuTTY → wait for the prompt to come back → next part. Ticks show what you have pasted. Watch for <code>% Invalid input</code>.</li>
@@ -1971,7 +2002,7 @@ line vty 0 4
       </div>
 
       <div class="card doc-card" id="h-recovery">
-        <h3>Password recovery (old enable password unknown), 2901 / 2911</h3>
+        <h3>Password recovery (old enable password unknown), 1941 / 2901 / 2911</h3>
         <ol class="doc-steps">
           <li>Turn the router off and on. Within the first 60 seconds send a <b>Break</b>: in PuTTY right-click the title bar → <b>Special Command → Break</b>. You get <code>rommon 1 &gt;</code>.</li>
           <li><code class="cmd">confreg 0x2142</code> then <code class="cmd">reset</code> (boots and skips the saved config).</li>
@@ -2904,7 +2935,57 @@ line vty 0 4
       return '';
     }
 
+    /** Rows for the Section II addressing table: router ports first, then PCs per LAN. */
+    function addrSheetRows() {
+      const ds = appState.initConfig.dualStack;
+      const rows = [];
+      const mask = c => IPv4.cidrToMask(Number(c));
+      const v6mode = { slaac: 'SLAAC (auto)', stateless: 'SLAAC + DHCPv6 (auto)', stateful: 'DHCPv6 (from the pool)', none: 'static' };
+      appState.routers.forEach(r => {
+        const host = sanitizeHostname(r.hostname);
+        const ll = ds ? routerLinkLocal(r) : '';
+        const ports = [];
+        r.lans.forEach(l => ports.push({ device: host, iface: l.iface, ipv4: l.gatewayIp, mask: l.mask, gw: 'N/A',
+          ipv6: ds && l.ipv6Prefix && l.ipv6Ip ? `${l.ipv6Ip}/${v6Len(l.ipv6Prefix)}` : '', ll: ds && l.ipv6Prefix ? ll : '', kind: 'lan' }));
+        routerLinks(r.id).forEach(l => {
+          const a = l.r1Id === r.id;
+          ports.push({ device: host, iface: a ? l.r1If : l.r2If, ipv4: a ? l.ip1 : l.ip2, mask: mask(l.cidr), gw: 'N/A',
+            ipv6: ds && l.ipv6Prefix ? `${a ? l.ipv6Ip1 : l.ipv6Ip2}/${v6Len(l.ipv6Prefix)}` : '', ll: ds && l.ipv6Prefix ? ll : '', kind: 'wan' });
+        });
+        routerLoopbacks(r).forEach(l => ports.push({ device: host, iface: l.name, ipv4: l.v4 ? l.v4.ip : '', mask: l.v4 ? mask(l.v4.cidr) : '', gw: 'N/A',
+          ipv6: ds && l.v6 ? `${l.v6.addr}/${l.v6.len}` : '', ll: '', kind: 'lo' }));
+        ports.sort((x, y) => x.iface.localeCompare(y.iface, undefined, { numeric: true }));
+        rows.push(...ports);
+      });
+      getAllLans().forEach(({ router, lan }) => {
+        const ll = ds && lan.ipv6Prefix ? routerLinkLocal(router) : '';
+        const v6 = ds && lan.ipv6Prefix ? `${v6mode[lan.ipv6Mode] || lan.ipv6Mode}, ${lan.ipv6Prefix}` : '';
+        lanPcs(lan).forEach(pc => rows.push({ device: String(pc.name || 'PC'), iface: 'NIC', ipv4: pcIp(lan, pc), mask: lan.mask,
+          gw: lan.gatewayIp, ipv6: v6, ll, kind: 'pc', lan: lan.name }));
+        rows.push({ device: `Other PCs, ${lan.name}`, iface: 'NIC', ipv4: lan.dhcpMode === 'none' ? 'static (pick a free host)' : 'DHCP', mask: lan.mask,
+          gw: lan.gatewayIp, ipv6: v6, ll, kind: 'dhcp' });
+      });
+      return rows;
+    }
+
+    function renderAddrSheet() {
+      const body = document.getElementById('addrSheetBody');
+      if (!body) return;
+      const rows = addrSheetRows();
+      document.getElementById('addrSheetBadge').textContent = `${rows.length} row${rows.length === 1 ? '' : 's'}`;
+      let last = '';
+      body.innerHTML = rows.length ? rows.map(x => {
+        const first = x.device !== last;
+        last = x.device;
+        return `<tr class="sheet-${x.kind}${first ? ' sheet-first' : ''}">
+          <td>${first ? `<b>${escapeHtml(x.device)}</b>` : ''}</td><td class="mono">${escapeHtml(x.iface)}</td>
+          <td class="mono">${escapeHtml(x.ipv4 || '')}</td><td class="mono">${escapeHtml(x.mask || '')}</td><td class="mono">${escapeHtml(x.gw)}</td>
+          <td class="mono">${escapeHtml(x.ipv6 || '')}</td><td class="mono">${escapeHtml(x.ll || '')}</td></tr>`;
+      }).join('') : `<tr><td colspan="7" style="text-align:center; padding:22px; color:var(--text-muted);">No routers yet. Add routers and attach subnets to their ports.</td></tr>`;
+    }
+
     function renderSubnetTable() {
+      renderAddrSheet();
       const tbody = document.getElementById('subnetTableBody');
       const subs = appState.addressing.generatedSubnets;
       document.getElementById('subnetCountBadge').textContent = `${subs.length} subnet${subs.length === 1 ? '' : 's'}`;
@@ -3388,7 +3469,7 @@ line vty 0 4
         <div class="device-row">
           <div class="device-icon" title="Cisco ${routerModel(r)} Router">${ROUTER_ICON_SVG}</div>
           <input type="text" class="device-host-input" data-rid="${r.id}" value="${escapeHtml(r.hostname)}" aria-label="Router hostname" />
-          <select class="device-model-select mono" data-rid="${r.id}" aria-label="Router model" title="2901: g0/0-g0/1 · 2911: g0/0-g0/2">${modelOptionsHtml(routerModel(r))}</select>
+          <select class="device-model-select mono" data-rid="${r.id}" aria-label="Router model" title="1941 / 2901: g0/0-g0/1 · 2911: g0/0-g0/2">${modelOptionsHtml(routerModel(r))}</select>
           <div class="port-chips" data-ports-for="${r.id}">${portChipsHtml(r.id)}</div>
           <button type="button" class="dev-del btn btn-danger btn-xs" data-del-router="${r.id}" title="Delete router">✕</button>
         </div>
@@ -3401,7 +3482,8 @@ line vty 0 4
     // Built-in GigabitEthernet ports per model. Serial ports come from HWIC-2T cards in slots 0/0 and 0/1.
     const ROUTER_MODELS = {
       '2911': { eth: ['g0/0', 'g0/1', 'g0/2'] },
-      '2901': { eth: ['g0/0', 'g0/1'] }
+      '2901': { eth: ['g0/0', 'g0/1'] },
+      '1941': { eth: ['g0/0', 'g0/1'] }
     };
     const ROUTER_MODEL_IDS = Object.keys(ROUTER_MODELS);
     const ETH_INTERFACES = ROUTER_MODELS['2911'].eth;
@@ -3414,7 +3496,7 @@ line vty 0 4
       return r && ROUTER_MODELS[r.model] ? r.model : '2911';
     }
 
-    /** Ethernet ports a LAN can use on this router (2901: g0/0-g0/1, 2911: g0/0-g0/2). */
+    /** Ethernet ports a LAN can use on this router (1941 / 2901: g0/0-g0/1, 2911: g0/0-g0/2). */
     function ethPorts(routerOrId) {
       return ROUTER_MODELS[routerModel(routerOrId)].eth;
     }
@@ -6440,14 +6522,14 @@ line vty 0 4
           </div>
           <div style="display:flex; gap:8px;">
             <input type="text" id="newRouterName" placeholder="Hostname (e.g. Main Router, Manila)" />
-            <select id="newRouterModel" class="mono" title="2901: g0/0-g0/1 · 2911: g0/0-g0/2" style="width:auto;">${modelOptionsHtml('2911')}</select>
+            <select id="newRouterModel" class="mono" title="1941 / 2901: g0/0-g0/1 · 2911: g0/0-g0/2" style="width:auto;">${modelOptionsHtml('2911')}</select>
             <button id="btnAddRouter" class="btn btn-primary" type="button">+ Add</button>
           </div>
         </div>
       `;
 
       if (!r) {
-        html += `<div class="sub-card text-muted">No routers yet. Add a 2901 or 2911 router above to configure its LANs.</div>`;
+        html += `<div class="sub-card text-muted">No routers yet. Add a 1941, 2901 or 2911 router above to configure its LANs.</div>`;
       } else {
         const usage = getInterfaceUsage(r.id);
         const freeIfs = ethPorts(r).filter(i => !usage[i]);
@@ -6471,7 +6553,7 @@ line vty 0 4
               <label class="field-label">Router Hostname &amp; Model</label>
               <div style="display:flex; gap:6px;">
                 <input type="text" class="router-host-input" data-rid="${r.id}" value="${escapeHtml(r.hostname)}" style="font-weight:700; flex:1;" />
-                <select class="router-model-select mono" data-rid="${r.id}" title="2901: g0/0-g0/1 · 2911: g0/0-g0/2" style="width:auto;">${modelOptionsHtml(routerModel(r))}</select>
+                <select class="router-model-select mono" data-rid="${r.id}" title="1941 / 2901: g0/0-g0/1 · 2911: g0/0-g0/2" style="width:auto;">${modelOptionsHtml(routerModel(r))}</select>
               </div>
               ${hasSpaces ? `<div class="text-muted" style="color:var(--amber); font-size:13px;">CLI hostname auto-sanitized to <span class="mono">${sanitizeHostname(r.hostname)}</span></div>` : ''}
             </div>
@@ -8649,7 +8731,7 @@ line vty 0 4
           is rebuilt from whatever the project holds now, so a changed topology
           on the day changes the steps too.
        ========================================================================= */
-    const EXAM_SMALL_MODEL = '2901'; // stands in for the 1941 (same g0/0 and g0/1)
+    const EXAM_SMALL_MODEL = '1941'; // R1, R2, R3 in the PDF (g0/0 and g0/1)
     const ROUTING_SCENARIOS = {
       s1: {
         label: 'S1 · Edge is the border (default)', links: { r1main: 'eigrp', mainedge: 'eigrp', edger2: 'ripv2', edger3: 'static' }, isp: false,
@@ -9419,6 +9501,16 @@ line vty 0 4
       });
 
       // Tab 1 Addressing Events
+      document.getElementById('btnPrintAddrSheet').addEventListener('click', () => {
+        document.body.classList.add('print-addr-sheet');
+        window.print();
+      });
+      window.addEventListener('afterprint', () => document.body.classList.remove('print-addr-sheet'));
+      document.getElementById('btnCopyAddrSheet').addEventListener('click', () => {
+        const head = ['Device', 'Interface', 'IPv4 address', 'Subnet mask', 'Default gateway', 'IPv6 address / prefix', 'IPv6 link-local / gateway'];
+        const lines = [head, ...addrSheetRows().map(x => [x.device, x.iface, x.ipv4, x.mask, x.gw, x.ipv6, x.ll])].map(r => r.join('\t'));
+        copyTextToClipboard(lines.join('\n'), 'Addressing table copied (paste into Word or Excel)');
+      });
       ['addrExamG', 'addrExamS'].forEach(id => document.getElementById(id).addEventListener('input', e => {
         appState.addressing[id === 'addrExamG' ? 'examG' : 'examS'] = e.target.value.trim();
         updateExamWorking();
