@@ -1088,6 +1088,8 @@
     .addr-sheet tr.sheet-first td { border-top: 2px solid var(--border-strong, #9aa3ae); }
     .addr-sheet tr.sheet-pc td:first-child b, .addr-sheet tr.sheet-dhcp td:first-child b { color: var(--cyan-ink); }
     .addr-sheet-note { margin: 0; padding: 10px 14px; font-size: 14px; }
+    .acl-scope-row { font-size: 14px; margin-top: 4px; }
+    .acl-router-picks.is-scoped { opacity: 0.6; }
     .redist-summary { display: flex; flex-direction: column; gap: 6px; padding: 8px 10px; border: 1px solid var(--border); border-radius: 6px; background: var(--amber-soft); }
     .redist-router { font-size: 14px; }
     .redist-line { font-size: 13px; margin: 2px 0 0 10px; line-height: 1.45; overflow-wrap: anywhere; }
@@ -4167,6 +4169,7 @@ line vty 0 4
       if (!Array.isArray(s.rules)) s.rules = [];
       s.rules.forEach(r => {
         if (!Array.isArray(r.dstRouterIds)) r.dstRouterIds = r.dstRouterId ? [r.dstRouterId] : [];
+        if (!['internal', 'all'].includes(r.dstRouterScope)) r.dstRouterScope = ''; // '' = the ticked routers
         if (!['all', 'telnet', 'ssh'].includes(r.loginLines)) r.loginLines = 'all';
         if (typeof r.srcPcId !== 'string') r.srcPcId = '';
         if (typeof r.dstPcId !== 'string') r.dstPcId = '';
@@ -4266,9 +4269,18 @@ line vty 0 4
       return lineCovers(a.line, b.line);
     }
 
+    /** A host in the LAN that is not the gateway and not a named PC, so 'a PC in X' means an ordinary PC. */
     function aclSampleHost(lan) {
       const net = IPv4.toInt(lan.netIp);
-      return IPv4.fromInt((net + (lan.cidr <= 30 ? 2 : 1)) >>> 0);
+      const fallback = IPv4.fromInt((net + (lan.cidr <= 30 ? 2 : 1)) >>> 0);
+      if (net === null || lan.cidr > 30) return fallback;
+      const taken = new Set([lan.gatewayIp, ...lanPcs(lan).map(pc => pcIp(lan, pc))]);
+      const last = net + Math.pow(2, 32 - lan.cidr) - 2;
+      for (let n = net + 1; n <= last; n++) {
+        const ip = IPv4.fromInt(n >>> 0);
+        if (!taken.has(ip)) return ip;
+      }
+      return fallback;
     }
 
     function routerMgmtIp(router) {
@@ -4319,8 +4331,16 @@ line vty 0 4
       if (vtySplit()) return comp.vty[`${vtyAclKey(routerId)}|${port === '23' ? 'telnet' : 'ssh'}`] || null;
       return comp.vty[vtyAclKey(routerId)] || null;
     }
-    /** Routers a login rule protects (older projects stored one router). */
+    /** Router ids for a scope: 'internal' = every router not marked as outside the network. */
+    function scopeRouterIds(scope) {
+      if (scope === 'all') return appState.routers.map(r => r.id);
+      if (scope === 'internal') return appState.routers.filter(r => !r.external).map(r => r.id);
+      return null;
+    }
+    /** Routers a login rule protects (older projects stored one router). A scope follows routers added later. */
     function ruleRouterIds(rule) {
+      const scoped = scopeRouterIds(rule.dstRouterScope);
+      if (scoped) return scoped;
       if (Array.isArray(rule.dstRouterIds) && rule.dstRouterIds.length) return rule.dstRouterIds;
       return rule.dstRouterId ? [rule.dstRouterId] : [];
     }
@@ -5052,6 +5072,7 @@ line vty 0 4
       appState.routers.forEach(r => {
         r.hostname = String(r.hostname || 'Router');
         if (!ROUTER_MODELS[r.model]) r.model = '2911';
+        r.external = r.external === true; // outside the network (an ISP), skipped by the all-routers-inside scope
         if (!Array.isArray(r.lans)) r.lans = [];
         r.lans.forEach(lan => {
           ['netIp', 'gatewayIp', 'mask', 'ipv6Prefix', 'ipv6Ip', 'ipv6LinkLocal', 'iface', 'dnsServerIp', 'dnsServerIpv6'].forEach(k => { lan[k] = clean(lan[k]); });
@@ -6560,6 +6581,10 @@ line vty 0 4
                 <input type="text" class="router-host-input" data-rid="${r.id}" value="${escapeHtml(r.hostname)}" style="font-weight:700; flex:1;" />
                 <select class="router-model-select mono" data-rid="${r.id}" title="1941 / 2901: g0/0-g0/1 · 2911: g0/0-g0/2" style="width:auto;">${modelOptionsHtml(routerModel(r))}</select>
               </div>
+              <label class="checkbox-row" style="font-size:14px;" title="Login rules for 'all routers inside the network' skip this router">
+                <input type="checkbox" class="router-external" data-rid="${r.id}" ${r.external ? 'checked' : ''} />
+                <span>Outside the network (an ISP router)</span>
+              </label>
               ${hasSpaces ? `<div class="text-muted" style="color:var(--amber); font-size:13px;">CLI hostname auto-sanitized to <span class="mono">${sanitizeHostname(r.hostname)}</span></div>` : ''}
             </div>
 
@@ -6657,6 +6682,13 @@ line vty 0 4
         // Redraw the LAN boxes that show the router-wide value
         inp.addEventListener('change', () => renderLeftPane());
       });
+
+      container.querySelectorAll('.router-external').forEach(cb => cb.addEventListener('change', e => {
+        const rt = getRouterById(cb.dataset.rid);
+        if (!rt) return;
+        rt.external = e.target.checked;
+        renderCliPane();
+      }));
 
       container.querySelectorAll('.router-model-select').forEach(sel => {
         sel.addEventListener('change', e => {
@@ -7509,6 +7541,7 @@ line vty 0 4
       if (!Array.isArray(aclDraft.dstRouterIds)) aclDraft.dstRouterIds = aclDraft.dstRouterId ? [aclDraft.dstRouterId] : [];
       aclDraft.dstRouterIds = aclDraft.dstRouterIds.filter(id => getRouterById(id));
       if (!['all', 'telnet', 'ssh'].includes(aclDraft.loginLines)) aclDraft.loginLines = 'all';
+      if (!['internal', 'all'].includes(aclDraft.dstRouterScope)) aclDraft.dstRouterScope = '';
       if (aclDraft.aclType !== 'standard' && aclDraft.aclType !== 'extended') aclDraft.aclType = 'extended';
       return aclDraft;
     }
@@ -7547,8 +7580,9 @@ line vty 0 4
         id: 'draft', action: d.action,
         srcType: s.type, srcLanId: s.lanId, srcHost: s.host, srcPcId: s.pcId || '',
         dstType: t.type, dstLanId: t.lanId, dstHost: t.host, dstPcId: t.pcId || '',
-        dstRouterId: vty ? ((d.dstRouterIds || [])[0] || '') : '',
-        dstRouterIds: vty ? (d.dstRouterIds || []).filter(id => getRouterById(id)) : [],
+        dstRouterId: vty ? ((scopeRouterIds(d.dstRouterScope) || d.dstRouterIds || [])[0] || '') : '',
+        dstRouterIds: vty ? (scopeRouterIds(d.dstRouterScope) || d.dstRouterIds || []).filter(id => getRouterById(id)) : [],
+        dstRouterScope: vty && ['internal', 'all'].includes(d.dstRouterScope) ? d.dstRouterScope : '',
         loginLines: vty && ['telnet', 'ssh'].includes(d.loginLines) ? d.loginLines : 'all',
         allowReplies: !vty && !std && d.action === 'deny' && d.allowReplies !== false,
         aclType: std ? 'standard' : 'extended',
@@ -7844,8 +7878,9 @@ line vty 0 4
                   <select class="acl-draft" data-key="dst">${aclEndpointOptions(d.dst, { router: true })}</select>
                   ${d.dst === 'host' ? `<input type="text" class="acl-draft-text mono" data-key="dstHost" value="${escapeHtml(d.dstHost)}" placeholder="Destination IP, e.g. 192.168.2.10" />` : ''}
                   ${isVtyDraft ? `
-                    <div class="acl-router-picks" role="group" aria-label="Routers this login rule protects">
-                      ${appState.routers.map(x => `<label class="checkbox-row"><input type="checkbox" class="acl-draft-router" value="${x.id}" ${d.dstRouterIds.includes(x.id) ? 'checked' : ''} /><span>${escapeHtml(sanitizeHostname(x.hostname))}</span></label>`).join('')}
+                    <label class="checkbox-row acl-scope-row"><input type="checkbox" class="acl-draft-scope" ${d.dstRouterScope === 'internal' ? 'checked' : ''} /><span>All routers inside the network (includes routers added later)</span></label>
+                    <div class="acl-router-picks${d.dstRouterScope ? ' is-scoped' : ''}" role="group" aria-label="Routers this login rule protects">
+                      ${appState.routers.map(x => { const on = d.dstRouterScope ? (scopeRouterIds(d.dstRouterScope) || []).includes(x.id) : d.dstRouterIds.includes(x.id); return `<label class="checkbox-row"><input type="checkbox" class="acl-draft-router" value="${x.id}" ${on ? 'checked' : ''} ${d.dstRouterScope ? 'disabled' : ''} /><span>${escapeHtml(sanitizeHostname(x.hostname))}${x.external ? ' <span class="text-muted">(outside)</span>' : ''}</span></label>`; }).join('')}
                     </div>` : ''}
                 </div>
               </div>
@@ -7928,7 +7963,7 @@ line vty 0 4
                       </span>
                     </div>
                     <div style="font-size:15px;">${escapeHtml(inf.sentence)}</div>
-                    ${vtyRule ? `<div class="acl-router-picks" role="group" aria-label="Routers rule #${i + 1} protects">${appState.routers.map(x => `<label class="checkbox-row"><input type="checkbox" class="acl-rule-router" data-idx="${i}" value="${x.id}" ${ruleRouterIds(rule).includes(x.id) ? 'checked' : ''} /><span>${escapeHtml(sanitizeHostname(x.hostname))}</span></label>`).join('')}</div>` : ''}
+                    ${vtyRule ? `<label class="checkbox-row acl-scope-row"><input type="checkbox" class="acl-rule-scope" data-idx="${i}" ${rule.dstRouterScope === 'internal' ? 'checked' : ''} /><span>All routers inside the network (includes routers added later)</span></label><div class="acl-router-picks${rule.dstRouterScope ? ' is-scoped' : ''}" role="group" aria-label="Routers rule #${i + 1} protects">${appState.routers.map(x => `<label class="checkbox-row"><input type="checkbox" class="acl-rule-router" data-idx="${i}" value="${x.id}" ${ruleRouterIds(rule).includes(x.id) ? 'checked' : ''} ${rule.dstRouterScope ? 'disabled' : ''} /><span>${escapeHtml(sanitizeHostname(x.hostname))}${x.external ? ' <span class="text-muted">(outside)</span>' : ''}</span></label>`).join('')}</div>` : ''}
                     ${!vtyRule && rule.action === 'deny' && rule.aclType !== 'standard' ? `
                       <label class="checkbox-row acl-replies-row"><input type="checkbox" class="acl-rule-replies" data-idx="${i}" ${rule.allowReplies ? 'checked' : ''} /><span>Allow replies (the other side can still start)</span></label>` : ''}
                     ${rule.note ? `<div class="text-muted" style="font-size:13.5px;">${escapeHtml(rule.note)}</div>` : ''}
@@ -8088,6 +8123,22 @@ line vty 0 4
       }));
       const holes = document.getElementById('aclLoginHoles');
       if (holes) holes.addEventListener('change', e => { sec.loginHoles = e.target.checked; rerender(); });
+      root.querySelectorAll('.acl-draft-scope').forEach(el => el.addEventListener('change', e => {
+        d.dstRouterScope = e.target.checked ? 'internal' : '';
+        if (!e.target.checked) d.dstRouterIds = scopeRouterIds('internal') || [];
+        rerender();
+      }));
+      root.querySelectorAll('.acl-rule-scope').forEach(el => el.addEventListener('change', e => {
+        const rule = sec.rules[Number(el.dataset.idx)];
+        if (!rule) return;
+        if (e.target.checked) rule.dstRouterScope = 'internal';
+        else {
+          rule.dstRouterIds = ruleRouterIds(rule).slice(); // keep today's routers ticked
+          rule.dstRouterScope = '';
+        }
+        rule.dstRouterId = ruleRouterIds(rule)[0] || '';
+        rerender();
+      }));
       root.querySelectorAll('.acl-draft-router').forEach(el => el.addEventListener('change', () => {
         d.dstRouterIds = [...root.querySelectorAll('.acl-draft-router:checked')].map(x => x.value);
         rerender();
@@ -8794,6 +8845,7 @@ line vty 0 4
         const isp = mk('isp', 'ISP', '2911', 'static');
         // A loopback stands in for "the internet", so there is something past Edge to ping
         isp.loopbacks = [{ id: uid('lo'), name: 'lo0', ip: '8.8.8.8/32', ipv6: '2001:4860:4860::8888/128' }];
+        isp.external = true;
         st.routers.push(isp);
       }
       st.links = [];
@@ -8859,10 +8911,10 @@ line vty 0 4
           srcLanId: '', srcHost: '', srcPcId: '', dstLanId: '', dstHost: '', dstPcId: '', dstRouterId: '', dstRouterIds: [], loginLines: 'all',
           aclType: 'extended', service: 'ip', customProto: 'tcp', customPort: '', placement: 'auto', note: '', allowReplies: false
         };
-        const internal = appState.routers.filter(r => r.id !== 'r_isp').map(r => r.id);
+        const internal = appState.routers.filter(r => !r.external).map(r => r.id);
         const sshTargets = ['r_edge', ...(isp ? ['r_isp'] : [])];
-        const login = (pc, ids, lines, note) => Object.assign({}, base, {
-          id: uid('sr'), action: 'permit', srcType: 'pc', srcPcId: pcIds[pc], dstType: 'router', dstRouterId: ids[0], dstRouterIds: ids, loginLines: lines, aclType: 'standard', note
+        const login = (pc, ids, lines, note, scope = '') => Object.assign({}, base, {
+          id: uid('sr'), action: 'permit', srcType: 'pc', srcPcId: pcIds[pc], dstType: 'router', dstRouterId: ids[0], dstRouterIds: ids, dstRouterScope: scope, loginLines: lines, aclType: 'standard', note
         });
         const block = (a, bb, note) => {
           const s = lanOf(a);
@@ -8872,9 +8924,9 @@ line vty 0 4
           }) : null;
         };
         appState.security.rules = [
-          login('PC0', internal, 'telnet', '(a) Telnet: PC0'),
-          login('PC2', internal, 'telnet', '(a) Telnet: PC2'),
-          login('PC4', internal, 'telnet', '(a) Telnet: PC4'),
+          login('PC0', internal, 'telnet', '(a) Telnet: PC0', 'internal'),
+          login('PC2', internal, 'telnet', '(a) Telnet: PC2', 'internal'),
+          login('PC4', internal, 'telnet', '(a) Telnet: PC4', 'internal'),
           login('PC8', sshTargets, 'ssh', '(b) SSH: PC8'),
           login('PC9', sshTargets, 'ssh', '(b) SSH: PC9'),
           block('lab', 'reg', '(c) Laboratory denied to Registrar'),
