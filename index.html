@@ -1070,6 +1070,9 @@
     }
     .acl-rule-head { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
     .acl-rule-head select { width: auto; padding: 2px 6px; font-size: 13.5px; }
+    .acl-router-picks { display: flex; flex-wrap: wrap; gap: 4px 14px; padding: 8px 10px; margin-top: 6px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg-input); }
+    .acl-router-picks .checkbox-row { margin: 0; }
+    .vty-split-note { padding: 6px 10px; border: 1px solid var(--border); border-radius: 6px; background: var(--accent-soft); color: var(--accent-ink); font-size: 14px; line-height: 1.5; }
     .acl-router {
       border: 1px solid var(--border);
       border-radius: var(--radius-md);
@@ -2309,7 +2312,7 @@ line vty 0 4
           consoleEnabled: true,
           consolePwd: 'cisco',
           consoleLoggingSync: true,
-          vtyMode: 'both', // 'telnet' | 'ssh' | 'both' | 'none'
+          vtyMode: 'both', // 'telnet' | 'ssh' | 'both' | 'split' (Telnet on vty 0 4, SSH on vty 5 15) | 'none'
           vtyPwd: 'cisco',
           vtyLast: '4',            // line vty 0 4 or line vty 0 15
           telnetLogin: 'password', // Telnet only: 'password' (line password) | 'local' (username + secret)
@@ -3837,6 +3840,8 @@ line vty 0 4
       if (!s.aclIds || typeof s.aclIds !== 'object') s.aclIds = {}; // typed ACL numbers/names, by port
       if (!Array.isArray(s.rules)) s.rules = [];
       s.rules.forEach(r => {
+        if (!Array.isArray(r.dstRouterIds)) r.dstRouterIds = r.dstRouterId ? [r.dstRouterId] : [];
+        if (!['all', 'telnet', 'ssh'].includes(r.loginLines)) r.loginLines = 'all';
         // Older projects had one type for every rule
         if (r.aclType !== 'standard' && r.aclType !== 'extended') {
           r.aclType = r.dstType === 'router' || s.mode === 'standard' ? 'standard' : 'extended';
@@ -3963,6 +3968,27 @@ line vty 0 4
       return `vty|${routerId}`;
     }
 
+    /* Login (VTY) lines: one block for everything, or Telnet on 0 4 and SSH on 5 15 */
+    const VTY_SPLIT_RANGE = { telnet: '0 4', ssh: '5 15' };
+    function vtySplit() { return appState.initConfig.vtyMode === 'split'; }
+    function vtyAllRange() { return `0 ${appState.initConfig.vtyLast === '15' ? '15' : '4'}`; }
+    function vtyLinesWord(lines) {
+      if (lines === 'telnet') return 'Telnet';
+      if (lines === 'ssh') return 'SSH';
+      const m = appState.initConfig.vtyMode;
+      return m === 'telnet' ? 'Telnet' : m === 'ssh' ? 'SSH' : 'SSH/Telnet';
+    }
+    /** The login ACL group that a Telnet (23) or SSH (22) login to this router meets. */
+    function vtyAclFor(comp, routerId, port) {
+      if (vtySplit()) return comp.vty[`${vtyAclKey(routerId)}|${port === '23' ? 'telnet' : 'ssh'}`] || null;
+      return comp.vty[vtyAclKey(routerId)] || null;
+    }
+    /** Routers a login rule protects (older projects stored one router). */
+    function ruleRouterIds(rule) {
+      if (Array.isArray(rule.dstRouterIds) && rule.dstRouterIds.length) return rule.dstRouterIds;
+      return rule.dstRouterId ? [rule.dstRouterId] : [];
+    }
+
     /** '' when id is a usable ACL number or name for that type, else the reason. */
     function aclIdProblem(id, type) {
       const v = String(id || '').trim();
@@ -4022,8 +4048,7 @@ line vty 0 4
 
     /** Commands that replace one ACL on its router: take it off the port, delete it, write it, put it back. */
     function aclGroupCli(g) {
-      const vtyRange = `0 ${appState.initConfig.vtyLast === '15' ? '15' : '4'}`;
-      if (g.vty) return [g.removeLine, ...g.lines, `line vty ${vtyRange}`, ` access-class ${g.id} in`, ' exit'];
+      if (g.vty) return [g.removeLine, ...g.lines, `line vty ${g.range}`, ` access-class ${g.id} in`, ' exit'];
       return [
         `interface ${g.iface}`, ` no ip access-group ${g.id} ${g.direction}`, ' exit',
         g.removeLine, ...g.lines,
@@ -4033,7 +4058,7 @@ line vty 0 4
 
     function aclWhereText(g) {
       const host = sanitizeHostname(getRouterById(g.routerId)?.hostname || '?');
-      if (g.vty) return `${host} · line vty 0 ${appState.initConfig.vtyLast === '15' ? '15' : '4'} · access-class in`;
+      if (g.vty) return `${host} · line vty ${g.range} (${vtyLinesWord(g.loginKind)}) · access-class in`;
       return `${host} · ${g.iface} ${g.direction} · near the ${g.side}`;
     }
 
@@ -4049,14 +4074,21 @@ line vty 0 4
       const rules = rulesOverride || sec.rules;
       const info = {};
       const placeKey = w => aclKey(w.router.id, w.iface, w.direction);
-      const vtyLast = appState.initConfig.vtyLast === '15' ? '15' : '4';
+      const split = vtySplit();
+      const loginKinds = rule => (split
+        ? (rule.loginLines === 'telnet' ? ['telnet'] : rule.loginLines === 'ssh' ? ['ssh'] : ['telnet', 'ssh'])
+        : ['all']);
 
       const items = rules.map((rule, idx) => {
         const src = resolveRuleEndpoint(rule.srcType, rule.srcLanId, rule.srcHost);
         const isVty = rule.dstType === 'router';
-        const dstRouter = isVty ? getRouterById(rule.dstRouterId) : null;
+        const dstRouters = isVty ? ruleRouterIds(rule).map(getRouterById).filter(Boolean) : [];
+        const loginWord = isVty ? vtyLinesWord(split ? (rule.loginLines || 'all') : (rule.loginLines === 'all' ? 'all' : rule.loginLines)) : '';
         const dst = isVty
-          ? { kind: 'router', router: dstRouter, label: dstRouter ? `${dstRouter.hostname} (SSH/Telnet login)` : 'a deleted router' }
+          ? {
+            kind: 'router', routers: dstRouters, router: dstRouters[0] || null,
+            label: dstRouters.length ? `${dstRouters.map(r => sanitizeHostname(r.hostname)).join(', ')} (${loginWord} login)` : 'a deleted router'
+          }
           : resolveRuleEndpoint(rule.dstType, rule.dstLanId, rule.dstHost);
         const std = isVty || (rule.aclType ? rule.aclType === 'standard' : sec.mode === 'standard');
         const verb = rule.action === 'deny' ? 'Block' : (isVty ? 'Allow only' : 'Allow');
@@ -4088,7 +4120,12 @@ line vty 0 4
         if (it.src.kind === 'invalid') inf.errors.push(`Source "${it.src.label}" is not a valid IPv4 address.`);
         [hostWarning(it.src, 'source'), it.isVty ? null : hostWarning(it.dst, 'destination')].forEach(w => { if (w) inf.warnings.push(w); });
         if (it.isVty) {
-          if (!it.dst.router) inf.errors.push('The router in this rule no longer exists.');
+          if (!it.dst.routers.length) inf.errors.push('Tick at least one router for this login rule (the routers it named no longer exist).');
+          else if (it.dst.routers.length < ruleRouterIds(it.rule).length) inf.warnings.push('Some routers in this rule were deleted; it now covers only the ones listed.');
+          const ll = it.rule.loginLines;
+          if (!split && (ll === 'telnet' || ll === 'ssh') && appState.initConfig.vtyMode === 'both') {
+            inf.notes.push(`Telnet and SSH share line vty ${vtyAllRange()}, so this list controls both. To keep them apart, pick "Telnet 0 4 + SSH 5 15" in Configure & CLI → Init Config → Remote Access.`);
+          }
           return;
         }
         if (it.dst.kind === 'missing') inf.errors.push('The destination LAN was deleted. Remove this rule or pick another destination.');
@@ -4150,9 +4187,16 @@ line vty 0 4
       items.forEach(it => {
         if (info[it.rule.id].errors.length) return;
         if (it.isVty) {
-          const rid = it.dst.router.id;
-          if (!vty[rid]) vty[rid] = { key: vtyAclKey(rid), vty: true, routerId: rid, type: 'standard', side: 'router', items: [] };
-          vty[rid].items.push(it);
+          it.dst.routers.forEach(r => loginKinds(it.rule).forEach(kind => {
+            const key = kind === 'all' ? vtyAclKey(r.id) : `${vtyAclKey(r.id)}|${kind}`;
+            if (!vty[key]) {
+              vty[key] = {
+                key, vty: true, routerId: r.id, loginKind: kind, range: kind === 'all' ? vtyAllRange() : VTY_SPLIT_RANGE[kind],
+                type: 'standard', side: 'router', items: []
+              };
+            }
+            vty[key].items.push(it);
+          }));
           return;
         }
         it.places.forEach(where => {
@@ -4170,9 +4214,15 @@ line vty 0 4
       });
       // An extended rule on a port makes that port's whole ACL extended
       groups.forEach(g => { g.type = g.items.some(it => !it.std) ? 'extended' : 'standard'; });
+      // Login ACLs in router order, Telnet (vty 0 4) before SSH (vty 5 15)
+      const routerOrder = id => appState.routers.findIndex(r => r.id === id);
+      const lineOrder = { all: 0, telnet: 1, ssh: 2 };
+      const vtyList = Object.values(vty).sort((a, b) => routerOrder(a.routerId) - routerOrder(b.routerId) || lineOrder[a.loginKind] - lineOrder[b.loginKind]);
+      Object.keys(vty).forEach(k => delete vty[k]);
+      vtyList.forEach(v => { vty[v.key] = v; });
 
       // 4. Numbers or names: typed ones first, then automatic ones that are still free on that router
-      const allAcls = [...groups, ...Object.values(vty)];
+      const allAcls = [...groups, ...vtyList];
       const used = {};
       const usedOn = rid => (used[rid] = used[rid] || new Set());
       const typedIds = sec.aclIds || {};
@@ -4195,7 +4245,7 @@ line vty 0 4
       allAcls.forEach(g => {
         if (g.id) return;
         if (sec.naming === 'named') {
-          const base = g.vty ? 'VTY_ACCESS'
+          const base = g.vty ? (g.loginKind === 'telnet' ? 'VTY_TELNET' : g.loginKind === 'ssh' ? 'VTY_SSH' : 'VTY_ACCESS')
             : `${g.type === 'standard' ? 'STD' : 'EXT'}_${g.iface.toUpperCase().replace(/[^A-Z0-9]+/g, '_')}_${g.direction.toUpperCase()}`;
           let name = base;
           let n = 2;
@@ -4268,21 +4318,26 @@ line vty 0 4
         finishAcl(g);
       });
 
-      Object.values(vty).forEach(v => {
-        const host = getRouterById(v.routerId)?.hostname || '?';
+      vtyList.forEach(v => {
+        const host = sanitizeHostname(getRouterById(v.routerId)?.hostname || '?');
+        const word = vtyLinesWord(v.loginKind);
         v.entries = [];
         const whitelist = v.items.some(it => it.rule.action === 'permit');
         v.items.forEach(it => {
           const inf = info[it.rule.id];
           inf.aclNumber = v.id;
           inf.aclKeys.push(v.key);
-          inf.placeText = `ACL ${v.id} · ${host} line vty 0 ${vtyLast} (access-class in)`;
-          if (it.rule.action === 'permit') inf.notes.push(`Only the "Allow" sources may log in to ${host}. Everyone else is refused (hidden deny any).`);
+          const pt = `ACL ${v.id} · ${host} line vty ${v.range} (access-class in)`;
+          inf.placeText = inf.placeText ? `${inf.placeText}; ${pt}` : pt;
+          if (it.rule.action === 'permit') {
+            const n = `Only the "Allow" sources may log in to ${host} by ${word}. Everyone else is refused (hidden deny any).`;
+            if (!inf.notes.includes(n)) inf.notes.push(n);
+          }
           v.entries.push({ kind: 'remark', text: remarkFor(it), ruleIdx: it.idx });
           const toks = aceTokens('standard', it.rule.action, { proto: 'ip' }, it.src, ANY_ENDPOINT);
           v.entries.push({
             kind: 'ace', tokens: toks, text: toks.map(x => x.t).join(' '), action: it.rule.action, ruleIdx: it.idx,
-            explain: `${it.rule.action === 'deny' ? 'Refuse' : 'Accept'} SSH/Telnet logins from ${epText(it.src)}`,
+            explain: `${it.rule.action === 'deny' ? 'Refuse' : 'Accept'} ${word} logins from ${epText(it.src)}`,
             match: { std: true, proto: 'ip', srcLo: it.src.lo, srcHi: it.src.hi, dstLo: 0, dstHi: 0xffffffff, port: '', icmpType: '' }
           });
         });
@@ -4310,12 +4365,15 @@ line vty 0 4
           : 'any PC (e.g. one in another LAN)';
         const s = lanChoice(it.src) || otherLanChoice(it.dst.lan ? it.dst.lan.id : '');
         if (it.isVty) {
-          const ip = routerMgmtIp(it.dst.router);
-          const telnet = appState.initConfig.vtyMode === 'telnet';
-          const cmd = telnet ? `telnet ${ip}` : `ssh -l ${appState.initConfig.sshUser || 'admin'} ${ip}`;
-          tests.push({
-            rule: it.idx + 1, from, cmd, expect: it.rule.action === 'permit' ? 'asks for the password (allowed)' : 'refused (blocked)',
-            tester: { src: s.v, srcHost: s.host, dst: 'router', dstHost: '', dstRouterId: it.dst.router.id, svc: telnet ? 'telnet' : 'ssh', customProto: 'tcp', customPort: '' }
+          vtyList.filter(v => v.items.includes(it)).forEach(v => {
+            const r = getRouterById(v.routerId);
+            const ip = routerMgmtIp(r);
+            const telnet = v.loginKind === 'telnet' || (v.loginKind === 'all' && appState.initConfig.vtyMode === 'telnet');
+            const cmd = telnet ? `telnet ${ip}` : `ssh -l ${appState.initConfig.sshUser || 'admin'} ${ip}`;
+            tests.push({
+              rule: it.idx + 1, from, cmd, expect: it.rule.action === 'permit' ? 'asks for the password (allowed)' : 'refused (blocked)',
+              tester: { src: s.v, srcHost: s.host, dst: 'router', dstHost: '', dstRouterId: v.routerId, svc: telnet ? 'telnet' : 'ssh', customProto: 'tcp', customPort: '' }
+            });
           });
           return;
         }
@@ -4336,10 +4394,12 @@ line vty 0 4
           }
         });
       });
-      Object.values(vty).forEach(v => {
+      vtyList.forEach(v => {
         if (!v.items.some(it => it.rule.action === 'permit')) return;
         const r = getRouterById(v.routerId);
-        tests.push({ rule: '-', from: 'any other PC', cmd: `ssh -l ${appState.initConfig.sshUser || 'admin'} ${routerMgmtIp(r)}`, expect: 'refused (not on the allow list)', tester: null });
+        const telnet = v.loginKind === 'telnet' || (v.loginKind === 'all' && appState.initConfig.vtyMode === 'telnet');
+        const cmd = telnet ? `telnet ${routerMgmtIp(r)}` : `ssh -l ${appState.initConfig.sshUser || 'admin'} ${routerMgmtIp(r)}`;
+        tests.push({ rule: '-', from: 'any other PC', cmd, expect: `refused (not on the ${vtyLinesWord(v.loginKind)} allow list)`, tester: null });
       });
 
       return { standard: sec.mode === 'standard', groups, vty, info, tests };
@@ -4448,7 +4508,8 @@ line vty 0 4
       if (router) {
         const login = proto === 'tcp' && (port === '22' || port === '23');
         if (login) {
-          reqChecks.push({ label: `asks ${sanitizeHostname(router.hostname)} for a login (line vty, access-class in)`, acl: comp.vty[router.id] || null });
+          const range = vtySplit() ? VTY_SPLIT_RANGE[port === '23' ? 'telnet' : 'ssh'] : vtyAllRange();
+          reqChecks.push({ label: `asks ${sanitizeHostname(router.hostname)} for ${port === '23' ? 'a Telnet' : 'an SSH'} login (access-class on line vty ${range})`, acl: vtyAclFor(comp, router.id, port) });
           const mode = appState.initConfig.vtyMode;
           if (mode === 'none' || (port === '22' && mode === 'telnet') || (port === '23' && mode === 'ssh')) {
             loginNote = `Even if the ACL allows it, ${sanitizeHostname(router.hostname)} refuses: its VTY lines do not accept ${port === '22' ? 'SSH' : 'Telnet'} (Init Config → Remote Access).`;
@@ -4538,7 +4599,7 @@ line vty 0 4
       const hadV6Mode = !!(appState.initConfig && appState.initConfig.ipv6Routing);
       appState.initConfig = Object.assign({}, d.initConfig, appState.initConfig || {});
       const icn = appState.initConfig;
-      if (!['telnet', 'ssh', 'both', 'none'].includes(icn.vtyMode)) icn.vtyMode = 'both';
+      if (!['telnet', 'ssh', 'both', 'split', 'none'].includes(icn.vtyMode)) icn.vtyMode = 'both';
       if (icn.vtyLast !== '15') icn.vtyLast = '4';
       if (icn.telnetLogin !== 'local') icn.telnetLogin = 'password';
       if (!['1024', '2048', '4096'].includes(String(icn.rsaModulus))) icn.rsaModulus = '1024';
@@ -4654,7 +4715,7 @@ line vty 0 4
 
     /** True when the VTY lines accept SSH. */
     function sshOn(ic) {
-      return ic.vtyMode === 'ssh' || ic.vtyMode === 'both';
+      return ic.vtyMode === 'ssh' || ic.vtyMode === 'both' || ic.vtyMode === 'split';
     }
 
     /** Domain name handed out by DHCP: the DHCP field, else the SSH domain name. */
@@ -4706,7 +4767,8 @@ line vty 0 4
       if (dualStack) initial.push(`ipv6 unicast-routing`);
 
       // A local user is needed for SSH, and for Telnet when it logs in with a username
-      const needUser = ssh || (ic.vtyMode === 'telnet' && ic.telnetLogin === 'local');
+      const telnetOn = ic.vtyMode === 'telnet' || ic.vtyMode === 'split';
+      const needUser = ssh || (telnetOn && ic.telnetLogin === 'local');
       if (ssh) initial.push(`ip domain-name ${ic.domainName.trim() || 'lab.local'}`);
       if (needUser) initial.push(`username ${ic.sshUser.trim() || 'admin'} secret ${ic.sshPwd.trim() || 'cisco'}`);
       if (ssh) {
@@ -4722,8 +4784,24 @@ line vty 0 4
         initial.push(` exit`);
       }
 
+      const telnetLoginLines = () => (ic.telnetLogin === 'local'
+        ? [` login local`]
+        : [` password ${ic.vtyPwd.trim() || 'cisco'}`, ` login`]);
+      if (ic.vtyMode === 'split') {
+        // Telnet and SSH on their own lines, so each can get its own login ACL (access-class)
+        initial.push(`line vty 0 4`);
+        telnetLoginLines().forEach(l => initial.push(l));
+        initial.push(` transport input telnet`);
+        initial.push(` exit`);
+        initial.push(`line vty 5 15`);
+        initial.push(` login local`);
+        initial.push(` transport input ssh`);
+      } else {
       initial.push(`line vty ${vtyRange}`);
-      if (ic.vtyMode === 'none') {
+      }
+      if (ic.vtyMode === 'split') {
+        // done above
+      } else if (ic.vtyMode === 'none') {
         initial.push(` transport input none`);
       } else if (ic.vtyMode === 'telnet') {
         if (ic.telnetLogin === 'local') {
@@ -4739,6 +4817,7 @@ line vty 0 4
       }
       initial.push(` exit`);
       if (ic.vtyMode === 'telnet') note('Telnet sends passwords as plain text. Use SSH outside a lab.');
+      if (ic.vtyMode === 'split') note('Telnet on vty 0 4 sends the password as plain text; SSH on vty 5 15 is encrypted. Test both: telnet <IP> asks for the line password, ssh -l <user> <IP> asks for the username secret.');
 
       // ---- SECTION 2: INTERFACES ----
       const interfaces = [];
@@ -5066,8 +5145,8 @@ line vty 0 4
       acls.push(`! --- Access Control Lists ---`);
       const sec = compileSecurityRules();
       const myGroups = sec.groups.filter(g => g.routerId === router.id);
-      const myVty = sec.vty[router.id];
-      if (!myGroups.length && !myVty) {
+      const myVtys = Object.values(sec.vty).filter(v => v.routerId === router.id);
+      if (!myGroups.length && !myVtys.length) {
         acls.push(`! (No ACLs on ${safeHost})`);
       } else {
         acls.push(`! Paste this part only after every ping, DHCP and web test passes`);
@@ -5078,12 +5157,12 @@ line vty 0 4
         aclGroupCli(g).forEach(l => acls.push(l));
         if (g.idError) warn(`ACL on ${g.iface} ${g.direction}: ${g.idError} Using ${g.id}.`);
       });
-      if (myVty) {
-        acls.push(`! ACL ${myVty.id} (standard) - who may log in to ${safeHost} by SSH/Telnet`);
+      myVtys.forEach(myVty => {
+        acls.push(`! ACL ${myVty.id} (standard) - who may log in to ${safeHost} by ${vtyLinesWord(myVty.loginKind)} (line vty ${myVty.range})`);
         aclGroupCli(myVty).forEach(l => acls.push(l));
         if (myVty.idError) warn(`Login ACL: ${myVty.idError} Using ${myVty.id}.`);
         if (ic.vtyMode === 'none') note(`The login ACL ${myVty.id} does nothing while remote access is off (transport input none).`);
-      }
+      });
 
       // ---- SECTION 6: SAVE ----
       // "write memory" saves like "copy running-config startup-config" but asks no filename question,
@@ -5116,8 +5195,9 @@ line vty 0 4
       if (myV6Pools.length) verify.push(`show ipv6 dhcp pool`);
       if (myV6Pools.some(x => x.lan.ipv6Mode === 'stateful')) verify.push(`show ipv6 dhcp binding`);
       plan.myLinks.filter(m => isSerialIf(m.myIf)).forEach(m => verify.push(`show controllers ${m.myIf}`));
-      if (myGroups.length || myVty) verify.push(`show access-lists`);
+      if (myGroups.length || myVtys.length) verify.push(`show access-lists`);
       if (ssh) verify.push(`show ip ssh`);
+      if (ic.vtyMode !== 'none') verify.push(`show running-config | section line vty`);
       // Pings: each neighbour across a WAN link, then the gateway of every other LAN
       plan.myLinks.forEach(m => {
         verify.push(`ping ${m.nextHop}`);
@@ -5627,7 +5707,7 @@ line vty 0 4
             <!-- Badges above hostname -->
             ${protos.length ? `<text x="0" y="-73" text-anchor="middle" fill="#0b5229" font-size="10.5" font-weight="700" font-family="monospace">${protos.join(' · ')}</text>` : ''}
             ${hostsDhcp ? `<rect x="24" y="-36" width="44" height="15" rx="4" fill="#e1f2e7" stroke="#11703a" /><text x="46" y="-25" text-anchor="middle" fill="#0b5229" font-size="8.5" font-weight="700" font-family="monospace">DHCP</text>` : ''}
-            ${compiledAcls.vty[router.id] ? `<g><title>Router login (SSH/Telnet) limited by ACL ${compiledAcls.vty[router.id].number} on line vty</title><rect x="26" y="22" width="52" height="15" rx="4" fill="#fbe5ea" stroke="#b8143a" /><text x="52" y="33" text-anchor="middle" fill="#8e0f2c" font-size="8.5" font-weight="700" font-family="monospace">VTY ACL</text></g>` : ''}
+            ${Object.values(compiledAcls.vty).some(v => v.routerId === router.id) ? `<g><title>Router login limited by ${Object.values(compiledAcls.vty).filter(v => v.routerId === router.id).map(v => `ACL ${v.number} on line vty ${v.range}`).join(' and ')}</title><rect x="26" y="22" width="52" height="15" rx="4" fill="#fbe5ea" stroke="#b8143a" /><text x="52" y="33" text-anchor="middle" fill="#8e0f2c" font-size="8.5" font-weight="700" font-family="monospace">VTY ACL</text></g>` : ''}
             ${isBorder ? `<g><title>Border router: redistributes routes between protocols</title><rect x="-74" y="-36" width="52" height="15" rx="4" fill="#fcecdc" stroke="#a84700" /><text x="-48" y="-25" text-anchor="middle" fill="#7a3300" font-size="8.5" font-weight="700" font-family="monospace">BORDER</text></g>` : ''}
           </g>
         `);
@@ -5785,18 +5865,37 @@ line vty 0 4
                 <option value="ssh" ${ic.vtyMode === 'ssh' ? 'selected' : ''}>SSH only</option>
                 <option value="telnet" ${ic.vtyMode === 'telnet' ? 'selected' : ''}>Telnet only</option>
                 <option value="both" ${ic.vtyMode === 'both' ? 'selected' : ''}>SSH and Telnet (transport input all)</option>
+                <option value="split" ${ic.vtyMode === 'split' ? 'selected' : ''} title="Telnet on line vty 0 4, SSH on line vty 5 15">Telnet 0 4 + SSH 5 15</option>
                 <option value="none" ${ic.vtyMode === 'none' ? 'selected' : ''}>None (transport input none)</option>
               </select>
             </div>
             <div class="field-group">
               <label class="field-label">VTY Lines</label>
+              ${ic.vtyMode === 'split' ? `
+                <div class="vty-split-note mono">vty 0 4 = Telnet<br>vty 5 15 = SSH</div>
+              ` : `
               <select id="icVtyLast" class="mono">
                 <option value="4" ${ic.vtyLast !== '15' ? 'selected' : ''}>line vty 0 4</option>
                 <option value="15" ${ic.vtyLast === '15' ? 'selected' : ''}>line vty 0 15</option>
-              </select>
+              </select>`}
             </div>
           </div>
 
+          ${ic.vtyMode === 'split' ? `
+            <div class="field-group">
+              <label class="field-label">Telnet login (line vty 0 4)</label>
+              <select id="icTelnetLogin">
+                <option value="password" ${ic.telnetLogin !== 'local' ? 'selected' : ''}>Line password (password + login)</option>
+                <option value="local" ${ic.telnetLogin === 'local' ? 'selected' : ''}>Username and secret (login local)</option>
+              </select>
+            </div>
+            ${ic.telnetLogin === 'local'
+              ? '<div class="text-muted" style="font-size:13.5px;">Telnet logs in with the SSH username and secret below.</div>'
+              : `<div class="field-group">
+                  <label class="field-label">Telnet (VTY) password</label>
+                  <input type="text" id="icVtyPwd" class="mono" value="${escapeHtml(ic.vtyPwd)}" />
+                </div>`}
+          ` : ''}
           ${ic.vtyMode === 'telnet' ? `
             <div class="field-group">
               <label class="field-label">Telnet Login</label>
@@ -5826,7 +5925,7 @@ line vty 0 4
             <div class="text-muted" style="font-size:13.5px;">Nobody can log in over the network. Only the console works.</div>
           ` : `
             <div class="item-box" style="margin-top:4px;">
-              <div class="field-label" style="color:var(--cyan);">SSH Setup</div>
+              <div class="field-label" style="color:var(--cyan);">SSH Setup${ic.vtyMode === 'split' ? ' (line vty 5 15, always login local)' : ''}</div>
               <div class="field-group">
                 <label class="field-label">IP Domain Name (needed for the RSA keys)</label>
                 <input type="text" id="icDomainName" class="mono" value="${escapeHtml(ic.domainName)}" placeholder="lab.local" />
@@ -6814,7 +6913,7 @@ line vty 0 4
       if (!aclDraft) {
         aclDraft = {
           action: 'deny', src: lanVal(0), srcHost: '', dst: lanVal(1), dstHost: '',
-          dstRouterId: appState.routers[0]?.id || '', service: 'web',
+          dstRouterId: appState.routers[0]?.id || '', dstRouterIds: appState.routers[0] ? [appState.routers[0].id] : [], loginLines: 'all', service: 'web',
           aclType: sec.mode === 'standard' ? 'standard' : 'extended',
           customProto: 'tcp', customPort: '', placement: 'auto', note: ''
         };
@@ -6823,6 +6922,9 @@ line vty 0 4
       if (!valid(aclDraft.src) || aclDraft.src === 'router') aclDraft.src = lanVal(0);
       if (!valid(aclDraft.dst)) aclDraft.dst = lanVal(1);
       if (!getRouterById(aclDraft.dstRouterId)) aclDraft.dstRouterId = appState.routers[0]?.id || '';
+      if (!Array.isArray(aclDraft.dstRouterIds)) aclDraft.dstRouterIds = aclDraft.dstRouterId ? [aclDraft.dstRouterId] : [];
+      aclDraft.dstRouterIds = aclDraft.dstRouterIds.filter(id => getRouterById(id));
+      if (!['all', 'telnet', 'ssh'].includes(aclDraft.loginLines)) aclDraft.loginLines = 'all';
       if (aclDraft.aclType !== 'standard' && aclDraft.aclType !== 'extended') aclDraft.aclType = 'extended';
       return aclDraft;
     }
@@ -6859,7 +6961,9 @@ line vty 0 4
         id: 'draft', action: d.action,
         srcType: s.type, srcLanId: s.lanId, srcHost: s.host,
         dstType: t.type, dstLanId: t.lanId, dstHost: t.host,
-        dstRouterId: vty ? d.dstRouterId : '',
+        dstRouterId: vty ? ((d.dstRouterIds || [])[0] || '') : '',
+        dstRouterIds: vty ? (d.dstRouterIds || []).filter(id => getRouterById(id)) : [],
+        loginLines: vty && ['telnet', 'ssh'].includes(d.loginLines) ? d.loginLines : 'all',
         aclType: std ? 'standard' : 'extended',
         service: std ? 'ip' : d.service,  // a standard ACL cannot pick a service
         customProto: d.customProto === 'udp' ? 'udp' : 'tcp', customPort: String(d.customPort || '').trim(),
@@ -6871,7 +6975,7 @@ line vty 0 4
     function draftProblem(rule) {
       if (rule.srcType === 'host' && IPv4.toInt(rule.srcHost) === null) return 'Type the source host IP (for example 192.168.1.10).';
       if (rule.dstType === 'host' && IPv4.toInt(rule.dstHost) === null) return 'Type the destination host IP.';
-      if (rule.dstType === 'router' && !getRouterById(rule.dstRouterId)) return 'Pick the router.';
+      if (rule.dstType === 'router' && !ruleRouterIds(rule).some(id => getRouterById(id))) return 'Tick at least one router.';
       if (rule.srcType === 'any' && rule.dstType === 'any') return 'Pick a LAN or a host for the source or the destination.';
       if (rule.aclType === 'extended' && rule.service === 'custom' && rule.customPort && !/^\d+$/.test(rule.customPort)) return 'The port must be a number.';
       return '';
@@ -6884,6 +6988,16 @@ line vty 0 4
         + `<option value="host" ${selected === 'host' ? 'selected' : ''}>One host (type its IP)…</option>`
         + (any ? `<option value="any" ${selected === 'any' ? 'selected' : ''}>Any (everyone)</option>` : '')
         + (router ? `<option value="router" ${selected === 'router' ? 'selected' : ''}>A router itself (SSH / Telnet login)</option>` : '');
+    }
+
+    function loginLinesOptions(sel) {
+      const split = vtySplit();
+      const opts = [
+        ['all', split ? 'Telnet and SSH (vty 0 4 and 5 15)' : `All logins (line vty ${vtyAllRange()})`],
+        ['telnet', split ? 'Telnet only (line vty 0 4)' : 'Telnet'],
+        ['ssh', split ? 'SSH only (line vty 5 15)' : 'SSH']
+      ];
+      return opts.map(([v, l]) => `<option value="${v}" ${(sel || 'all') === v ? 'selected' : ''}>${l}</option>`).join('');
     }
 
     function tokensHtml(tokens) {
@@ -6914,10 +7028,10 @@ line vty 0 4
       const typed = String((sec.aclIds || {})[g.key] || '');
       const lan = g.vty ? null : getAllLans().find(x => x.router.id === g.routerId && x.lan.iface === g.iface);
       const lanName = lan ? lan.lan.name : g.iface;
-      const vtyRange = `0 ${appState.initConfig.vtyLast === '15' ? '15' : '4'}`;
+      const vtyRange = g.vty ? g.range : '';
       let seq = 0;
       const why = g.vty
-        ? 'A login ACL is always standard and goes on the VTY lines with access-class (not access-group). It checks who is trying to SSH or Telnet into the router.'
+        ? `A login ACL is always standard and goes on the VTY lines with access-class (not access-group). It checks who is trying to log in by ${vtyLinesWord(g.loginKind)}${g.loginKind === 'all' ? '' : `, because ${vtyLinesWord(g.loginKind)} uses line vty ${g.range}`}.`
         : g.direction === 'in'
           ? `Extended ACLs go near the source, so unwanted traffic is dropped before it crosses the network. "in" on ${g.iface} = packets coming from ${lanName} into ${host}.`
           : `A standard ACL only looks at the source, so it goes near the destination; near the source it would cut that source off from every network. "out" on ${g.iface} = packets leaving ${host} into ${lanName}.`;
@@ -7052,7 +7166,7 @@ line vty 0 4
         {
           task: `Only ${A} may SSH or Telnet into ${sanitizeHostname(r.hostname)}.`,
           how: 'Allow · from the LAN · to "A router itself". Becomes a login ACL with access-class on line vty.',
-          draft: { action: 'permit', src: `lan:${a.lan.id}`, dst: 'router', dstRouterId: r.id }
+          draft: { action: 'permit', src: `lan:${a.lan.id}`, dst: 'router', dstRouterId: r.id, dstRouterIds: [r.id], loginLines: 'all' }
         },
         {
           task: `Block Telnet from ${B} to anywhere. Allow everything else.`,
@@ -7082,7 +7196,7 @@ line vty 0 4
       const stdDraft = !isVtyDraft && d.aclType === 'standard';
       const examples = aclExamples();
       const byRouter = appState.routers
-        .map(r => ({ r, acls: [...comp.groups.filter(g => g.routerId === r.id), ...(comp.vty[r.id] ? [comp.vty[r.id]] : [])] }))
+        .map(r => ({ r, acls: [...comp.groups.filter(g => g.routerId === r.id), ...Object.values(comp.vty).filter(v => v.routerId === r.id)] }))
         .filter(x => x.acls.length);
 
       root.innerHTML = `
@@ -7131,11 +7245,18 @@ line vty 0 4
                   <label class="field-label">To (destination)</label>
                   <select class="acl-draft" data-key="dst">${aclEndpointOptions(d.dst, { router: true })}</select>
                   ${d.dst === 'host' ? `<input type="text" class="acl-draft-text mono" data-key="dstHost" value="${escapeHtml(d.dstHost)}" placeholder="Destination IP, e.g. 192.168.2.10" />` : ''}
-                  ${isVtyDraft ? `<select class="acl-draft" data-key="dstRouterId">${appState.routers.map(x => `<option value="${x.id}" ${d.dstRouterId === x.id ? 'selected' : ''}>${escapeHtml(sanitizeHostname(x.hostname))}</option>`).join('')}</select>` : ''}
+                  ${isVtyDraft ? `
+                    <div class="acl-router-picks" role="group" aria-label="Routers this login rule protects">
+                      ${appState.routers.map(x => `<label class="checkbox-row"><input type="checkbox" class="acl-draft-router" value="${x.id}" ${d.dstRouterIds.includes(x.id) ? 'checked' : ''} /><span>${escapeHtml(sanitizeHostname(x.hostname))}</span></label>`).join('')}
+                    </div>` : ''}
                 </div>
               </div>
               ${isVtyDraft ? `
-                <div class="text-muted" style="font-size:14px; margin-top:6px;">A login rule becomes a standard ACL on <span class="mono">line vty</span> with <span class="mono">access-class</span>. With Allow, only those sources may log in; everyone else is refused.</div>
+                <div class="field-group" style="margin-top:6px;">
+                  <label class="field-label">Which logins</label>
+                  <select class="acl-draft" data-key="loginLines">${loginLinesOptions(d.loginLines)}</select>
+                </div>
+                <div class="text-muted" style="font-size:14px; margin-top:6px;">A login rule becomes a standard ACL on <span class="mono">line vty</span> with <span class="mono">access-class</span>, on every router you ticked. With Allow, only those sources may log in; everyone else is refused.${vtySplit() ? ' Telnet rules go on <span class="mono">line vty 0 4</span>, SSH rules on <span class="mono">line vty 5 15</span>.' : ''}</div>
               ` : `
                 <div class="row-3" style="margin-top:6px;">
                   <div class="field-group">
@@ -7190,7 +7311,8 @@ line vty 0 4
                   <div class="acl-rule">
                     <div class="acl-rule-head">
                       <span class="badge ${rule.action === 'deny' ? 'badge-rose' : 'badge-emerald'}">#${i + 1} ${rule.action === 'deny' ? 'BLOCK' : 'ALLOW'}</span>
-                      ${vtyRule ? '<span class="badge badge-cyan">login</span>' : `
+                      ${vtyRule ? `<span class="badge badge-cyan">login</span>
+                        <select class="acl-rule-lines" data-idx="${i}" title="Which logins this rule controls">${loginLinesOptions(rule.loginLines)}</select>` : `
                         <select class="acl-rule-type" data-idx="${i}" title="Standard or extended">
                           <option value="extended" ${rule.aclType !== 'standard' ? 'selected' : ''}>Extended</option>
                           <option value="standard" ${rule.aclType === 'standard' ? 'selected' : ''}>Standard</option>
@@ -7351,6 +7473,15 @@ line vty 0 4
         showToast(`Rule #${sec.rules.length} added`);
       });
 
+      root.querySelectorAll('.acl-draft-router').forEach(el => el.addEventListener('change', () => {
+        d.dstRouterIds = [...root.querySelectorAll('.acl-draft-router:checked')].map(x => x.value);
+        rerender();
+      }));
+      root.querySelectorAll('.acl-rule-lines').forEach(sel => sel.addEventListener('change', e => {
+        const rule = sec.rules[Number(sel.dataset.idx)];
+        if (rule) rule.loginLines = ['telnet', 'ssh'].includes(e.target.value) ? e.target.value : 'all';
+        rerender();
+      }));
       root.querySelectorAll('.acl-rule-type').forEach(sel => sel.addEventListener('change', e => {
         const rule = sec.rules[Number(sel.dataset.idx)];
         if (rule) rule.aclType = e.target.value === 'standard' ? 'standard' : 'extended';
@@ -7425,7 +7556,7 @@ line vty 0 4
       root.querySelectorAll('.acl-copy-router').forEach(btn => btn.addEventListener('click', () => {
         const c = compileSecurityRules();
         const r = getRouterById(btn.dataset.rid);
-        const list = [...c.groups.filter(g => g.routerId === btn.dataset.rid), ...(c.vty[btn.dataset.rid] ? [c.vty[btn.dataset.rid]] : [])];
+        const list = [...c.groups.filter(g => g.routerId === btn.dataset.rid), ...Object.values(c.vty).filter(v => v.routerId === btn.dataset.rid)];
         const lines = ['enable', 'configure terminal'];
         list.forEach(g => {
           lines.push(`! ACL ${g.id} (${g.type}) ${aclWhereText(g)}`);
