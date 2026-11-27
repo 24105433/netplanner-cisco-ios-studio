@@ -2526,7 +2526,6 @@ line vty 0 4
           sshV2: true,
           copyRunStart: true,
           dualStack: true,
-          passiveLan: true,
           clockRate: '64000',      // set on every serial port (DCE or DTE)
           dhcpDomain: '',          // DHCP domain-name (blank = the SSH domain name)
           dhcpLease: '',           // DHCP lease in days (blank = IOS default of 1 day)
@@ -5137,7 +5136,6 @@ line vty 0 4
         if (typeof acl !== 'object') delete appState.exam.acl;
         else ['telnetPcIds', 'sshPcIds', 'sshTargets', 'denies'].forEach(k => { if (!Array.isArray(acl[k])) acl[k] = []; });
       }
-      if (appState.initConfig && appState.initConfig.passiveLan === undefined) appState.initConfig.passiveLan = true;
     }
 
     /* =========================================================================
@@ -5519,7 +5517,6 @@ line vty 0 4
       const routing = [];
       routing.push(`! --- Routing & Redistribution ---`);
       const rt = normalizeRouting(router);
-      const passive = ic.passiveLan !== false;
       const rid = typedRouterId(router);
       if (rt.routerId.trim() && !rid) warn(`Router ID "${rt.routerId.trim()}" must look like an IPv4 address (for example 1.1.1.1), so it is left out.`);
 
@@ -5545,7 +5542,6 @@ line vty 0 4
 
       plan.dynamic.forEach(p => {
         const nets = plan.networksFor(p).filter(n => n.netIp);
-        const passiveIfs = passive ? router.lans.map(l => l.iface) : [];
         if (p === 'ripv2') {
           routing.push(`router rip`);
           routing.push(` version 2`);
@@ -5558,10 +5554,17 @@ line vty 0 4
               routing.push(` network ${cf}`);
             }
           });
-          // RIP's classful "network" also switches RIP on for links of other protocols in the same class.
-          // Always keep those quiet (the LAN checkbox only controls LAN ports).
-          plan.myLinks.forEach(m => {
-            if (m.proto !== 'ripv2' && classfulSeen.has(IPv4.classfulNetwork(m.lnk.netIp))) passiveIfs.push(m.myIf);
+          // RIP's classful "network" also switches RIP on for the other ports in the same class.
+          // Harmless when the router on the other end does not run RIP: it ignores the updates.
+          const extra = plan.myLinks.filter(m => m.proto !== 'ripv2' && classfulSeen.has(IPv4.classfulNetwork(m.lnk.netIp)));
+          if (extra.length) {
+            routing.push(` ! The classful network line also sends RIP updates out ${extra.map(m => m.myIf).join(', ')}; routers there that do not run RIP ignore them`);
+          }
+          extra.forEach(m => {
+            const peerPlan = m.peer ? getRouterRoutingPlan(m.peer.id) : null;
+            if (peerPlan && peerPlan.dynamic.includes('ripv2')) {
+              note(`${safeHost} ${m.myIf} goes to ${sanitizeHostname(m.peer.hostname)} by ${PROTO_LABEL[m.proto]}, but ${sanitizeHostname(m.peer.hostname)} runs RIP too and both "network ${IPv4.classfulNetwork(m.lnk.netIp)}" lines cover it, so RIP also runs on that link. ${PROTO_LABEL[m.proto]} routes still win (lower administrative distance).`);
+            }
           });
         } else if (p === 'ospf') {
           routing.push(`router ospf ${ids.ospf}`);
@@ -5573,7 +5576,6 @@ line vty 0 4
           routing.push(` no auto-summary`);
           nets.forEach(n => routing.push(` network ${n.netIp} ${IPv4.cidrToWildcard(n.cidr)}`));
         }
-        [...new Set(passiveIfs)].forEach(i => routing.push(` passive-interface ${i}`));
         (plan.redist[p] || []).forEach(x => routing.push(` ${x.cmd}`));
         routing.push(` exit`);
       });
@@ -5611,7 +5613,6 @@ line vty 0 4
           const v6rid = rid || autoRouterId(router);
           if (plan.border6) routing.push(`! IPv6 border router: redistributes between ${plan.dynamic.map(p => V6_PROTO_LABEL[p]).join(' + ')}${plan.hasStatic6 ? ' + static' : ''}`);
           plan.dynamic.forEach(p => {
-            const passiveIfs = passive ? router.lans.filter(l => l.ipv6Prefix).map(l => l.iface) : [];
             if (p === 'ospf') {
               routing.push(`ipv6 router ospf ${ids.ospf}`);
               if (v6rid) routing.push(` router-id ${v6rid}`);
@@ -5622,8 +5623,6 @@ line vty 0 4
             } else {
               routing.push(`ipv6 router rip ${ids.ripng}`);
             }
-            // RIPng has no passive-interface command
-            if (p !== 'ripv2') passiveIfs.forEach(i => routing.push(` passive-interface ${i}`));
             (plan.redist6[p] || []).forEach(x => routing.push(` ${x.cmd}`));
             routing.push(` exit`);
           });
@@ -5739,7 +5738,7 @@ line vty 0 4
       'enable', 'configure terminal', 'hostname', 'interface', 'ip address', 'ipv6 address', 'ip dhcp', 'ipv6 dhcp',
       'ip helper-address', 'ip route', 'ipv6 route', 'router rip', 'router ospf', 'router eigrp', 'ipv6 router rip',
       'ipv6 router ospf', 'ipv6 router eigrp', 'ipv6 rip', 'ipv6 ospf', 'ipv6 eigrp', 'router-id', 'eigrp router-id',
-      'redistribute', 'default-information originate', 'passive-interface', 'access-list', 'no access-list',
+      'redistribute', 'default-information originate', 'access-list', 'no access-list',
       'ip access-list', 'ip access-group', 'no ip access-group', 'access-class', 'line console', 'line vty', 'banner motd',
       'crypto key', 'ip ssh version', 'ip domain-name', 'username', 'transport input', 'clock rate', 'no shutdown',
       'copy running-config startup-config', 'end', 'ipv6 unicast-routing', 'show', 'ping'
@@ -7174,10 +7173,6 @@ line vty 0 4
               </div>`).join('') || '<div class="text-muted" style="font-size:13.5px;">Nowhere: no router runs two routing sources.</div>'}
             <div class="text-muted" style="font-size:13px;">Check it on the router with <code class="cmd">show ip protocols</code> (look for "Redistributing").</div>
           </div>
-          <label class="checkbox-row" style="font-size:14px;">
-            <input type="checkbox" id="rtPassiveLan" ${ic.passiveLan !== false ? 'checked' : ''} />
-            <span><span class="mono">passive-interface</span> on LAN ports (no routing updates sent to PCs)</span>
-          </label>
         </div>
 
         <div class="sub-card" style="border-color:var(--accent);">
@@ -7422,10 +7417,6 @@ line vty 0 4
         });
       });
 
-      document.getElementById('rtPassiveLan').addEventListener('change', e => {
-        ic.passiveLan = e.target.checked;
-        renderCliPane();
-      });
 
       const ridEl = document.getElementById('rtRouterId');
       ridEl.addEventListener('input', e => {
