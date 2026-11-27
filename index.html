@@ -9,32 +9,47 @@
        DESIGN TOKENS & BASE STYLES (Offline-Capable, Zero External Dependencies)
        ========================================================================== */
     :root {
-      --bg-app: #0b1120;
-      --bg-surface: #111827;
-      --bg-panel: #162033;
-      --bg-elevated: #1e293b;
-      --bg-input: #0f172a;
-      --border: #263449;
-      --border-focus: #6366f1;
-      --text-primary: #f1f5f9;
-      --text-secondary: #94a3b8;
-      --text-muted: #64748b;
-      --accent: #6366f1;
-      --accent-hover: #818cf8;
-      --accent-soft: rgba(99, 102, 241, 0.16);
-      --cyan: #38bdf8;
-      --cyan-soft: rgba(56, 189, 248, 0.14);
-      --emerald: #34d399;
-      --emerald-soft: rgba(52, 211, 153, 0.14);
-      --amber: #fbbf24;
-      --amber-soft: rgba(251, 191, 36, 0.14);
-      --rose: #fb7185;
-      --rose-soft: rgba(251, 113, 133, 0.15);
+      /* Light "cable label" theme. Role colours follow the TIA-606 labelling
+         code used on real racks: blue = LAN (station) cabling, orange = WAN /
+         demarc, violet = routers + actions, green = working, red = fault. */
+      --bg-app: #e8ecf1;        /* the wall the labels are stuck on */
+      --bg-surface: #ffffff;    /* header, side panes */
+      --bg-panel: #ffffff;      /* cards = white label stock */
+      --bg-elevated: #f2f4f7;   /* plain buttons */
+      --bg-input: #f6f8fa;      /* rows inside cards */
+      --field-bg: #ffffff;      /* text boxes and dropdowns */
+      --bg-code: #fbfcfd;       /* IOS script paper */
+      --border: #cbd2db;
+      --border-strong: #8f99a8;
+      --border-focus: #5b2d96;
+      --text-primary: #14181f;
+      --text-secondary: #424b58;
+      --text-muted: #5c6573;
+      --accent: #5b2d96;        /* violet: routers, selection, the button that does the job */
+      --accent-hover: #47217a;
+      --accent-ink: #4a2380;
+      --accent-soft: #efe8f8;
+      --cyan: #0a5fae;          /* blue: LAN */
+      --cyan-ink: #08467f;
+      --cyan-soft: #e4effa;
+      --emerald: #11703a;       /* green: OK / permit */
+      --emerald-ink: #0b5229;
+      --emerald-soft: #e1f2e7;
+      --amber: #a84700;         /* orange: WAN, cautions */
+      --amber-ink: #7a3300;
+      --amber-soft: #fcecdc;
+      --rose: #b8143a;          /* red: errors / deny */
+      --rose-ink: #8e0f2c;
+      --rose-soft: #fbe5ea;
+      --shadow-card: 0 1px 2px rgba(20, 24, 31, 0.06), 0 2px 8px rgba(20, 24, 31, 0.05);
       --radius-sm: 6px;
-      --radius-md: 10px;
-      --radius-lg: 14px;
-      --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-      --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+      --radius-md: 8px;
+      --radius-lg: 12px;
+      --font-sans: "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", Arial, sans-serif;
+      /* Label lettering: DIN-style faces that ship with Windows (Bahnschrift) and macOS (DIN Alternate) */
+      --font-label: Bahnschrift, "DIN Alternate", "D-DIN", "Segoe UI Semibold", "Segoe UI", system-ui, sans-serif;
+      --font-mono: "Cascadia Mono", Consolas, ui-monospace, SFMono-Regular, Menlo, Monaco, "Liberation Mono", monospace;
+      color-scheme: light;
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -44,8 +59,8 @@
       background: var(--bg-app);
       color: var(--text-primary);
       font-family: var(--font-sans);
-      font-size: 14px;
-      line-height: 1.45;
+      font-size: 16px;
+      line-height: 1.5;
       -webkit-font-smoothing: antialiased;
     }
 
@@ -56,10 +71,17 @@
     }
 
     /* Custom Scrollbars */
-    ::-webkit-scrollbar { width: 8px; height: 8px; }
-    ::-webkit-scrollbar-track { background: #0d1526; border-radius: 6px; }
-    ::-webkit-scrollbar-thumb { background: #334155; border-radius: 6px; }
-    ::-webkit-scrollbar-thumb:hover { background: #475569; }
+    ::-webkit-scrollbar { width: 12px; height: 12px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #b7c0cc; border-radius: 8px; border: 3px solid transparent; background-clip: padding-box; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--border-strong); background-clip: padding-box; }
+    html { scrollbar-color: #b7c0cc transparent; }
+    ::selection { background: #d9c9f0; color: var(--text-primary); }
+    :focus-visible { outline: 3px solid color-mix(in srgb, var(--accent) 55%, transparent); outline-offset: 2px; }
+    a { color: var(--cyan); text-underline-offset: 3px; }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { transition: none !important; animation: none !important; scroll-behavior: auto !important; }
+    }
 
     /* ==========================================================================
        HEADER & TOP NAVIGATION
@@ -67,8 +89,8 @@
     .app-header {
       background: var(--bg-surface);
       border-bottom: 1px solid var(--border);
-      padding: 0 18px;
-      min-height: 58px;
+      padding: 6px 16px;
+      min-height: 60px;
       flex-shrink: 0;
       display: flex;
       align-items: center;
@@ -91,66 +113,77 @@
       width: 34px;
       height: 34px;
       border-radius: 9px;
-      background: linear-gradient(135deg, #4f46e5, #0ea5e9);
+      background: var(--accent);
       display: flex;
       align-items: center;
       justify-content: center;
-      font-family: var(--font-mono);
+      font-family: var(--font-label);
       font-weight: 700;
-      font-size: 13px;
+      font-size: 14px;
+      letter-spacing: 0.02em;
       color: #fff;
-      box-shadow: 0 2px 10px rgba(79, 70, 229, 0.35);
       flex-shrink: 0;
     }
 
     .brand-text h1 {
-      font-size: 15px;
+      font-family: var(--font-label);
+      font-size: 18px;
       font-weight: 700;
-      letter-spacing: -0.01em;
+      letter-spacing: 0;
+      line-height: 1.2;
       color: var(--text-primary);
     }
 
     .brand-text span {
       display: block;
-      font-size: 11px;
+      font-size: 13px;
       color: var(--text-secondary);
     }
 
     .main-nav {
       display: flex;
       align-items: center;
-      gap: 6px;
-      background: var(--bg-input);
-      padding: 4px;
-      border-radius: var(--radius-md);
-      border: 1px solid var(--border);
+      gap: 4px;
+      flex-wrap: wrap;
+      min-width: 0;
     }
 
+    /* Tabs read like the printed labels on a patch panel: the open one is the
+       label that is stuck on (violet tape, white print). */
     .nav-tab {
-      border: none;
+      border: 1.5px solid transparent;
       background: transparent;
       color: var(--text-secondary);
-      padding: 7px 14px;
-      border-radius: 7px;
-      font-size: 13px;
+      padding: 7px 12px;
+      border-radius: 4px;
+      font-family: var(--font-label);
+      font-size: 16px;
       font-weight: 600;
+      white-space: nowrap;
       cursor: pointer;
-      transition: all 0.15s ease;
+      transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
     }
 
-    .nav-tab:hover { color: var(--text-primary); }
+    .nav-tab:hover { color: var(--text-primary); background: var(--bg-elevated); border-color: var(--border); }
     .nav-tab.active {
       background: var(--accent);
+      border-color: var(--accent);
       color: #fff;
-      box-shadow: 0 2px 8px rgba(99, 102, 241, 0.35);
     }
 
     .header-actions {
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 6px;
       flex-wrap: wrap;
-      padding: 6px 0;
+    }
+    @media (max-width: 1500px) {
+      .brand-text span { display: none; }
+    }
+    @media (max-width: 1360px) {
+      .app-header { justify-content: flex-start; row-gap: 6px; }
+      .main-nav { order: 3; flex-basis: 100%; }
+      .header-actions { margin-left: auto; }
     }
 
     /* ==========================================================================
@@ -161,19 +194,20 @@
       align-items: center;
       justify-content: center;
       gap: 6px;
-      padding: 7px 12px;
+      padding: 8px 14px;
+      min-height: 38px;
       border-radius: var(--radius-sm);
       border: 1px solid var(--border);
       background: var(--bg-elevated);
       color: var(--text-primary);
-      font-size: 12.5px;
+      font-size: 15px;
       font-weight: 600;
       cursor: pointer;
-      transition: all 0.15s ease;
+      transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
       white-space: nowrap;
     }
 
-    .btn:hover { background: #293548; border-color: #3b4c68; }
+    .btn:hover { background: #e6e9ee; border-color: var(--border-strong); }
     .btn:active { transform: translateY(1px); }
 
     .btn-primary {
@@ -184,35 +218,33 @@
     .btn-primary:hover { background: var(--accent-hover); border-color: var(--accent-hover); }
 
     .btn-cyan {
-      background: rgba(14, 165, 233, 0.16);
-      border-color: rgba(56, 189, 248, 0.35);
-      color: var(--cyan);
+      background: var(--cyan-soft);
+      border-color: color-mix(in srgb, var(--cyan) 40%, transparent);
+      color: var(--cyan-ink);
     }
-    .btn-cyan:hover { background: rgba(14, 165, 233, 0.28); }
+    .btn-cyan:hover { background: color-mix(in srgb, var(--cyan) 18%, white); border-color: var(--cyan); }
 
     .btn-emerald {
-      background: rgba(16, 185, 129, 0.16);
-      border-color: rgba(52, 211, 153, 0.35);
-      color: var(--emerald);
+      background: var(--emerald-soft);
+      border-color: color-mix(in srgb, var(--emerald) 40%, transparent);
+      color: var(--emerald-ink);
     }
-    .btn-emerald:hover { background: rgba(16, 185, 129, 0.28); }
+    .btn-emerald:hover { background: color-mix(in srgb, var(--emerald) 18%, white); border-color: var(--emerald); }
 
     .btn-danger {
-      background: rgba(244, 63, 94, 0.12);
-      border-color: rgba(251, 113, 133, 0.3);
+      background: var(--field-bg);
+      border-color: color-mix(in srgb, var(--rose) 45%, transparent);
       color: var(--rose);
     }
-    .btn-danger:hover { background: rgba(244, 63, 94, 0.25); }
+    .btn-danger:hover { background: var(--rose-soft); border-color: var(--rose); }
 
-    .btn-sm { padding: 4px 9px; font-size: 11.5px; }
-    .btn-xs { padding: 3px 7px; font-size: 11px; }
+    .btn-sm { padding: 5px 11px; min-height: 32px; font-size: 14px; }
+    .btn-xs { padding: 3px 8px; min-height: 28px; font-size: 13.5px; }
 
     .field-group { display: flex; flex-direction: column; gap: 5px; }
     .field-label {
-      font-size: 11px;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
+      font-size: 14px;
+      font-weight: 600;
       color: var(--text-secondary);
     }
 
@@ -223,11 +255,11 @@
       width: 100%;
       padding: 8px 10px;
       border-radius: var(--radius-sm);
-      border: 1px solid var(--border);
-      background: var(--bg-input);
+      border: 1px solid var(--border-strong);
+      background: var(--field-bg);
       color: var(--text-primary);
       font-family: var(--font-sans);
-      font-size: 13px;
+      font-size: 15px;
       transition: border-color 0.15s ease, box-shadow 0.15s ease;
     }
 
@@ -236,7 +268,7 @@
     input:focus, select:focus, textarea:focus {
       outline: none;
       border-color: var(--border-focus);
-      box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.25);
+      box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent);
     }
 
     .checkbox-row {
@@ -244,14 +276,14 @@
       align-items: center;
       gap: 8px;
       cursor: pointer;
-      font-size: 13px;
+      font-size: 15px;
       color: var(--text-primary);
       user-select: none;
     }
 
     .checkbox-row input[type="checkbox"] {
-      width: 16px;
-      height: 16px;
+      width: 18px;
+      height: 18px;
       accent-color: var(--accent);
       cursor: pointer;
       flex-shrink: 0;
@@ -261,11 +293,12 @@
       background: var(--bg-panel);
       border: 1px solid var(--border);
       border-radius: var(--radius-lg);
-      padding: 16px;
+      padding: 18px;
     }
 
     .card-title {
-      font-size: 13.5px;
+      font-family: var(--font-label);
+      font-size: 18px;
       font-weight: 700;
       color: var(--text-primary);
       margin-bottom: 12px;
@@ -280,31 +313,31 @@
       align-items: center;
       gap: 4px;
       padding: 2px 8px;
-      border-radius: 999px;
-      font-size: 11px;
+      border-radius: 3px;
+      font-size: 13px;
       font-weight: 600;
       font-family: var(--font-mono);
     }
-    .badge-indigo { background: var(--accent-soft); color: #a5b4fc; border: 1px solid rgba(99,102,241,0.3); }
-    .badge-cyan { background: var(--cyan-soft); color: var(--cyan); border: 1px solid rgba(56,189,248,0.3); }
-    .badge-emerald { background: var(--emerald-soft); color: var(--emerald); border: 1px solid rgba(52,211,153,0.3); }
-    .badge-amber { background: var(--amber-soft); color: var(--amber); border: 1px solid rgba(251,191,36,0.3); }
-    .badge-rose { background: var(--rose-soft); color: var(--rose); border: 1px solid rgba(251,113,133,0.3); }
+    .badge-indigo { background: var(--accent-soft); color: var(--accent-ink); border: 1px solid color-mix(in srgb, var(--accent) 40%, transparent); }
+    .badge-cyan { background: var(--cyan-soft); color: var(--cyan-ink); border: 1px solid color-mix(in srgb, var(--cyan) 40%, transparent); }
+    .badge-emerald { background: var(--emerald-soft); color: var(--emerald-ink); border: 1px solid color-mix(in srgb, var(--emerald) 40%, transparent); }
+    .badge-amber { background: var(--amber-soft); color: var(--amber-ink); border: 1px solid color-mix(in srgb, var(--amber) 40%, transparent); }
+    .badge-rose { background: var(--rose-soft); color: var(--rose-ink); border: 1px solid color-mix(in srgb, var(--rose) 40%, transparent); }
 
     .alert {
       padding: 10px 12px;
       border-radius: var(--radius-sm);
-      font-size: 12.5px;
+      font-size: 14.5px;
       font-weight: 500;
       margin-top: 10px;
     }
-    .alert-error { background: var(--rose-soft); border: 1px solid rgba(251,113,133,0.35); color: #fecdd3; }
-    .alert-warn { background: var(--amber-soft); border: 1px solid rgba(251,191,36,0.35); color: #fde68a; }
-    .alert-info { background: var(--cyan-soft); border: 1px solid rgba(56,189,248,0.3); color: #bae6fd; }
+    .alert-error { background: var(--rose-soft); border: 1px solid color-mix(in srgb, var(--rose) 40%, transparent); color: var(--rose-ink); }
+    .alert-warn { background: var(--amber-soft); border: 1px solid color-mix(in srgb, var(--amber) 35%, transparent); color: var(--amber-ink); }
+    .alert-info { background: var(--cyan-soft); border: 1px solid color-mix(in srgb, var(--cyan) 30%, transparent); color: var(--cyan-ink); }
 
     .hidden { display: none !important; }
     .mono { font-family: var(--font-mono); }
-    .text-muted { color: var(--text-secondary); font-size: 12px; }
+    .text-muted { color: var(--text-secondary); font-size: 14.5px; }
     .divider { height: 1px; background: var(--border); margin: 12px 0; }
 
     /* ==========================================================================
@@ -336,6 +369,7 @@
       padding: 3px;
       gap: 3px;
     }
+    .seg-control { background: var(--bg-elevated); }
 
     .seg-btn {
       border: none;
@@ -343,12 +377,13 @@
       color: var(--text-secondary);
       padding: 6px 12px;
       border-radius: 5px;
-      font-size: 12.5px;
+      font-size: 14.5px;
       font-weight: 600;
       cursor: pointer;
       transition: all 0.15s;
     }
     .seg-btn.active { background: var(--accent); color: #fff; }
+    .seg-btn:hover:not(.active) { color: var(--text-primary); }
 
     .stat-box {
       background: var(--bg-input);
@@ -356,13 +391,13 @@
       border-radius: var(--radius-md);
       padding: 10px 12px;
     }
-    .stat-label { font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-secondary); font-weight: 700; }
-    .stat-val { font-family: var(--font-mono); font-size: 15px; font-weight: 700; margin-top: 3px; color: var(--text-primary); }
+    .stat-label { font-size: 14px; color: var(--text-secondary); font-weight: 600; }
+    .stat-val { font-family: var(--font-mono); font-size: 19px; font-weight: 700; margin-top: 2px; color: var(--text-primary); font-variant-numeric: tabular-nums; }
 
     .progress-track {
       width: 100%;
       height: 8px;
-      background: #1e293b;
+      background: #dde2e9;
       border-radius: 99px;
       overflow: hidden;
       margin-top: 6px;
@@ -386,7 +421,7 @@
 
     .vlsm-row {
       display: grid;
-      grid-template-columns: 34px 82px minmax(130px, 1fr) 84px minmax(0, 2.3fr) 34px;
+      grid-template-columns: 38px 88px minmax(130px, 1fr) 88px minmax(0, 2.3fr) 38px;
       gap: 6px 8px;
       align-items: center;
       background: var(--bg-input);
@@ -394,9 +429,9 @@
       padding: 6px 8px;
       border-radius: var(--radius-sm);
     }
-    .vlsm-row.is-lan { border-left: 3px solid var(--cyan); }
-    .vlsm-row.is-wan { border-left: 3px solid var(--amber); }
-    .vlsm-row select, .vlsm-row input { padding: 6px 8px; font-size: 12.5px; }
+    .vlsm-row.is-lan { background: color-mix(in srgb, var(--cyan-soft) 55%, white); border-color: color-mix(in srgb, var(--cyan) 35%, transparent); }
+    .vlsm-row.is-wan { background: color-mix(in srgb, var(--amber-soft) 55%, white); border-color: color-mix(in srgb, var(--amber) 35%, transparent); }
+    .vlsm-row select, .vlsm-row input { padding: 6px 8px; font-size: 15px; }
     .vlsm-row .v-idx { text-align: center; }
 
     .vlsm-head {
@@ -405,10 +440,8 @@
       padding: 0 12px 4px 11px;
     }
     .vlsm-head span {
-      font-size: 10.5px;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
+      font-size: 14px;
+      font-weight: 600;
       color: var(--text-secondary);
     }
 
@@ -421,7 +454,7 @@
     .vlsm-hint {
       grid-column: 3 / -1;
       font-family: var(--font-mono);
-      font-size: 11px;
+      font-size: 13px;
       color: var(--text-muted);
       white-space: pre-wrap;
     }
@@ -447,8 +480,8 @@
       width: 30px;
       height: 30px;
       border-radius: 50%;
-      background: #162033;
-      border: 1.5px solid #475569;
+      background: var(--accent-soft);
+      border: 1.5px solid color-mix(in srgb, var(--accent) 45%, transparent);
       display: flex;
       align-items: center;
       justify-content: center;
@@ -456,15 +489,15 @@
     .port-chips { display: flex; flex-wrap: wrap; gap: 5px; min-width: 0; }
     .port-chip {
       font-family: var(--font-mono);
-      font-size: 11px;
+      font-size: 13px;
       padding: 2px 8px;
-      border-radius: 999px;
+      border-radius: 3px;
       border: 1px solid var(--border);
       color: var(--text-muted);
       white-space: nowrap;
     }
-    .port-chip.lan { color: var(--cyan); background: var(--cyan-soft); border-color: rgba(56,189,248,0.3); }
-    .port-chip.wan { color: var(--amber); background: var(--amber-soft); border-color: rgba(251,191,36,0.3); }
+    .port-chip.lan { color: var(--cyan-ink); background: var(--cyan-soft); border-color: color-mix(in srgb, var(--cyan) 45%, transparent); }
+    .port-chip.wan { color: var(--amber-ink); background: var(--amber-soft); border-color: color-mix(in srgb, var(--amber) 45%, transparent); }
 
     /* Bounded Scrollable Subnet Table */
     .table-card {
@@ -482,7 +515,7 @@
       justify-content: space-between;
       gap: 10px;
       flex-wrap: wrap;
-      background: rgba(15, 23, 42, 0.55);
+      background: var(--bg-elevated);
     }
 
     .table-scroll-wrap {
@@ -494,33 +527,33 @@
       width: 100%;
       border-collapse: collapse;
       white-space: nowrap;
-      font-size: 12.5px;
+      font-size: 15px;
+      font-variant-numeric: tabular-nums;
     }
 
     table.data-table thead th {
       position: sticky;
       top: 0;
       z-index: 5;
-      background: #1a263b;
+      background: var(--bg-elevated);
       color: var(--text-secondary);
       text-align: left;
       padding: 10px 12px;
-      font-size: 11px;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.04em;
-      border-bottom: 1px solid var(--border);
+      font-size: 14px;
+      font-weight: 600;
+      border-bottom: 1.5px solid var(--border-strong);
     }
 
     table.data-table tbody td {
       padding: 9px 12px;
-      border-bottom: 1px solid rgba(38, 52, 73, 0.65);
+      border-bottom: 1px solid var(--border);
       font-family: var(--font-mono);
       color: var(--text-primary);
     }
 
     table.data-table tbody td.name-col { font-family: var(--font-sans); font-weight: 600; }
-    table.data-table tbody tr:hover { background: rgba(99, 102, 241, 0.09); }
+    table.data-table tbody tr:nth-child(even) { background: #f7f9fb; }
+    table.data-table tbody tr:hover { background: var(--accent-soft); }
 
     /* ==========================================================================
        TAB 2: 3-COLUMN TOPOLOGY & CISCO IOS PLANNER
@@ -550,15 +583,19 @@
       gap: 4px 12px;
       align-items: center;
       max-width: 46%;
-      background: rgba(17, 24, 39, 0.85);
+      background: rgba(255, 255, 255, 0.94);
       border: 1px solid var(--border);
       border-radius: var(--radius-sm);
       padding: 4px 9px;
-      font-size: 11px;
+      font-size: 13px;
       color: var(--text-secondary);
     }
     .legend-item { display: inline-flex; align-items: center; gap: 5px; white-space: nowrap; }
     .legend-note { color: var(--text-muted); }
+    @media (max-width: 900px) {
+      .canvas-help { display: none; }
+      .canvas-legend { max-width: calc(100% - 24px); }
+    }
 
     .pane {
       display: flex;
@@ -573,7 +610,7 @@
     }
 
     .pane-center {
-      background: #090f1d;
+      background: #f6f8fb; /* same as the halo behind link labels in the SVG */
       position: relative;
       display: flex;
       flex-direction: column;
@@ -596,7 +633,7 @@
     .sub-tabs {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
-      background: var(--bg-input);
+      background: var(--bg-elevated);
       border-bottom: 1px solid var(--border);
       padding: 6px;
       gap: 4px;
@@ -606,21 +643,23 @@
       border: none;
       background: transparent;
       color: var(--text-secondary);
-      padding: 7px 4px;
-      border-radius: 6px;
-      font-size: 11.5px;
-      font-weight: 700;
+      padding: 8px 4px;
+      border-radius: 4px;
+      font-family: var(--font-label);
+      font-size: 15px;
+      font-weight: 600;
       cursor: pointer;
       transition: all 0.15s;
       text-align: center;
     }
-    .sub-tab-btn:hover { color: var(--text-primary); background: rgba(255,255,255,0.04); }
+    .sub-tab-btn:hover { color: var(--text-primary); background: var(--bg-elevated); }
     .sub-tab-btn.active { background: var(--accent); color: #fff; }
 
     .pane-scroll {
       flex: 1;
       overflow-y: auto;
       padding: 14px;
+      background: var(--bg-app);
       display: flex;
       flex-direction: column;
       gap: 12px;
@@ -641,7 +680,8 @@
       align-items: center;
       justify-content: space-between;
       gap: 8px;
-      font-size: 12.5px;
+      font-family: var(--font-label);
+      font-size: 16px;
       font-weight: 700;
       color: var(--text-primary);
     }
@@ -674,8 +714,8 @@
       flex-direction: column;
       gap: 4px;
     }
-    .device-counter label { font-size: 10.5px; color: var(--text-secondary); font-weight: 600; }
-    .device-counter input { padding: 4px 6px; font-size: 12px; text-align: center; }
+    .device-counter label { font-size: 12.5px; color: var(--text-secondary); font-weight: 600; }
+    .device-counter input { padding: 4px 6px; font-size: 14px; text-align: center; }
 
     /* Center SVG Canvas */
     .canvas-toolbar {
@@ -693,15 +733,15 @@
     .canvas-toolbar > * { pointer-events: auto; }
 
     .canvas-pill {
-      background: rgba(17, 24, 39, 0.88);
+      background: rgba(255, 255, 255, 0.94);
       border: 1px solid var(--border);
-      backdrop-filter: blur(6px);
+      box-shadow: var(--shadow-card);
       padding: 6px 10px;
       border-radius: var(--radius-md);
       display: flex;
       align-items: center;
       gap: 8px;
-      font-size: 12px;
+      font-size: 14px;
       color: var(--text-secondary);
     }
 
@@ -728,7 +768,7 @@
     }
 
     .svg-router-node { cursor: move; }
-    .svg-router-node:hover .router-ring { stroke: #818cf8; }
+    .svg-router-node:hover .router-ring { stroke: var(--accent); }
 
     .canvas-help {
       position: absolute;
@@ -737,11 +777,11 @@
       z-index: 10;
       pointer-events: none;
       max-width: calc(100% - 24px);
-      background: rgba(17, 24, 39, 0.85);
+      background: rgba(255, 255, 255, 0.94);
       border: 1px solid var(--border);
       border-radius: var(--radius-sm);
       padding: 4px 9px;
-      font-size: 11px;
+      font-size: 13px;
       color: var(--text-secondary);
     }
 
@@ -763,13 +803,13 @@
       cursor: pointer;
       font: inherit;
     }
-    .plan-row:hover { border-color: #3b4c68; }
+    .plan-row:hover { border-color: var(--border-strong); }
     .plan-row.active { border-color: var(--accent); background: var(--accent-soft); }
-    .plan-name { font-weight: 700; font-size: 12.5px; min-width: 84px; }
+    .plan-name { font-weight: 700; font-size: 14.5px; min-width: 84px; }
     .plan-chips { display: flex; flex-wrap: wrap; gap: 4px; flex: 1; }
     .proto-chip {
       font-family: var(--font-mono);
-      font-size: 10.5px;
+      font-size: 12.5px;
       font-weight: 700;
       padding: 1px 7px;
       border-radius: 999px;
@@ -777,10 +817,10 @@
       border: 1px solid color-mix(in srgb, var(--pc) 45%, transparent);
       background: color-mix(in srgb, var(--pc) 14%, transparent);
     }
-    .link-proto-box { padding: 8px; gap: 6px; border-left-width: 3px; border-radius: 0 var(--radius-sm) var(--radius-sm) 0; }
-    .link-proto-box select { width: auto; padding: 4px 6px; font-size: 12px; }
-    .route-list { display: flex; flex-direction: column; gap: 3px; font-size: 11px; }
-    .route-list .mono { color: var(--emerald); }
+    .link-proto-box { padding: 8px; gap: 6px; }
+    .link-proto-box select { width: auto; padding: 4px 6px; font-size: 14px; }
+    .route-list { display: flex; flex-direction: column; gap: 3px; font-size: 13px; }
+    .route-list .mono { color: var(--emerald-ink); }
     .test-list { display: flex; flex-direction: column; gap: 6px; }
     .test-row {
       display: grid;
@@ -812,37 +852,37 @@
 
     .pill-btn {
       border: 1px solid var(--border);
-      background: var(--bg-input);
+      background: var(--field-bg);
       color: var(--text-secondary);
-      padding: 4px 9px;
-      border-radius: 999px;
-      font-size: 11.5px;
+      padding: 5px 11px;
+      border-radius: 4px;
+      font-size: 13.5px;
       font-weight: 600;
       cursor: pointer;
       transition: all 0.15s;
     }
-    .pill-btn:hover { color: var(--text-primary); }
+    .pill-btn:hover { color: var(--text-primary); border-color: var(--border-strong); }
     .pill-btn.active { background: var(--accent); border-color: var(--accent); color: #fff; }
 
     .cli-terminal {
       flex: 1;
       overflow: auto;
       padding: 14px;
-      background: #070c17;
+      background: var(--bg-code);
       font-family: var(--font-mono);
-      font-size: 12px;
-      line-height: 1.55;
-      color: #e2e8f0;
+      font-size: 15px;
+      line-height: 1.6;
+      color: var(--text-primary);
       white-space: pre;
       tab-size: 2;
     }
 
-    .cli-comment { color: #64748b; font-style: italic; }
-    .cli-section { color: #38bdf8; font-weight: 700; }
-    .cli-kw { color: #a5b4fc; font-weight: 600; }
-    .cli-ip { color: #34d399; }
-    .cli-str { color: #fbbf24; }
-    .cli-warn { color: #fb7185; }
+    .cli-comment { color: #5f6876; font-style: italic; }
+    .cli-section { color: var(--cyan-ink); font-weight: 700; }
+    .cli-kw { color: var(--accent-ink); font-weight: 700; }
+    .cli-ip { color: var(--emerald-ink); }
+    .cli-str { color: var(--amber-ink); }
+    .cli-warn { color: var(--rose); font-weight: 600; }
 
     /* Checks for the selected router (shown above the CLI) */
     .cli-notes {
@@ -854,39 +894,45 @@
       display: flex;
       flex-direction: column;
       gap: 4px;
-      font-size: 11.5px;
+      font-size: 13.5px;
       max-height: 130px;
       overflow: auto;
     }
     .cli-notes:empty { display: none; }
     .cli-notes li { color: var(--text-secondary); }
     .cli-notes li b { margin-right: 6px; }
-    .cli-notes li.warn { color: #fb7185; }
-    .cli-notes li.note { color: #fbbf24; }
+    .cli-notes li.warn { color: var(--rose); }
+    .cli-notes li.note { color: var(--amber-ink); }
     .cli-opts { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 12px; }
-    .cli-opts .checkbox-row { margin: 0; font-size: 11.5px; }
-    .cli-opts select { width: auto; padding: 3px 6px; font-size: 11.5px; }
+    .cli-opts .checkbox-row { margin: 0; font-size: 13.5px; }
+    .cli-opts select { width: auto; padding: 3px 6px; font-size: 13.5px; }
     #cliModeHint { margin-left: auto; }
 
     /* Copy in parts: the script split into small blocks, each with its own Copy button */
     .cli-terminal.chunked { white-space: normal; padding: 10px; display: flex; flex-direction: column; gap: 10px; }
-    .cli-chunk { border: 1px solid #1e293b; border-radius: 8px; background: #0a1122; flex-shrink: 0; }
-    .cli-chunk.done { opacity: 0.6; border-color: rgba(52, 211, 153, 0.45); }
+    .cli-chunk { border: 1px solid var(--border); border-radius: 8px; background: var(--bg-panel); flex-shrink: 0; box-shadow: var(--shadow-card); }
+    .cli-chunk.done { border-color: color-mix(in srgb, var(--emerald) 55%, transparent); background: #f7fbf8; box-shadow: none; }
+    .cli-chunk.done .chunk-body { color: var(--text-muted); }
     .chunk-head {
       display: flex;
       justify-content: space-between;
       align-items: center;
       gap: 8px;
-      padding: 6px 10px;
-      border-bottom: 1px solid #1e293b;
+      padding: 8px 10px 8px 12px;
+      border-bottom: 1px solid var(--border);
+      background: var(--bg-elevated);
+      border-radius: 8px 8px 0 0;
       font-family: var(--font-sans);
-      font-size: 11.5px;
+      font-size: 14px;
       color: var(--text-secondary);
     }
     .chunk-head b { color: var(--text-primary); }
-    .chunk-wait { color: var(--amber); }
-    .cli-chunk.done .chunk-copy { color: var(--emerald); border-color: rgba(52, 211, 153, 0.5); }
-    .chunk-body { white-space: pre; padding: 8px 10px; overflow-x: auto; }
+    .chunk-wait { color: var(--amber-ink); font-weight: 600; }
+    /* The one button that matters while pasting: big, violet, always on the right */
+    .chunk-copy { background: var(--accent); border-color: var(--accent); color: #fff; min-height: 36px; padding: 6px 18px; font-size: 15px; }
+    .chunk-copy:hover { background: var(--accent-hover); border-color: var(--accent-hover); }
+    .cli-chunk.done .chunk-copy { background: var(--emerald-soft); color: var(--emerald-ink); border-color: color-mix(in srgb, var(--emerald) 50%, transparent); }
+    .chunk-body { white-space: pre; padding: 10px 12px; overflow-x: auto; }
 
     /* Loopback rows in the Routers tab */
     .loop-row { display: grid; grid-template-columns: 64px 1fr 1fr auto; gap: 6px; align-items: center; }
@@ -894,6 +940,7 @@
 
     .cli-footer {
       padding: 10px 14px;
+      box-shadow: 0 -1px 0 var(--border);
       border-top: 1px solid var(--border);
       background: var(--bg-panel);
       display: flex;
@@ -915,53 +962,51 @@
       flex-direction: column;
       gap: 16px;
     }
-    .doc-intro h2 { font-size: 20px; margin-bottom: 4px; }
-    .doc-intro p { color: var(--text-secondary); font-size: 13px; max-width: 80ch; }
+    .doc-intro h2 { font-family: var(--font-label); font-size: 28px; line-height: 1.2; margin-bottom: 6px; }
+    .doc-intro p { color: var(--text-secondary); font-size: 16px; max-width: 75ch; }
     .doc-toc { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
     .doc-toc a {
-      color: var(--text-secondary);
+      color: var(--text-primary);
       text-decoration: none;
       border: 1px solid var(--border);
-      background: var(--bg-input);
-      padding: 4px 10px;
-      border-radius: 999px;
-      font-size: 12px;
+      background: var(--bg-panel);
+      padding: 5px 12px;
+      border-radius: 4px;
+      font-size: 14px;
       font-weight: 600;
     }
     .doc-toc a:hover { color: var(--text-primary); border-color: var(--accent); }
     .doc-card { scroll-margin-top: 80px; }
-    .doc-card h3 { font-size: 15px; margin-bottom: 10px; }
-    .doc-card h4 { font-size: 12px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.04em; margin: 12px 0 6px; }
+    .doc-card h3 { font-family: var(--font-label); font-size: 20px; line-height: 1.25; margin-bottom: 12px; }
+    .doc-card h4 { font-size: 15px; color: var(--text-secondary); font-weight: 700; margin: 16px 0 6px; }
     .doc-card a { color: var(--cyan); }
-    .doc-steps { padding-left: 20px; display: flex; flex-direction: column; gap: 6px; font-size: 13px; line-height: 1.55; }
-    .doc-note { margin-top: 10px; font-size: 12.5px; color: var(--text-secondary); }
+    .doc-steps { padding-left: 22px; display: flex; flex-direction: column; gap: 8px; font-size: 16px; line-height: 1.6; max-width: 80ch; }
+    .doc-note { margin-top: 10px; font-size: 14.5px; color: var(--text-secondary); }
     .doc-table-wrap { overflow-x: auto; }
-    .doc-table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+    .doc-table { width: 100%; border-collapse: collapse; font-size: 15.5px; }
     .doc-table th {
       text-align: left;
       color: var(--text-secondary);
       font-weight: 600;
-      font-size: 11px;
-      text-transform: uppercase;
-      letter-spacing: 0.04em;
-      border-bottom: 1px solid var(--border);
+      font-size: 14px;
+      border-bottom: 1.5px solid var(--border-strong);
       padding: 6px 8px;
     }
-    .doc-table td { border-bottom: 1px solid var(--border); padding: 7px 8px; vertical-align: top; line-height: 1.5; }
+    .doc-table td { border-bottom: 1px solid var(--border); padding: 8px 10px; vertical-align: top; line-height: 1.55; }
     .doc-table td:first-child { white-space: nowrap; color: var(--text-primary); font-weight: 600; }
     .doc-table td.mono { font-weight: 400; }
-    .doc-table tr.doc-group td { color: var(--cyan); font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; padding-top: 14px; }
-    .doc-card code { font-family: var(--font-mono); font-size: 12px; color: #c7d2fe; }
+    .doc-table tr.doc-group td { color: var(--accent-ink); font-family: var(--font-label); font-size: 16px; font-weight: 700; padding-top: 18px; border-bottom-color: var(--border-strong); }
+    .doc-card code { font-family: var(--font-mono); font-size: 14.5px; color: var(--accent-ink); }
     code.cmd {
-      background: rgba(99, 102, 241, 0.12);
-      border: 1px solid rgba(99, 102, 241, 0.3);
-      padding: 1px 6px;
-      border-radius: 5px;
+      background: var(--accent-soft);
+      border: 1px solid color-mix(in srgb, var(--accent) 35%, transparent);
+      padding: 2px 7px;
+      border-radius: 4px;
       cursor: copy;
       display: inline-block;
       margin: 1px 0;
     }
-    code.cmd:hover { border-color: var(--accent); color: #fff; }
+    code.cmd:hover { border-color: var(--accent); background: var(--accent); color: #fff; }
     .cmd-grid { display: flex; flex-wrap: wrap; gap: 6px; }
     @media (max-width: 760px) {
       .doc-table td:first-child { white-space: normal; }
@@ -978,17 +1023,17 @@
       .acl-grid, .acl-learn-grid { grid-template-columns: minmax(0, 1fr); }
     }
     .doc-card h3 .badge { margin-left: 6px; vertical-align: middle; }
-    .doc-list { padding-left: 18px; display: flex; flex-direction: column; gap: 5px; font-size: 13px; line-height: 1.5; }
+    .doc-list { padding-left: 18px; display: flex; flex-direction: column; gap: 5px; font-size: 15px; line-height: 1.5; }
     .doc-code {
       font-family: var(--font-mono);
-      font-size: 12px;
-      background: #070c17;
+      font-size: 14px;
+      background: var(--bg-code);
       border: 1px solid var(--border);
       border-radius: var(--radius-sm);
       padding: 8px 10px;
       overflow-x: auto;
       white-space: pre;
-      color: #e2e8f0;
+      color: var(--text-primary);
       margin: 0 0 8px;
     }
     .acl-preview {
@@ -1002,18 +1047,16 @@
       gap: 6px;
     }
     .acl-preview-title, .acl-step, .acl-leg-title {
-      font-size: 11px;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      color: var(--cyan);
-      font-weight: 600;
+      font-size: 14.5px;
+      color: var(--cyan-ink);
+      font-weight: 700;
     }
     #aclPreview { display: flex; flex-direction: column; gap: 6px; }
-    .acl-preview-sentence { font-size: 13px; font-weight: 600; }
-    .acl-preview-where { font-family: var(--font-mono); font-size: 11.5px; color: var(--cyan); }
-    .acl-msg { font-size: 12px; line-height: 1.45; }
+    .acl-preview-sentence { font-size: 15px; font-weight: 600; }
+    .acl-preview-where { font-family: var(--font-mono); font-size: 13.5px; color: var(--cyan-ink); }
+    .acl-msg { font-size: 14px; line-height: 1.45; }
     .acl-msg.err { color: var(--rose); }
-    .acl-msg.warn { color: var(--amber); }
+    .acl-msg.warn { color: var(--amber-ink); }
     .acl-msg.note { color: var(--text-secondary); }
     .acl-rule {
       background: var(--bg-input);
@@ -1026,7 +1069,7 @@
       margin-bottom: 8px;
     }
     .acl-rule-head { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
-    .acl-rule-head select { width: auto; padding: 2px 6px; font-size: 11.5px; }
+    .acl-rule-head select { width: auto; padding: 2px 6px; font-size: 13.5px; }
     .acl-router {
       border: 1px solid var(--border);
       border-radius: var(--radius-md);
@@ -1038,65 +1081,65 @@
       margin-bottom: 12px;
     }
     .acl-router-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-    .acl-box { border: 1px solid var(--border); border-radius: var(--radius-sm); background: #0a1122; min-width: 0; }
+    .acl-box { border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--bg-panel); min-width: 0; }
     .acl-box-head { display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: center; padding: 8px 10px; border-bottom: 1px solid var(--border); }
     .acl-id-row { display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: center; padding: 8px 10px; border-bottom: 1px solid var(--border); }
-    .acl-id-row input { width: 150px; padding: 4px 8px; font-size: 12px; }
+    .acl-id-row input { width: 150px; padding: 4px 8px; font-size: 14px; }
     .acl-body { padding: 8px 10px; display: flex; flex-direction: column; gap: 5px; }
-    .acl-why { padding: 8px 10px; border-top: 1px solid var(--border); font-size: 12px; color: var(--text-secondary); line-height: 1.5; }
+    .acl-why { padding: 8px 10px; border-top: 1px solid var(--border); font-size: 14px; color: var(--text-secondary); line-height: 1.5; }
     .ace {
       display: flex;
       flex-direction: column;
       gap: 2px;
-      padding: 5px 8px;
-      border-left: 3px solid var(--border);
-      background: rgba(15, 23, 42, 0.6);
+      padding: 6px 9px;
+      border: 1px solid var(--border);
+      background: var(--bg-panel);
       border-radius: 4px;
     }
-    .ace.deny { border-left-color: var(--rose); }
-    .ace.permit { border-left-color: var(--emerald); }
-    .ace.cmd { border-left-color: var(--accent); }
-    .ace.cmd .ace-cmd { color: #c7d2fe; }
+    .ace.deny { background: color-mix(in srgb, var(--rose-soft) 60%, white); border-color: color-mix(in srgb, var(--rose) 30%, transparent); }
+    .ace.permit { background: color-mix(in srgb, var(--emerald-soft) 60%, white); border-color: color-mix(in srgb, var(--emerald) 30%, transparent); }
+    .ace.cmd { background: color-mix(in srgb, var(--accent-soft) 60%, white); border-color: color-mix(in srgb, var(--accent) 30%, transparent); }
+    .ace.cmd .ace-cmd { color: var(--accent-ink); }
     .ace.remark .ace-cmd { color: var(--text-muted); font-style: italic; }
-    .ace.implicit { border-left: 3px dashed var(--rose); opacity: 0.85; }
-    .ace.implicit .ace-cmd { color: #fda4af; }
-    .ace-cmd { font-family: var(--font-mono); font-size: 12px; white-space: pre-wrap; word-break: break-word; }
-    .ace-seq { display: inline-block; min-width: 30px; color: var(--text-muted); font-size: 11px; }
-    .ace-explain { font-size: 11.5px; color: var(--text-secondary); }
+    .ace.implicit { border: 1.5px dashed var(--rose); background: var(--bg-panel); }
+    .ace.implicit .ace-cmd { color: var(--rose); }
+    .ace-cmd { font-family: var(--font-mono); font-size: 14px; white-space: pre-wrap; word-break: break-word; }
+    .ace-seq { display: inline-block; min-width: 30px; color: var(--text-muted); font-size: 13px; }
+    .ace-explain { font-size: 13.5px; color: var(--text-secondary); }
     .tok { border-radius: 3px; cursor: help; }
-    .tok-deny { color: #fda4af; font-weight: 700; }
-    .tok-permit { color: #6ee7b7; font-weight: 700; }
-    .tok-proto { color: #c4b5fd; }
-    .tok-src { color: #7dd3fc; }
-    .tok-dst { color: #fcd34d; }
-    .tok-wc { color: #94a3b8; }
-    .tok-port { color: #f9a8d4; }
-    .tok-kw { color: #a5b4fc; }
-    .acl-legend { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 12px; font-family: var(--font-mono); color: var(--text-secondary); }
-    .ace-anatomy { font-size: 13px; background: #070c17; border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 10px; margin-bottom: 10px; overflow-x: auto; white-space: nowrap; }
+    .tok-deny { color: var(--rose); font-weight: 700; }
+    .tok-permit { color: var(--emerald); font-weight: 700; }
+    .tok-proto { color: #6d28d9; }
+    .tok-src { color: var(--cyan); }
+    .tok-dst { color: #8a4b00; }
+    .tok-wc { color: #5f6876; }
+    .tok-port { color: #b0165f; }
+    .tok-kw { color: var(--accent-ink); font-weight: 600; }
+    .acl-legend { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 14px; font-family: var(--font-mono); color: var(--text-secondary); }
+    .ace-anatomy { font-size: 15px; background: var(--bg-code); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 10px; margin-bottom: 10px; overflow-x: auto; white-space: nowrap; }
     .acl-tester-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
     @media (max-width: 700px) { .acl-tester-grid { grid-template-columns: minmax(0, 1fr); } }
     .acl-test-result { margin-top: 10px; display: flex; flex-direction: column; gap: 8px; }
-    .acl-packet { font-size: 12px; color: var(--text-secondary); }
-    .acl-verdict { padding: 10px 12px; border-radius: var(--radius-sm); font-weight: 600; font-size: 13px; line-height: 1.45; }
-    .acl-verdict.ok { background: var(--emerald-soft); color: #a7f3d0; border: 1px solid rgba(52, 211, 153, 0.35); }
-    .acl-verdict.bad { background: var(--rose-soft); color: #fecdd3; border: 1px solid rgba(251, 113, 133, 0.35); }
-    .acl-verdict.warn { background: var(--amber-soft); color: #fde68a; border: 1px solid rgba(251, 191, 36, 0.35); }
-    .acl-steps { list-style: none; display: flex; flex-direction: column; gap: 8px; padding: 0; font-size: 12.5px; line-height: 1.5; }
-    .acl-steps li { border-left: 3px solid var(--border); padding-left: 8px; }
-    .acl-steps li.ok { border-left-color: var(--emerald); }
-    .acl-steps li.bad { border-left-color: var(--rose); }
-    .acl-mini { margin-top: 4px; display: flex; flex-direction: column; gap: 2px; font-size: 11.5px; }
+    .acl-packet { font-size: 14px; color: var(--text-secondary); }
+    .acl-verdict { padding: 10px 12px; border-radius: var(--radius-sm); font-weight: 600; font-size: 15px; line-height: 1.45; }
+    .acl-verdict.ok { background: var(--emerald-soft); color: var(--emerald-ink); border: 1px solid color-mix(in srgb, var(--emerald) 45%, transparent); }
+    .acl-verdict.bad { background: var(--rose-soft); color: var(--rose-ink); border: 1px solid color-mix(in srgb, var(--rose) 35%, transparent); }
+    .acl-verdict.warn { background: var(--amber-soft); color: var(--amber-ink); border: 1px solid color-mix(in srgb, var(--amber) 35%, transparent); }
+    .acl-steps { list-style: none; display: flex; flex-direction: column; gap: 8px; padding: 0; font-size: 14.5px; line-height: 1.5; }
+    .acl-steps li { border: 1px solid var(--border); border-radius: 4px; padding: 6px 9px; }
+    .acl-steps li.ok { background: color-mix(in srgb, var(--emerald-soft) 60%, white); border-color: color-mix(in srgb, var(--emerald) 35%, transparent); }
+    .acl-steps li.bad { background: color-mix(in srgb, var(--rose-soft) 60%, white); border-color: color-mix(in srgb, var(--rose) 35%, transparent); }
+    .acl-mini { margin-top: 4px; display: flex; flex-direction: column; gap: 2px; font-size: 13.5px; }
     .mini-line { padding: 1px 6px; border-radius: 3px; color: var(--text-secondary); }
     .mini-line .seq { display: inline-block; min-width: 28px; color: var(--text-muted); font-family: var(--font-mono); }
-    .mini-line.hit.deny { background: var(--rose-soft); color: #fecdd3; }
-    .mini-line.hit.permit { background: var(--emerald-soft); color: #a7f3d0; }
-    .acl-diagram { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; font-size: 12.5px; margin-bottom: 10px; }
+    .mini-line.hit.deny { background: var(--rose-soft); color: var(--rose-ink); }
+    .mini-line.hit.permit { background: var(--emerald-soft); color: var(--emerald-ink); }
+    .acl-diagram { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; font-size: 14.5px; margin-bottom: 10px; }
     .acl-diagram .node { border: 1px solid var(--border); border-radius: 6px; padding: 6px 10px; background: var(--bg-input); }
-    .acl-diagram .node.port { font-family: var(--font-mono); color: var(--cyan); }
+    .acl-diagram .node.port { font-family: var(--font-mono); color: var(--cyan-ink); }
     .acl-diagram .node.router { border-color: var(--accent); }
     .acl-diagram .arrow { color: var(--text-secondary); }
-    .wc-out { display: flex; flex-direction: column; gap: 3px; font-size: 12.5px; margin-top: 6px; }
+    .wc-out { display: flex; flex-direction: column; gap: 3px; font-size: 14.5px; margin-top: 6px; }
 
     /* Toast */
     .toast {
@@ -1104,14 +1147,14 @@
       bottom: 18px;
       right: 18px;
       z-index: 100;
-      background: #1e293b;
-      color: #f8fafc;
-      border: 1px solid #475569;
+      background: var(--text-primary);
+      color: #ffffff;
+      border: 1px solid var(--text-primary);
       padding: 10px 14px;
       border-radius: var(--radius-md);
-      font-size: 12.5px;
+      font-size: 15px;
       font-weight: 600;
-      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.45);
+      box-shadow: 0 8px 24px rgba(20, 24, 31, 0.22);
       opacity: 0;
       transform: translateY(10px);
       pointer-events: none;
@@ -1156,6 +1199,27 @@
       .vlsm-row .vlsm-hint { grid-column: 1 / -1; grid-row: 3; }
       .vlsm-conn .conn-if { flex-basis: 64px; }
     }
+
+    /* ==========================================================================
+       PRINT: addressing table, help pages and the selected router's script
+       ========================================================================== */
+    @media print {
+      @page { margin: 12mm; }
+      html, body { background: #fff; font-size: 11pt; height: auto; }
+      .app-header, .toast, .canvas-toolbar, .canvas-help, .canvas-legend, .pane-left,
+      .cli-header, .cli-footer, .doc-toc, .btn, .chunk-copy, .seg-control, .table-toolbar .btn { display: none !important; }
+      .tab-view.hidden { display: none !important; }
+      .card, .table-card, .cli-chunk { box-shadow: none; break-inside: avoid; border-color: #9aa3ae; }
+      .table-scroll-wrap, .vlsm-list, .pane-scroll, .cli-terminal, .cli-notes { max-height: none !important; overflow: visible !important; }
+      .studio-grid, .diagram-stage { height: auto !important; display: block; overflow: visible; }
+      .pane, .pane-right { overflow: visible; border: none; }
+      .cli-terminal { white-space: pre-wrap; font-size: 10pt; }
+      .chunk-body { white-space: pre-wrap; }
+      .diagram-stage { height: 90vh !important; }
+      table.data-table { white-space: normal; font-size: 9pt; }
+      table.data-table thead th { position: static; }
+      a { color: inherit; }
+    }
   </style>
 </head>
 <body>
@@ -1185,8 +1249,8 @@
       <button id="btnLoadSample" class="btn btn-cyan" type="button" title="Load pre-configured dual-stack Cebu-Davao lab">
         Sample Lab
       </button>
-      <button id="btnSaveJson" class="btn" type="button">Save Project (.json)</button>
-      <button id="btnLoadJson" class="btn" type="button">Load Project (.json)</button>
+      <button id="btnSaveJson" class="btn" type="button" title="Download this project as a .json file">Save project</button>
+      <button id="btnLoadJson" class="btn" type="button" title="Open a saved project .json file">Open project</button>
       <input id="fileLoadJson" type="file" accept=".json,application/json" class="hidden" />
     </div>
   </header>
@@ -1264,7 +1328,7 @@
           <button id="btnAddrAddRouter" class="btn btn-primary btn-sm" type="button">+ Add Router</button>
         </div>
         <div class="csv-bar">
-          <span class="text-muted" style="font-size:12px;">Router CSV (router, interface, ipv4, ipv6, link_local):</span>
+          <span class="text-muted" style="font-size:14px;">Router CSV (router, interface, ipv4, ipv6, link_local):</span>
           <button id="btnCsvImport" class="btn btn-sm" type="button" title="Build routers, LANs, WAN links and loopbacks from a CSV with one row per interface">Import CSV</button>
           <button id="btnCsvExport" class="btn btn-sm" type="button" title="Download every router interface and its addresses (addressing table)">Download CSV</button>
           <button id="btnCsvTemplate" class="btn btn-sm" type="button">Template CSV</button>
@@ -1337,7 +1401,7 @@
           <div class="stat-box">
             <div style="display:flex; justify-content:space-between; align-items:center;">
               <span class="stat-label">Address Pool Utilization</span>
-              <span id="vlsmStatPct" class="mono" style="font-size:12px; font-weight:700;">0%</span>
+              <span id="vlsmStatPct" class="mono" style="font-size:14px; font-weight:700;">0%</span>
             </div>
             <div class="progress-track">
               <div id="vlsmProgressBar" class="progress-fill" style="width:0%;"></div>
@@ -1361,7 +1425,7 @@
       <div class="table-card">
         <div class="table-toolbar">
           <div style="display:flex; align-items:center; gap:10px;">
-            <strong style="font-size:13.5px;">Generated Subnet Table</strong>
+            <strong style="font-size:16px;">Generated Subnet Table</strong>
             <span id="subnetCountBadge" class="badge badge-indigo">0 subnets</span>
           </div>
           <div style="display:flex; gap:8px; flex-wrap:wrap;">
@@ -1448,7 +1512,7 @@
         <div class="cli-header">
           <div style="display:flex; align-items:center; justify-content:space-between; gap:8px;">
             <span class="field-label" style="margin:0;">Target Router CLI</span>
-            <select id="cliRouterSelect" class="mono" style="max-width:210px; padding:5px 8px; font-size:12.5px;"></select>
+            <select id="cliRouterSelect" class="mono" style="max-width:210px; padding:5px 8px; font-size:14.5px;"></select>
           </div>
           <div id="cliFilterPills" class="cli-pills">
             <button class="pill-btn active" data-filter="all" type="button">All</button>
@@ -1475,7 +1539,7 @@
               <option value="30">30 lines</option>
             </select>
             <button id="btnClearTicks" class="btn btn-xs" type="button" title="Untick every part, to paste them again">Clear ✓</button>
-            <span id="cliModeHint" class="text-muted" style="font-size:11px;"></span>
+            <span id="cliModeHint" class="text-muted" style="font-size:13px;"></span>
           </div>
         </div>
 
@@ -1517,7 +1581,7 @@
 
       <div class="doc-intro" id="acl-learn">
         <h2>Learn the basics</h2>
-        <p>Everything you need for the exam, short. Click any <code class="cmd">grey command</code> to copy it.</p>
+        <p>Everything you need for the exam, short. Click any <code class="cmd">highlighted command</code> to copy it.</p>
       </div>
       <div class="acl-learn-grid">
         <div class="card doc-card">
@@ -1701,7 +1765,7 @@ line vty 0 4
     <div class="doc-container">
       <div class="doc-intro">
         <h2>Help</h2>
-        <p>For the hands-on exam: real routers, cables and PCs, configured through PuTTY. Click any <code class="cmd">grey command</code> to copy it.</p>
+        <p>For the hands-on exam: real routers, cables and PCs, configured through PuTTY. Click any <code class="cmd">highlighted command</code> to copy it.</p>
         <nav class="doc-toc" aria-label="Help sections">
           <a href="#h-workflow">Exam workflow</a>
           <a href="#h-fields">What to type</a>
@@ -1888,7 +1952,7 @@ line vty 0 4
     <div class="doc-container">
       <div class="doc-intro">
         <h2>Troubleshooting</h2>
-        <p>Work from the bottom up: cable and port → IP address → gateway → routing → DHCP/ACL/SSH. Click any <code class="cmd">grey command</code> to copy it. The <b>Verify</b> button in the CLI pane lists the checks for the router you picked.</p>
+        <p>Work from the bottom up: cable and port → IP address → gateway → routing → DHCP/ACL/SSH. Click any <code class="cmd">highlighted command</code> to copy it. The <b>Verify</b> button in the CLI pane lists the checks for the router you picked.</p>
         <nav class="doc-toc" aria-label="Troubleshooting sections">
           <a href="#t-symptoms">Symptom → fix</a>
           <a href="#t-status">Interface status</a>
@@ -2704,7 +2768,7 @@ line vty 0 4
           <td>${s.lastUsable}</td>
           <td style="color:var(--text-secondary);">${s.broadcast}</td>
           <td style="color:var(--emerald); font-weight:700;">${s.usableHosts.toLocaleString()}</td>
-          <td style="color:#a5b4fc;">${escapeHtml(s.ipv6Prefix)}</td>
+          <td style="color:var(--accent-ink);">${escapeHtml(s.ipv6Prefix)}</td>
         </tr>
       `).join('');
     }
@@ -2751,7 +2815,7 @@ line vty 0 4
     // reqId -> { kind: 'ok-lan'|'ok-wan'|'unlinked'|'incomplete'|'conflict'|'bad'|'nospace', msg }
     let vlsmLinkStatus = {};
 
-    const ROUTER_ICON_SVG = `<svg width="20" height="20" viewBox="-13 -13 26 26" aria-hidden="true"><path d="M-10 0 H10 M6 -4 L10 0 L6 4 M-6 -4 L-10 0 L-6 4" stroke="#e2e8f0" stroke-width="2" fill="none"/><path d="M0 -10 V10 M-4 -6 L0 -10 L4 -6 M-4 6 L0 10 L4 6" stroke="#38bdf8" stroke-width="2" fill="none"/></svg>`;
+    const ROUTER_ICON_SVG = `<svg width="20" height="20" viewBox="-13 -13 26 26" aria-hidden="true"><path d="M-10 0 H10 M6 -4 L10 0 L6 4 M-6 -4 L-10 0 L-6 4" stroke="#14181f" stroke-width="2" fill="none"/><path d="M0 -10 V10 M-4 -6 L0 -10 L4 -6 M-4 6 L0 10 L4 6" stroke="#5b2d96" stroke-width="2" fill="none"/></svg>`;
 
     function ifaceKey(routerId, iface) {
       return `${routerId}|${iface}`;
@@ -3408,7 +3472,7 @@ line vty 0 4
     const ROUTING_PROTOCOLS = ['static', 'ripv2', 'ospf', 'eigrp'];
     const PROTO_LABEL = { static: 'Static', ripv2: 'RIPv2', ospf: 'OSPF', eigrp: 'EIGRP' };
     const PROTO_SHORT = { static: 'STATIC', ripv2: 'RIP', ospf: 'OSPF', eigrp: 'EIGRP' };
-    const PROTO_COLOR = { static: '#94a3b8', ripv2: '#34d399', ospf: '#a78bfa', eigrp: '#fb923c' };
+    const PROTO_COLOR = { static: '#5c6573', ripv2: '#11703a', ospf: '#7e22ce', eigrp: '#c2410c' };
     const PROTO_HINT = {
       static: 'Routes are typed by hand (ip route). AD 1, no metric. Good for small, stable parts such as the ISP side.',
       ripv2: 'Distance vector. Metric = hop count (max 15, 16 = unreachable). AD 120. Simple, but slow on big networks.',
@@ -5135,7 +5199,7 @@ line vty 0 4
     const TOPO_BG = `
       <defs>
         <pattern id="topoDots" width="24" height="24" patternUnits="userSpaceOnUse">
-          <circle cx="1" cy="1" r="1" fill="rgba(148, 163, 184, 0.14)" />
+          <circle cx="1" cy="1" r="1" fill="rgba(20, 24, 31, 0.16)" />
         </pattern>
         <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
           <feGaussianBlur stdDeviation="3" result="blur" />
@@ -5212,7 +5276,7 @@ line vty 0 4
         y = uy < 0 ? p.y - 30 : p.y + 50;
         anchor = side > 0 ? 'start' : 'end';
       }
-      return `<text x="${x.toFixed(1)}" y="${y.toFixed(1)}" text-anchor="${anchor}" fill="#94a3b8" font-size="10" font-family="monospace" paint-order="stroke" stroke="#090f1d" stroke-width="3">${escapeHtml(text)}</text>`;
+      return `<text x="${x.toFixed(1)}" y="${y.toFixed(1)}" text-anchor="${anchor}" fill="#424b58" font-size="11" font-family="monospace" paint-order="stroke" stroke="#f6f8fb" stroke-width="4">${escapeHtml(text)}</text>`;
     }
 
     function renderTopologySvg() {
@@ -5224,7 +5288,7 @@ line vty 0 4
       if (!routers.length) {
         if (autoBtn) autoBtn.disabled = true;
         topoLastPositions = {};
-        svg.innerHTML = `${TOPO_BG}<g id="topoContent"><text x="350" y="190" text-anchor="middle" fill="#64748b" font-size="14" font-family="sans-serif">No routers in topology yet. Add a 2901 or 2911 router on the left pane.</text></g>`;
+        svg.innerHTML = `${TOPO_BG}<g id="topoContent"><text x="350" y="190" text-anchor="middle" fill="#5c6573" font-size="15" font-family="sans-serif">No routers yet. Add one on the Addressing tab or in Configure &amp; CLI.</text></g>`;
         applyTopologyView();
         return;
       }
@@ -5343,9 +5407,9 @@ line vty 0 4
 
         const pillSvg = (x, y) => `
           <g transform="translate(${x.toFixed(1)}, ${y.toFixed(1)})">
-            <rect x="-92" y="-14" width="184" height="${appState.initConfig.dualStack ? 36 : 22}" rx="6" fill="#111827" stroke="${lc}" stroke-width="1.2" />
-            <text x="0" y="0" text-anchor="middle" fill="#fbbf24" font-size="10.5" font-weight="700" font-family="monospace"><tspan fill="${lc}">${PROTO_SHORT[linkProto]}</tspan> · ${escapeHtml(lnk.netIp)}/${escapeHtml(lnk.cidr)}</text>
-            ${appState.initConfig.dualStack ? `<text x="0" y="14" text-anchor="middle" fill="#a5b4fc" font-size="9.5" font-family="monospace">${escapeHtml(lnk.ipv6Prefix)}</text>` : ''}
+            <rect x="-92" y="-14" width="184" height="${appState.initConfig.dualStack ? 36 : 22}" rx="6" fill="#ffffff" stroke="${lc}" stroke-width="1.5" />
+            <text x="0" y="0" text-anchor="middle" fill="#7a3300" font-size="11" font-weight="700" font-family="monospace"><tspan fill="${lc}">${PROTO_SHORT[linkProto]}</tspan> · ${escapeHtml(lnk.netIp)}/${escapeHtml(lnk.cidr)}</text>
+            ${appState.initConfig.dualStack ? `<text x="0" y="14" text-anchor="middle" fill="#4a2380" font-size="10" font-family="monospace">${escapeHtml(lnk.ipv6Prefix)}</text>` : ''}
           </g>`;
 
         if (p1.manual) {
@@ -5412,8 +5476,8 @@ line vty 0 4
           const lIp = leftIs1 ? lnk.ip1 : lnk.ip2;
           const rIp = leftIs1 ? lnk.ip2 : lnk.ip1;
           parts.push(`
-            <text x="${sx + 3}" y="${sy + 12}" text-anchor="start" fill="#94a3b8" font-size="10" font-family="monospace">${escapeHtml(lIf)} (${escapeHtml(lIp)})</text>
-            <text x="${ex - 3}" y="${sy + 12}" text-anchor="end" fill="#94a3b8" font-size="10" font-family="monospace">${escapeHtml(rIf)} (${escapeHtml(rIp)})</text>
+            <text x="${sx + 3}" y="${sy + 12}" text-anchor="start" fill="#424b58" font-size="11" font-family="monospace">${escapeHtml(lIf)} (${escapeHtml(lIp)})</text>
+            <text x="${ex - 3}" y="${sy + 12}" text-anchor="end" fill="#424b58" font-size="11" font-family="monospace">${escapeHtml(rIf)} (${escapeHtml(rIp)})</text>
           `);
         } else {
           // Cross-row curved path
@@ -5438,8 +5502,8 @@ line vty 0 4
           const lIp = leftIs1 ? lnk.ip1 : lnk.ip2;
           const rIp = leftIs1 ? lnk.ip2 : lnk.ip1;
           parts.push(`
-            <text x="${lx}" y="${p1.y + 16}" text-anchor="start" fill="#94a3b8" font-size="10" font-family="monospace">${escapeHtml(lIf)} (${escapeHtml(lIp)})</text>
-            <text x="${rx}" y="${p2.y + 16}" text-anchor="end" fill="#94a3b8" font-size="10" font-family="monospace">${escapeHtml(rIf)} (${escapeHtml(rIp)})</text>
+            <text x="${lx}" y="${p1.y + 16}" text-anchor="start" fill="#424b58" font-size="11" font-family="monospace">${escapeHtml(lIf)} (${escapeHtml(lIp)})</text>
+            <text x="${rx}" y="${p2.y + 16}" text-anchor="end" fill="#424b58" font-size="11" font-family="monospace">${escapeHtml(rIf)} (${escapeHtml(rIp)})</text>
           `);
         }
       });
@@ -5472,21 +5536,21 @@ line vty 0 4
           const hasAcl = routerAclGroups.some(g => g.iface === lan.iface);
 
           // Cable from Router to Switch/Home Router
-          parts.push(`<line x1="${pos.x}" y1="${pos.y + 30}" x2="${swX}" y2="${swY - 22}" stroke="#38bdf8" stroke-width="2.5" />`);
+          parts.push(`<line x1="${pos.x}" y1="${pos.y + 30}" x2="${swX}" y2="${swY - 22}" stroke="#0a5fae" stroke-width="2.5" />`);
 
           // Interface label on cable
           const midLx = (pos.x + swX) / 2;
           const midLy = (pos.y + 30 + swY - 22) / 2;
           parts.push(`
-            <rect x="${midLx - 56}" y="${midLy - 11}" width="112" height="20" rx="5" fill="#0f172a" stroke="#1e293b" />
-            <text x="${midLx}" y="${midLy + 3}" text-anchor="middle" fill="#38bdf8" font-size="10" font-family="monospace">${escapeHtml(lan.iface)}: ${escapeHtml(lan.gatewayIp)}</text>
+            <rect x="${midLx - 66}" y="${midLy - 11}" width="132" height="20" rx="4" fill="#ffffff" stroke="#0a5fae" />
+            <text x="${midLx}" y="${midLy + 3}" text-anchor="middle" fill="#08467f" font-size="10.5" font-family="monospace">${escapeHtml(lan.iface)}: ${escapeHtml(lan.gatewayIp)}</text>
           `);
 
           // ACL Shield Badge if ACL applied on this interface
           if (hasAcl) {
             parts.push(`
               <g transform="translate(${midLx + 64}, ${midLy - 8})" title="ACL Applied">
-                <path d="M8 0 L16 3 V9 C16 14 12 17 8 19 C4 17 0 14 0 9 V3 Z" fill="#f43f5e" stroke="#fecdd3" stroke-width="1"/>
+                <path d="M8 0 L16 3 V9 C16 14 12 17 8 19 C4 17 0 14 0 9 V3 Z" fill="#b8143a" stroke="#ffffff" stroke-width="1"/>
                 <text x="8" y="12" text-anchor="middle" fill="#fff" font-size="8" font-weight="700">A</text>
               </g>
             `);
@@ -5496,21 +5560,21 @@ line vty 0 4
           if (lan.accessDevice === 'Home Router') {
             parts.push(`
               <g transform="translate(${swX - 28}, ${swY - 20})">
-                <rect width="56" height="32" rx="7" fill="#1e293b" stroke="#38bdf8" stroke-width="1.8" />
-                <line x1="12" y1="0" x2="10" y2="-11" stroke="#38bdf8" stroke-width="2" />
-                <line x1="44" y1="0" x2="46" y2="-11" stroke="#38bdf8" stroke-width="2" />
-                <circle cx="16" cy="16" r="2.5" fill="#34d399" />
-                <circle cx="28" cy="16" r="2.5" fill="#38bdf8" />
-                <circle cx="40" cy="16" r="2.5" fill="#fbbf24" />
+                <rect width="56" height="32" rx="7" fill="#ffffff" stroke="#0a5fae" stroke-width="1.8" />
+                <line x1="12" y1="0" x2="10" y2="-11" stroke="#0a5fae" stroke-width="2" />
+                <line x1="44" y1="0" x2="46" y2="-11" stroke="#0a5fae" stroke-width="2" />
+                <circle cx="16" cy="16" r="2.5" fill="#11703a" />
+                <circle cx="28" cy="16" r="2.5" fill="#0a5fae" />
+                <circle cx="40" cy="16" r="2.5" fill="#a84700" />
               </g>
             `);
           } else {
             // 2960 Switch
             parts.push(`
               <g transform="translate(${swX - 30}, ${swY - 18})">
-                <rect width="60" height="30" rx="5" fill="#1e293b" stroke="#38bdf8" stroke-width="1.8" />
-                <path d="M12 10 H44 M40 6 L44 10 L40 14" stroke="#38bdf8" stroke-width="1.6" fill="none" />
-                <path d="M48 20 H16 M20 16 L16 20 L20 24" stroke="#38bdf8" stroke-width="1.6" fill="none" />
+                <rect width="60" height="30" rx="5" fill="#ffffff" stroke="#0a5fae" stroke-width="1.8" />
+                <path d="M12 10 H44 M40 6 L44 10 L40 14" stroke="#0a5fae" stroke-width="1.6" fill="none" />
+                <path d="M48 20 H16 M20 16 L16 20 L20 24" stroke="#0a5fae" stroke-width="1.6" fill="none" />
               </g>
             `);
           }
@@ -5522,10 +5586,10 @@ line vty 0 4
 
           parts.push(`
             <g transform="translate(${swX}, ${swY + 28})">
-              <text x="0" y="0" text-anchor="middle" fill="#f1f5f9" font-size="11.5" font-weight="700" font-family="sans-serif">${escapeHtml(lan.name)}</text>
-              <text x="0" y="15" text-anchor="middle" fill="#34d399" font-size="10.5" font-family="monospace">${escapeHtml(lan.netIp)}/${escapeHtml(lan.cidr)}</text>
-              ${appState.initConfig.dualStack && lan.ipv6Prefix ? `<text x="0" y="29" text-anchor="middle" fill="#a5b4fc" font-size="9.5" font-family="monospace">${escapeHtml(lan.ipv6Prefix)} (${escapeHtml(lan.ipv6Mode)})</text>` : ''}
-              <text x="0" y="${appState.initConfig.dualStack && lan.ipv6Prefix ? 43 : 29}" text-anchor="middle" fill="#fbbf24" font-size="9.5" font-family="monospace">${dhcpBadge}</text>
+              <text x="0" y="0" text-anchor="middle" fill="#14181f" font-size="12.5" font-weight="700" font-family="sans-serif">${escapeHtml(lan.name)}</text>
+              <text x="0" y="15" text-anchor="middle" fill="#0b5229" font-size="11" font-family="monospace">${escapeHtml(lan.netIp)}/${escapeHtml(lan.cidr)}</text>
+              ${appState.initConfig.dualStack && lan.ipv6Prefix ? `<text x="0" y="29" text-anchor="middle" fill="#4a2380" font-size="10" font-family="monospace">${escapeHtml(lan.ipv6Prefix)} (${escapeHtml(lan.ipv6Mode)})</text>` : ''}
+              <text x="0" y="${appState.initConfig.dualStack && lan.ipv6Prefix ? 43 : 29}" text-anchor="middle" fill="#7a3300" font-size="10" font-family="monospace">${dhcpBadge}</text>
             </g>
           `);
 
@@ -5535,15 +5599,15 @@ line vty 0 4
             const devY = swY + (appState.initConfig.dualStack ? 96 : 82);
             const devSpacing = 54;
             const startDevX = swX - ((devEntries.length - 1) * devSpacing) / 2;
-            parts.push(`<line x1="${swX}" y1="${swY + 12}" x2="${swX}" y2="${swY + 16}" stroke="#334155" stroke-width="1.5" />`);
+            parts.push(`<line x1="${swX}" y1="${swY + 12}" x2="${swX}" y2="${swY + 16}" stroke="#8f99a8" stroke-width="1.5" />`);
 
             devEntries.forEach(([type, count], dIdx) => {
               const dx = startDevX + dIdx * devSpacing;
               parts.push(`
                 <g transform="translate(${dx - 20}, ${devY})">
-                  <rect width="40" height="44" rx="6" fill="#111827" stroke="#263449" />
+                  <rect width="40" height="44" rx="6" fill="#ffffff" stroke="#cbd2db" />
                   ${getDeviceSvgIcon(type)}
-                  <text x="20" y="39" text-anchor="middle" fill="#cbd5e1" font-size="9" font-family="sans-serif">${capitalize(type)} ×${count}</text>
+                  <text x="20" y="39" text-anchor="middle" fill="#424b58" font-size="9" font-family="sans-serif">${capitalize(type)} ×${count}</text>
                 </g>
               `);
             });
@@ -5553,18 +5617,18 @@ line vty 0 4
         // Draw Router Node
         parts.push(`
           <g class="svg-router-node" data-select-router="${router.id}" transform="translate(${pos.x}, ${pos.y})">
-            <circle class="router-ring" r="34" fill="#162033" stroke="${isSelected ? '#6366f1' : '#475569'}" stroke-width="${isSelected ? 3.5 : 2}" ${isSelected ? 'filter="url(#glow)"' : ''} />
+            <circle class="router-ring" r="34" fill="#ffffff" stroke="${isSelected ? '#5b2d96' : '#8f99a8'}" stroke-width="${isSelected ? 3.5 : 2}" ${isSelected ? 'filter="url(#glow)"' : ''} />
             <!-- Cisco Router Crossed Arrows Icon -->
-            <path d="M-16 0 H16 M11 -5 L16 0 L11 5 M-11 -5 L-16 0 L-11 5" stroke="#e2e8f0" stroke-width="2" fill="none" />
-            <path d="M0 -16 V16 M-5 -11 L0 -16 L5 -11 M-5 11 L0 16 L5 11" stroke="#38bdf8" stroke-width="2" fill="none" />
+            <path d="M-16 0 H16 M11 -5 L16 0 L11 5 M-11 -5 L-16 0 L-11 5" stroke="#14181f" stroke-width="2" fill="none" />
+            <path d="M0 -16 V16 M-5 -11 L0 -16 L5 -11 M-5 11 L0 16 L5 11" stroke="#5b2d96" stroke-width="2" fill="none" />
             <!-- Hostname & Model -->
-            <rect x="-66" y="-66" width="132" height="24" rx="6" fill="${isSelected ? '#4f46e5' : '#1e293b'}" stroke="${isSelected ? '#818cf8' : '#334155'}" />
-            <text x="0" y="-50" text-anchor="middle" fill="#fff" font-size="11.5" font-weight="700" font-family="sans-serif">${escapeHtml(router.hostname)} (${routerModel(router)})</text>
+            <rect x="-66" y="-66" width="132" height="24" rx="6" fill="${isSelected ? '#5b2d96' : '#ffffff'}" stroke="${isSelected ? '#5b2d96' : '#8f99a8'}" />
+            <text x="0" y="-50" text-anchor="middle" fill="${isSelected ? '#ffffff' : '#14181f'}" font-size="12.5" font-weight="700" font-family="sans-serif">${escapeHtml(router.hostname)} (${routerModel(router)})</text>
             <!-- Badges above hostname -->
-            ${protos.length ? `<text x="0" y="-73" text-anchor="middle" fill="#34d399" font-size="9.5" font-weight="700" font-family="monospace">${protos.join(' · ')}</text>` : ''}
-            ${hostsDhcp ? `<rect x="24" y="-36" width="44" height="15" rx="4" fill="#065f46" stroke="#34d399" /><text x="46" y="-25" text-anchor="middle" fill="#d1fae5" font-size="8.5" font-weight="700" font-family="monospace">DHCP</text>` : ''}
-            ${compiledAcls.vty[router.id] ? `<g><title>Router login (SSH/Telnet) limited by ACL ${compiledAcls.vty[router.id].number} on line vty</title><rect x="26" y="22" width="52" height="15" rx="4" fill="#4c0519" stroke="#fb7185" /><text x="52" y="33" text-anchor="middle" fill="#ffe4e6" font-size="8.5" font-weight="700" font-family="monospace">VTY ACL</text></g>` : ''}
-            ${isBorder ? `<g><title>Border router: redistributes routes between protocols</title><rect x="-74" y="-36" width="52" height="15" rx="4" fill="#78350f" stroke="#fbbf24" /><text x="-48" y="-25" text-anchor="middle" fill="#fef3c7" font-size="8.5" font-weight="700" font-family="monospace">BORDER</text></g>` : ''}
+            ${protos.length ? `<text x="0" y="-73" text-anchor="middle" fill="#0b5229" font-size="10.5" font-weight="700" font-family="monospace">${protos.join(' · ')}</text>` : ''}
+            ${hostsDhcp ? `<rect x="24" y="-36" width="44" height="15" rx="4" fill="#e1f2e7" stroke="#11703a" /><text x="46" y="-25" text-anchor="middle" fill="#0b5229" font-size="8.5" font-weight="700" font-family="monospace">DHCP</text>` : ''}
+            ${compiledAcls.vty[router.id] ? `<g><title>Router login (SSH/Telnet) limited by ACL ${compiledAcls.vty[router.id].number} on line vty</title><rect x="26" y="22" width="52" height="15" rx="4" fill="#fbe5ea" stroke="#b8143a" /><text x="52" y="33" text-anchor="middle" fill="#8e0f2c" font-size="8.5" font-weight="700" font-family="monospace">VTY ACL</text></g>` : ''}
+            ${isBorder ? `<g><title>Border router: redistributes routes between protocols</title><rect x="-74" y="-36" width="52" height="15" rx="4" fill="#fcecdc" stroke="#a84700" /><text x="-48" y="-25" text-anchor="middle" fill="#7a3300" font-size="8.5" font-weight="700" font-family="monospace">BORDER</text></g>` : ''}
           </g>
         `);
       });
@@ -5621,19 +5685,19 @@ line vty 0 4
     function getDeviceSvgIcon(type) {
       switch (type) {
         case 'pc':
-          return `<rect x="10" y="6" width="20" height="14" rx="2" fill="none" stroke="#38bdf8" stroke-width="1.6"/><line x1="15" y1="24" x2="25" y2="24" stroke="#38bdf8" stroke-width="1.6"/><line x1="20" y1="20" x2="20" y2="24" stroke="#38bdf8" stroke-width="1.6"/>`;
+          return `<rect x="10" y="6" width="20" height="14" rx="2" fill="none" stroke="#0a5fae" stroke-width="1.6"/><line x1="15" y1="24" x2="25" y2="24" stroke="#0a5fae" stroke-width="1.6"/><line x1="20" y1="20" x2="20" y2="24" stroke="#0a5fae" stroke-width="1.6"/>`;
         case 'laptop':
-          return `<rect x="11" y="7" width="18" height="12" rx="1.5" fill="none" stroke="#818cf8" stroke-width="1.6"/><path d="M7 22 H33" stroke="#818cf8" stroke-width="2" stroke-linecap="round"/>`;
+          return `<rect x="11" y="7" width="18" height="12" rx="1.5" fill="none" stroke="#5b2d96" stroke-width="1.6"/><path d="M7 22 H33" stroke="#5b2d96" stroke-width="2" stroke-linecap="round"/>`;
         case 'server':
-          return `<rect x="12" y="5" width="16" height="20" rx="2" fill="none" stroke="#34d399" stroke-width="1.6"/><line x1="15" y1="10" x2="25" y2="10" stroke="#34d399" stroke-width="1.4"/><line x1="15" y1="15" x2="25" y2="15" stroke="#34d399" stroke-width="1.4"/><circle cx="20" cy="21" r="1.3" fill="#34d399"/>`;
+          return `<rect x="12" y="5" width="16" height="20" rx="2" fill="none" stroke="#11703a" stroke-width="1.6"/><line x1="15" y1="10" x2="25" y2="10" stroke="#11703a" stroke-width="1.4"/><line x1="15" y1="15" x2="25" y2="15" stroke="#11703a" stroke-width="1.4"/><circle cx="20" cy="21" r="1.3" fill="#11703a"/>`;
         case 'printer':
-          return `<rect x="10" y="11" width="20" height="10" rx="2" fill="none" stroke="#fbbf24" stroke-width="1.5"/><rect x="14" y="6" width="12" height="5" fill="none" stroke="#fbbf24" stroke-width="1.4"/><rect x="14" y="18" width="12" height="6" fill="#0f172a" stroke="#fbbf24" stroke-width="1.4"/>`;
+          return `<rect x="10" y="11" width="20" height="10" rx="2" fill="none" stroke="#a84700" stroke-width="1.5"/><rect x="14" y="6" width="12" height="5" fill="none" stroke="#a84700" stroke-width="1.4"/><rect x="14" y="18" width="12" height="6" fill="#ffffff" stroke="#a84700" stroke-width="1.4"/>`;
         case 'smartphone':
-          return `<rect x="14" y="6" width="12" height="19" rx="2.5" fill="none" stroke="#f472b6" stroke-width="1.6"/><circle cx="20" cy="22" r="1.2" fill="#f472b6"/>`;
+          return `<rect x="14" y="6" width="12" height="19" rx="2.5" fill="none" stroke="#b0165f" stroke-width="1.6"/><circle cx="20" cy="22" r="1.2" fill="#b0165f"/>`;
         case 'tablet':
-          return `<rect x="11" y="6" width="18" height="19" rx="2.5" fill="none" stroke="#c084fc" stroke-width="1.6"/><circle cx="20" cy="22" r="1.2" fill="#c084fc"/>`;
+          return `<rect x="11" y="6" width="18" height="19" rx="2.5" fill="none" stroke="#7e22ce" stroke-width="1.6"/><circle cx="20" cy="22" r="1.2" fill="#7e22ce"/>`;
         default:
-          return `<circle cx="20" cy="15" r="7" fill="none" stroke="#94a3b8" stroke-width="1.5"/>`;
+          return `<circle cx="20" cy="15" r="7" fill="none" stroke="#5c6573" stroke-width="1.5"/>`;
       }
     }
 
@@ -5708,7 +5772,7 @@ line vty 0 4
             <div class="field-group" style="justify-content:flex-end;">
               <label class="checkbox-row">
                 <input type="checkbox" id="icConsoleSync" ${ic.consoleLoggingSync ? 'checked' : ''} />
-                <span style="font-size:12px;">logging sync</span>
+                <span style="font-size:14px;">logging sync</span>
               </label>
             </div>
           </div>
@@ -5759,7 +5823,7 @@ line vty 0 4
               </div>
             `}
           ` : ic.vtyMode === 'none' ? `
-            <div class="text-muted" style="font-size:11.5px;">Nobody can log in over the network. Only the console works.</div>
+            <div class="text-muted" style="font-size:13.5px;">Nobody can log in over the network. Only the console works.</div>
           ` : `
             <div class="item-box" style="margin-top:4px;">
               <div class="field-label" style="color:var(--cyan);">SSH Setup</div>
@@ -5787,12 +5851,12 @@ line vty 0 4
                 <div class="field-group" style="justify-content:flex-end;">
                   <label class="checkbox-row">
                     <input type="checkbox" id="icSshV2" ${ic.sshV2 !== false ? 'checked' : ''} />
-                    <span class="mono" style="font-size:12px;">ip ssh version 2</span>
+                    <span class="mono" style="font-size:14px;">ip ssh version 2</span>
                   </label>
                 </div>
               </div>
               ${ic.vtyMode === 'both' ? `
-                <div class="text-muted" style="font-size:11px;">Telnet also logs in with this username and secret (login local).</div>
+                <div class="text-muted" style="font-size:13px;">Telnet also logs in with this username and secret (login local).</div>
               ` : ''}
             </div>
           `}
@@ -5800,9 +5864,9 @@ line vty 0 4
           <div class="divider"></div>
           <label class="checkbox-row">
             <input type="checkbox" id="icCopyRunStart" ${ic.copyRunStart ? 'checked' : ''} />
-            <span>Save at the end (<span class="mono" style="font-size:12px;">end</span> + <span class="mono" style="font-size:12px;">write memory</span>)</span>
+            <span>Save at the end (<span class="mono" style="font-size:14px;">end</span> + <span class="mono" style="font-size:14px;">write memory</span>)</span>
           </label>
-          <div class="text-muted" style="font-size:11px;">Same as copy running-config startup-config, without the filename question that would swallow the next pasted line.</div>
+          <div class="text-muted" style="font-size:13px;">Same as copy running-config startup-config, without the filename question that would swallow the next pasted line.</div>
         </div>
 
         <div class="sub-card">
@@ -5817,7 +5881,7 @@ line vty 0 4
               <input type="text" id="icDhcpLease" class="mono" value="${escapeHtml(ic.dhcpLease)}" placeholder="1 (IOS default)" />
             </div>
           </div>
-          <div class="text-muted" style="font-size:11px;">The clock rate goes on every serial port (s0/x/x). Pick serial ports for WAN rows in the VLSM table.</div>
+          <div class="text-muted" style="font-size:13px;">The clock rate goes on every serial port (s0/x/x). Pick serial ports for WAN rows in the VLSM table.</div>
           <div class="field-group">
             <label class="field-label">DHCP Domain Name</label>
             <input type="text" id="icDhcpDomain" class="mono" value="${escapeHtml(ic.dhcpDomain)}" placeholder="${escapeHtml(sshOn(ic) && ic.domainName ? `${ic.domainName} (same as SSH)` : 'none')}" />
@@ -5911,14 +5975,14 @@ line vty 0 4
                 <input type="text" class="router-host-input" data-rid="${r.id}" value="${escapeHtml(r.hostname)}" style="font-weight:700; flex:1;" />
                 <select class="router-model-select mono" data-rid="${r.id}" title="2901: g0/0-g0/1 · 2911: g0/0-g0/2" style="width:auto;">${modelOptionsHtml(routerModel(r))}</select>
               </div>
-              ${hasSpaces ? `<div class="text-muted" style="color:var(--amber); font-size:11px;">CLI hostname auto-sanitized to <span class="mono">${sanitizeHostname(r.hostname)}</span></div>` : ''}
+              ${hasSpaces ? `<div class="text-muted" style="color:var(--amber); font-size:13px;">CLI hostname auto-sanitized to <span class="mono">${sanitizeHostname(r.hostname)}</span></div>` : ''}
             </div>
 
             ${appState.initConfig.dualStack ? `
               <div class="field-group">
                 <label class="field-label">IPv6 Link-Local (used on every port of ${escapeHtml(sanitizeHostname(r.hostname))})</label>
                 <input type="text" class="router-ll-input mono" data-rid="${r.id}" value="${escapeHtml(r.linkLocal || '')}" placeholder="fe80::1" style="${linkLocalProblem(r) ? 'border-color:var(--rose);' : ''}" />
-                <div class="text-muted" data-ll-hint style="font-size:11px; ${linkLocalProblem(r) ? 'color:var(--rose);' : ''}">${escapeHtml(linkLocalProblem(r) || 'One per router (fe80::1, fe80::2…), so both ends of every link differ.')}</div>
+                <div class="text-muted" data-ll-hint style="font-size:13px; ${linkLocalProblem(r) ? 'color:var(--rose);' : ''}">${escapeHtml(linkLocalProblem(r) || 'One per router (fe80::1, fe80::2…), so both ends of every link differ.')}</div>
               </div>
             ` : ''}
 
@@ -5929,7 +5993,7 @@ line vty 0 4
               <button class="btn btn-sm btn-add-lan" data-rid="${r.id}" type="button" style="width:100%;">
                 + Attach LAN to ${freeIfs[0]}
               </button>
-            ` : `<div class="text-muted" style="font-size:11px; text-align:center;">All ${ethPorts(r).length} GigabitEthernet ports (${ethPorts(r).join(', ')}) in use</div>`}
+            ` : `<div class="text-muted" style="font-size:13px; text-align:center;">All ${ethPorts(r).length} GigabitEthernet ports (${ethPorts(r).join(', ')}) in use</div>`}
 
             <!-- Loopbacks: advertised by the router's routing protocol, handy as router ID or a fake "internet" host -->
             <div class="item-box">
@@ -5944,7 +6008,7 @@ line vty 0 4
                   ${appState.initConfig.dualStack ? `<input type="text" class="loop-field mono" data-rid="${r.id}" data-loid="${lo.id}" data-field="ipv6" value="${escapeHtml(lo.ipv6)}" placeholder="2001:db8:acad:ff::1/128" aria-label="Loopback IPv6" />` : '<span></span>'}
                   <button class="btn btn-danger btn-xs btn-del-loop" data-rid="${r.id}" data-loid="${lo.id}" type="button" title="Remove loopback">✕</button>
                 </div>
-              `).join('') || `<div class="text-muted" style="font-size:11px;">None. A loopback never goes down, so it makes a stable router ID or a test "internet" address on the ISP.</div>`}
+              `).join('') || `<div class="text-muted" style="font-size:13px;">None. A loopback never goes down, so it makes a stable router ID or a test "internet" address on the ISP.</div>`}
             </div>
           </div>
         `;
@@ -6235,7 +6299,7 @@ line vty 0 4
             <div class="field-group">
               <label class="field-label">Subnet Source</label>
               ${lan.vlsmReqId ? `
-                <div class="mono" title="Linked to a VLSM row. Change it on the Addressing page." style="padding:8px 10px; border:1px dashed rgba(56,189,248,0.45); border-radius:var(--radius-sm); font-size:12px; color:var(--cyan);">VLSM · ${escapeHtml(lan.netIp)}/${escapeHtml(lan.cidr)}</div>
+                <div class="mono" title="Linked to a VLSM row. Change it on the Addressing page." style="padding:8px 10px; border:1px dashed color-mix(in srgb, var(--cyan) 45%, transparent); border-radius:var(--radius-sm); font-size:14px; color:var(--cyan);">VLSM · ${escapeHtml(lan.netIp)}/${escapeHtml(lan.cidr)}</div>
               ` : `
                 <select class="lan-field mono" data-rid="${router.id}" data-lanid="${lan.id}" data-field="subnetPick">
                   ${pool.map(s => `<option value="${s.id}" ${lan.subnetSource === 'pool' && lan.subnetId === s.id ? 'selected' : ''}>#${s.index} ${escapeHtml(s.name)} (${s.netIp}/${s.cidr})</option>`).join('')}
@@ -6256,7 +6320,7 @@ line vty 0 4
                 <input type="number" min="8" max="30" class="lan-field mono" data-rid="${router.id}" data-lanid="${lan.id}" data-field="customCidr" value="${escapeHtml(lan.cidr)}" />
               </div>
             </div>
-            <div class="text-muted" data-lan-nethint="${lan.id}" style="font-size:11px; margin-top:-4px;">Network ${escapeHtml(lan.netIp)}/${escapeHtml(lan.cidr)} · gateway ${escapeHtml(lan.gatewayIp)}</div>
+            <div class="text-muted" data-lan-nethint="${lan.id}" style="font-size:13px; margin-top:-4px;">Network ${escapeHtml(lan.netIp)}/${escapeHtml(lan.cidr)} · gateway ${escapeHtml(lan.gatewayIp)}</div>
           ` : ''}
 
           <!-- DHCPv4 Settings -->
@@ -6288,7 +6352,7 @@ line vty 0 4
             const usable = Math.max(0, IPv4.totalAddresses(Number(lan.cidr) || 24) - 2);
             const ex = Math.max(0, Number(lan.dhcpExcludeCount) || 0);
             return lan.dhcpMode !== 'none' && ex >= usable
-              ? `<div style="font-size:11px; color:var(--amber);">⚠ This /${escapeHtml(lan.cidr)} LAN has only ${usable} usable addresses. Excluding ${ex} would leave none for PCs, so the CLI excludes ${Math.max(0, usable - 1)}.</div>`
+              ? `<div style="font-size:13px; color:var(--amber);">⚠ This /${escapeHtml(lan.cidr)} LAN has only ${usable} usable addresses. Excluding ${ex} would leave none for PCs, so the CLI excludes ${Math.max(0, usable - 1)}.</div>`
               : '';
           })()}
 
@@ -6327,7 +6391,7 @@ line vty 0 4
             <div class="row-2">
               <div class="field-group">
                 <label class="field-label">Link-Local</label>
-                <div class="mono" title="Set once per router, above" style="padding:8px 10px; border:1px dashed var(--border); border-radius:var(--radius-sm); font-size:12px; color:var(--text-secondary);">${escapeHtml(routerLinkLocal(router))} (router-wide)</div>
+                <div class="mono" title="Set once per router, above" style="padding:8px 10px; border:1px dashed var(--border); border-radius:var(--radius-sm); font-size:14px; color:var(--text-secondary);">${escapeHtml(routerLinkLocal(router))} (router-wide)</div>
               </div>
               <div class="field-group">
                 <label class="field-label">DNS Server IPv6</label>
@@ -6386,7 +6450,7 @@ line vty 0 4
         return `
           <div class="item-box" style="padding:8px; gap:4px;">
             <div class="field-label" style="color:${PROTO_COLOR[p]};">${PROTO_LABEL[p]}${plan.v6match ? ` + ${V6_PROTO_LABEL[p]}` : ''}</div>
-            <div class="mono" style="font-size:11px; line-height:1.6;">${[...v4, ...v6].map(escapeHtml).join('<br>') || '—'}</div>
+            <div class="mono" style="font-size:13px; line-height:1.6;">${[...v4, ...v6].map(escapeHtml).join('<br>') || '—'}</div>
           </div>`;
       }).join('');
 
@@ -6396,7 +6460,7 @@ line vty 0 4
             <span>Network Routing Plan</span>
             <span class="badge badge-emerald">Automatic</span>
           </div>
-          <div class="text-muted" style="font-size:11.5px;">
+          <div class="text-muted" style="font-size:13.5px;">
             Pick one protocol per router. Each link then gets a protocol, and a router that sits between
             different protocols becomes a <strong style="color:var(--amber);">border router</strong> that redistributes routes for you.
           </div>
@@ -6404,13 +6468,13 @@ line vty 0 4
             ${plans.map(p => `
               <button type="button" class="plan-row ${p.router.id === r.id ? 'active' : ''}" data-plan-router="${p.router.id}">
                 <span class="plan-name">${escapeHtml(p.router.hostname)}</span>
-                <span class="plan-chips">${planRunsList(p).map(protoChipHtml).join('') || '<span class="text-muted" style="font-size:11px;">no routes</span>'}</span>
+                <span class="plan-chips">${planRunsList(p).map(protoChipHtml).join('') || '<span class="text-muted" style="font-size:13px;">no routes</span>'}</span>
                 ${p.border ? '<span class="badge badge-amber">Border</span>' : ''}
               </button>
             `).join('')}
           </div>
           ${warnings.map(w => `<div class="alert alert-warn" style="margin-top:0;">${escapeHtml(w)}</div>`).join('')}
-          <label class="checkbox-row" style="font-size:12px;">
+          <label class="checkbox-row" style="font-size:14px;">
             <input type="checkbox" id="rtPassiveLan" ${ic.passiveLan !== false ? 'checked' : ''} />
             <span><span class="mono">passive-interface</span> on LAN ports (no routing updates sent to PCs)</span>
           </label>
@@ -6427,12 +6491,12 @@ line vty 0 4
           <div class="seg-control" style="display:grid; grid-template-columns:repeat(4, 1fr);">
             ${ROUTING_PROTOCOLS.map(p => `<button type="button" class="seg-btn rt-domain ${rt.domain === p ? 'active' : ''}" data-domain="${p}">${PROTO_LABEL[p]}</button>`).join('')}
           </div>
-          <div class="text-muted" style="font-size:11.5px;">${PROTO_HINT[rt.domain]}</div>
+          <div class="text-muted" style="font-size:13.5px;">${PROTO_HINT[rt.domain]}</div>
           <div class="field-group">
             <label class="field-label">Router ID (OSPF and EIGRP)</label>
             <input type="text" id="rtRouterId" class="mono" value="${escapeHtml(rt.routerId)}" placeholder="${escapeHtml(autoRid ? `auto: ${autoRid}` : '1.1.1.1')}" style="${ridBad ? 'border-color:var(--rose);' : ''}" />
           </div>
-          <div class="text-muted" style="font-size:11px;">Blank = IOS picks the highest loopback, else the highest interface IP${autoRid ? ` (${escapeHtml(autoRid)})` : ''}. IPv6 OSPF/EIGRP always get one written out.</div>
+          <div class="text-muted" style="font-size:13px;">Blank = IOS picks the highest loopback, else the highest interface IP${autoRid ? ` (${escapeHtml(autoRid)})` : ''}. IPv6 OSPF/EIGRP always get one written out.</div>
         </div>
 
         <div class="sub-card">
@@ -6457,7 +6521,7 @@ line vty 0 4
               <input type="text" class="rt-id mono" data-key="ripngName" value="${escapeHtml(ic.ripngName)}" placeholder="RIPNG" />
             </div>
           </div>
-          <div class="text-muted" style="font-size:11px;">In use: <span class="mono">router ospf ${escapeHtml(ids.ospf)}</span> · area ${escapeHtml(ids.area)} · <span class="mono">router eigrp ${escapeHtml(ids.eigrp)}</span> · <span class="mono">ipv6 router rip ${escapeHtml(ids.ripng)}</span>. Neighbours must use the same OSPF area and EIGRP AS.</div>
+          <div class="text-muted" style="font-size:13px;">In use: <span class="mono">router ospf ${escapeHtml(ids.ospf)}</span> · area ${escapeHtml(ids.area)} · <span class="mono">router eigrp ${escapeHtml(ids.eigrp)}</span> · <span class="mono">ipv6 router rip ${escapeHtml(ids.ripng)}</span>. Neighbours must use the same OSPF area and EIGRP AS.</div>
         </div>
 
         <div class="sub-card">
@@ -6471,7 +6535,7 @@ line vty 0 4
             return `
               <div class="item-box link-proto-box" style="border-left-color:${PROTO_COLOR[m.proto]};">
                 <div style="display:flex; justify-content:space-between; align-items:center; gap:8px;">
-                  <span class="mono" style="font-size:11.5px;">${escapeHtml(m.myIf)} → ${escapeHtml(m.peer ? m.peer.hostname : '?')} ${escapeHtml(m.peerIf)}</span>
+                  <span class="mono" style="font-size:13.5px;">${escapeHtml(m.myIf)} → ${escapeHtml(m.peer ? m.peer.hostname : '?')} ${escapeHtml(m.peerIf)}</span>
                   <span style="display:flex; gap:6px; align-items:center;">
                     <select class="link-proto" data-lid="${m.lnk.id}" title="Routing protocol on this link (both ends use it)">
                       <option value="auto" ${!manual ? 'selected' : ''}>Auto (${PROTO_LABEL[auto.proto]})</option>
@@ -6480,16 +6544,16 @@ line vty 0 4
                     <button class="btn btn-danger btn-xs btn-del-link" data-lid="${m.lnk.id}" type="button" title="Remove this WAN link${m.lnk.vlsmReqId ? ' (its VLSM row is unlinked)' : ''}">✕</button>
                   </span>
                 </div>
-                <div class="text-muted" style="font-size:11px;">${escapeHtml(m.lnk.netIp)}/${escapeHtml(m.lnk.cidr)}${isSerialIf(m.myIf) ? ' · serial' : ''} · ${manual ? 'set by hand' : escapeHtml(auto.reason)}</div>
+                <div class="text-muted" style="font-size:13px;">${escapeHtml(m.lnk.netIp)}/${escapeHtml(m.lnk.cidr)}${isSerialIf(m.myIf) ? ' · serial' : ''} · ${manual ? 'set by hand' : escapeHtml(auto.reason)}</div>
               </div>
             `;
-          }).join('') : `<div class="text-muted" style="font-size:11.5px;">No WAN links on ${name} yet. Add WAN rows in the VLSM table on the Addressing page.</div>`}
+          }).join('') : `<div class="text-muted" style="font-size:13.5px;">No WAN links on ${name} yet. Add WAN rows in the VLSM table on the Addressing page.</div>`}
         </div>
 
         ${plan.dynamic.length ? `
           <div class="sub-card">
             <div class="sub-card-header"><span>Networks ${name} Advertises</span></div>
-            <div class="text-muted" style="font-size:11px;">Its LANs and loopbacks, plus the links that run each protocol. RIP uses the classful network, OSPF and EIGRP the exact subnet.</div>
+            <div class="text-muted" style="font-size:13px;">Its LANs and loopbacks, plus the links that run each protocol. RIP uses the classful network, OSPF and EIGRP the exact subnet.</div>
             ${advHtml}
           </div>
         ` : ''}
@@ -6504,9 +6568,9 @@ line vty 0 4
               ${plan.statics.map(s => `<div><span class="mono">ip route ${escapeHtml(s.net)} ${escapeHtml(s.mask)} ${escapeHtml(s.nextHop)}</span> <span class="text-muted">${escapeHtml(s.why)}</span></div>`).join('')}
               ${plan.v6match ? plan.statics6.map(s => `<div><span class="mono">ipv6 route ${escapeHtml(s.prefix)} ${escapeHtml(s.nextHop)}</span> <span class="text-muted">${escapeHtml(s.why)}</span></div>`).join('') : ''}
             </div>
-          ` : `<div class="text-muted" style="font-size:11.5px;">${plan.staticLinks.length ? 'Nothing to add.' : `None needed: ${name} has no static links, so it learns every route from a routing protocol.`}</div>`}
+          ` : `<div class="text-muted" style="font-size:13.5px;">${plan.staticLinks.length ? 'Nothing to add.' : `None needed: ${name} has no static links, so it learns every route from a routing protocol.`}</div>`}
           ${plan.isStub ? `
-            <label class="checkbox-row" style="font-size:12px;">
+            <label class="checkbox-row" style="font-size:14px;">
               <input type="checkbox" id="rtStubDefault" ${rt.stubDefault !== false ? 'checked' : ''} />
               <span>One way out (stub router): use a single default route</span>
             </label>
@@ -6533,12 +6597,12 @@ line vty 0 4
             <button id="btnAddDefaultRoute" class="btn btn-xs btn-cyan" type="button">Fill Default Route</button>
             <button id="btnAddCustomStatic" class="btn btn-sm" type="button" style="flex:1;">+ Add Route</button>
           </div>
-          <div class="text-muted" style="font-size:11px;">Give a next hop, an exit port, or both. An admin distance above 1 makes a floating (backup) route.</div>
+          <div class="text-muted" style="font-size:13px;">Give a next hop, an exit port, or both. An admin distance above 1 makes a floating (backup) route.</div>
           ${(rt.customStatics || []).map((cs, idx) => {
             const res = customRouteLine(cs);
             return `
               <div class="item-box" style="flex-direction:row; justify-content:space-between; align-items:center; padding:6px 8px; ${res.error ? 'border-color:var(--rose);' : ''}">
-                <span class="mono" style="font-size:11px;">${escapeHtml(res.error ? `⚠ ${res.error}` : res.line)}${res.fam === '6' && !ic.dualStack ? ' <span class="text-muted">(skipped: IPv6 off)</span>' : ''}</span>
+                <span class="mono" style="font-size:13px;">${escapeHtml(res.error ? `⚠ ${res.error}` : res.line)}${res.fam === '6' && !ic.dualStack ? ' <span class="text-muted">(skipped: IPv6 off)</span>' : ''}</span>
                 <button class="btn btn-danger btn-xs btn-del-cs" data-idx="${idx}" type="button">✕</button>
               </div>`;
           }).join('')}
@@ -6550,7 +6614,7 @@ line vty 0 4
             ${plan.border || plan.border6 ? '<span class="badge badge-amber">Border router</span>' : '<span class="badge badge-indigo">Not needed</span>'}
           </div>
           ${plan.border ? `
-            <div class="text-muted" style="font-size:11.5px;">
+            <div class="text-muted" style="font-size:13.5px;">
               ${name} runs ${runs.map(p => PROTO_LABEL[p]).join(' + ')}. A router only learns routes from routers that speak
               the same protocol, so ${name} passes routes across:
             </div>
@@ -6559,14 +6623,14 @@ line vty 0 4
                 <div class="field-label" style="color:${PROTO_COLOR[p]};">Into ${PROTO_LABEL[p]}</div>
                 ${plan.redist[p].map(x => `
                   <div>
-                    <div class="mono" style="font-size:11.5px;">${escapeHtml(x.cmd)}</div>
-                    <div class="text-muted" style="font-size:11px;">${escapeHtml(x.why)}</div>
+                    <div class="mono" style="font-size:13.5px;">${escapeHtml(x.cmd)}</div>
+                    <div class="text-muted" style="font-size:13px;">${escapeHtml(x.why)}</div>
                   </div>
                 `).join('')}
               </div>
             `).join('')}
           ` : `
-            <div class="text-muted" style="font-size:11.5px;">
+            <div class="text-muted" style="font-size:13.5px;">
               ${runs.length ? `${name} only uses ${runs.map(p => PROTO_LABEL[p]).join(' + ')}, so it has nothing to pass between protocols.` : `${name} has no routes yet.`}
             </div>
           `}
@@ -6575,13 +6639,13 @@ line vty 0 4
               <div class="field-label" style="color:${PROTO_COLOR[p]};">Into ${V6_PROTO_LABEL[p]} (IPv6)</div>
               ${plan.redist6[p].map(x => `
                 <div>
-                  <div class="mono" style="font-size:11.5px;">${escapeHtml(x.cmd)}</div>
-                  <div class="text-muted" style="font-size:11px;">${escapeHtml(x.why)}</div>
+                  <div class="mono" style="font-size:13.5px;">${escapeHtml(x.cmd)}</div>
+                  <div class="text-muted" style="font-size:13px;">${escapeHtml(x.why)}</div>
                 </div>
-              `).join('') || '<div class="text-muted" style="font-size:11px;">Nothing to add.</div>'}
+              `).join('') || '<div class="text-muted" style="font-size:13px;">Nothing to add.</div>'}
             </div>
           `).join('') : ''}
-          <div class="text-muted" style="font-size:10.5px;">
+          <div class="text-muted" style="font-size:12.5px;">
             Seed metrics (Network Redistribution module): into RIP <span class="mono">metric 2</span>,
             into OSPF <span class="mono">subnets metric 20</span>, into EIGRP <span class="mono">metric 10000 100 255 1 1500</span>.
             ${plan.v6match ? 'IPv6 uses the same numbers; OSPFv3 drops the word <span class="mono">subnets</span>.' : ''}
@@ -6596,7 +6660,7 @@ line vty 0 4
               <button type="button" class="seg-btn rt-v6mode ${v6Mode === 'ripng' ? 'active' : ''}" data-v6mode="ripng">RIPng</button>
               <button type="button" class="seg-btn rt-v6mode ${v6Mode === 'match' ? 'active' : ''}" data-v6mode="match">Same as IPv4</button>
             </div>
-            <div class="text-muted" style="font-size:11.5px;">${{
+            <div class="text-muted" style="font-size:13.5px;">${{
               static: 'Every router gets <span class="mono">ipv6 route</span> lines to every other LAN and loopback, along the shortest path.',
               ripng: 'RIPng runs on every interface of every router (<span class="mono">ipv6 router rip</span>).',
               match: 'IPv6 follows each link\'s IPv4 protocol: RIP → RIPng, OSPF → OSPFv3 (<span class="mono">ipv6 ospf</span>), EIGRP → EIGRP for IPv6. Static links get IPv6 static routes, and border routers redistribute IPv6 too.'
@@ -6862,13 +6926,13 @@ line vty 0 4
           <div class="acl-box-head">
             <span class="badge ${g.type === 'standard' ? 'badge-cyan' : 'badge-indigo'}">${g.type}</span>
             <b class="mono">ACL ${escapeHtml(g.id)}</b>
-            <span class="text-muted" style="font-size:12px;">${escapeHtml(aclWhereText(g))}</span>
+            <span class="text-muted" style="font-size:14px;">${escapeHtml(aclWhereText(g))}</span>
             <button class="btn btn-xs acl-copy" data-key="${escapeHtml(g.key)}" type="button" style="margin-left:auto;" title="Copy these commands (paste at ${host}(config)#)">Copy</button>
           </div>
           <div class="acl-id-row">
             <label class="field-label" style="margin:0;">Number or name</label>
             <input type="text" class="acl-id-input mono" data-key="${escapeHtml(g.key)}" data-type="${g.type}" value="${escapeHtml(typed)}" placeholder="${escapeHtml(g.idTyped ? '' : String(g.id))}" title="Leave blank for ${escapeHtml(String(g.id))}. Type the number or name your task asks for." />
-            <span class="text-muted" style="font-size:11px;">${g.type === 'standard' ? '1-99, 1300-1999' : '100-199, 2000-2699'} or a name</span>
+            <span class="text-muted" style="font-size:13px;">${g.type === 'standard' ? '1-99, 1300-1999' : '100-199, 2000-2699'} or a name</span>
             ${g.idError ? `<span class="acl-msg err">${escapeHtml(g.idError)} Using ${escapeHtml(String(g.id))}.</span>` : ''}
           </div>
           <div class="acl-body">
@@ -6955,7 +7019,7 @@ line vty 0 4
           <div class="acl-leg-title">Reply: back from ${escapeHtml(r.dst.ipText)} to ${escapeHtml(r.src.ipText)} (${r.pkt.proto === 'icmp' ? 'echo-reply' : 'from the server port'})</div>
           <ol class="acl-steps">${r.reply.steps.map(stepHtml).join('') || '<li class="ok">No router port with an ACL on the way back.</li>'}</ol>
         ` : ''}
-        <div class="text-muted" style="font-size:11px;">Assumes routing works. Router ACLs only see traffic that passes through a router port.</div>`;
+        <div class="text-muted" style="font-size:13px;">Assumes routing works. Router ACLs only see traffic that passes through a router port.</div>`;
     }
 
     /** Typical exam tasks, written with this project's LANs and routers. */
@@ -7042,12 +7106,12 @@ line vty 0 4
                   </div>
                 </div>
               </div>
-              <label class="checkbox-row" style="font-size:12.5px;">
+              <label class="checkbox-row" style="font-size:14.5px;">
                 <input type="checkbox" id="aclPermitRest" ${sec.permitRest ? 'checked' : ''} />
                 <span>End every ACL with <span class="mono">permit any</span> / <span class="mono">permit ip any any</span> (allow everything else)</span>
               </label>
               ${!sec.permitRest ? '<div class="acl-msg warn">⚠ Without it, the hidden deny any at the end of every ACL blocks everything you did not allow, including DHCP, DNS and ping replies.</div>' : ''}
-              <div class="text-muted" style="font-size:11.5px;">Each rule can still be switched between standard and extended in the list below. If the task gives an ACL number or name, type it on the ACL itself (Generated ACLs).</div>
+              <div class="text-muted" style="font-size:13.5px;">Each rule can still be switched between standard and extended in the list below. If the task gives an ACL number or name, type it on the ACL itself (Generated ACLs).</div>
             </div>
 
             <div class="card doc-card" id="acl-build">
@@ -7071,7 +7135,7 @@ line vty 0 4
                 </div>
               </div>
               ${isVtyDraft ? `
-                <div class="text-muted" style="font-size:12px; margin-top:6px;">A login rule becomes a standard ACL on <span class="mono">line vty</span> with <span class="mono">access-class</span>. With Allow, only those sources may log in; everyone else is refused.</div>
+                <div class="text-muted" style="font-size:14px; margin-top:6px;">A login rule becomes a standard ACL on <span class="mono">line vty</span> with <span class="mono">access-class</span>. With Allow, only those sources may log in; everyone else is refused.</div>
               ` : `
                 <div class="row-3" style="margin-top:6px;">
                   <div class="field-group">
@@ -7138,14 +7202,14 @@ line vty 0 4
                         <button class="btn btn-danger btn-xs acl-rule-del" data-idx="${i}" type="button" aria-label="Delete rule">✕</button>
                       </span>
                     </div>
-                    <div style="font-size:13px;">${escapeHtml(inf.sentence)}</div>
-                    ${rule.note ? `<div class="text-muted" style="font-size:11.5px;">${escapeHtml(rule.note)}</div>` : ''}
-                    ${inf.placeText ? `<div class="mono" style="font-size:11.5px; color:var(--cyan);">→ ${escapeHtml(inf.placeText)}</div>` : ''}
+                    <div style="font-size:15px;">${escapeHtml(inf.sentence)}</div>
+                    ${rule.note ? `<div class="text-muted" style="font-size:13.5px;">${escapeHtml(rule.note)}</div>` : ''}
+                    ${inf.placeText ? `<div class="mono" style="font-size:13.5px; color:var(--cyan);">→ ${escapeHtml(inf.placeText)}</div>` : ''}
                     ${inf.notes.map(n => `<div class="acl-msg note">${escapeHtml(n)}</div>`).join('')}
                     ${inf.warnings.map(w => `<div class="acl-msg warn">⚠ ${escapeHtml(w)}</div>`).join('')}
                     ${inf.errors.map(e => `<div class="acl-msg err">✕ ${escapeHtml(e)}</div>`).join('')}
                   </div>`;
-              }).join('') : '<div class="text-muted" style="font-size:12px;">No rules yet. Add one above, or start from an example below.</div>'}
+              }).join('') : '<div class="text-muted" style="font-size:14px;">No rules yet. Add one above, or start from an example below.</div>'}
             </div>
 
             <div class="card doc-card" id="acl-examples">
@@ -7165,7 +7229,7 @@ line vty 0 4
                     </tbody>
                   </table>
                 </div>
-              ` : '<div class="text-muted" style="font-size:12px;">Add at least two LANs to see examples.</div>'}
+              ` : '<div class="text-muted" style="font-size:14px;">Add at least two LANs to see examples.</div>'}
             </div>
           </div>
 
@@ -7180,17 +7244,17 @@ line vty 0 4
                 <span><span class="tok tok-dst">destination</span></span>
                 <span><span class="tok tok-port">eq 80</span> port</span>
               </div>
-              <div class="text-muted" style="font-size:11.5px; margin:6px 0 10px;">Hover a coloured word for what it means. The same commands are in the Configure &amp; CLI tab's CLI pane under ACLs. Paste them only after every ping, DHCP and web test passes.</div>
+              <div class="text-muted" style="font-size:13.5px; margin:6px 0 10px;">Hover a coloured word for what it means. The same commands are in the Configure &amp; CLI tab's CLI pane under ACLs. Paste them only after every ping, DHCP and web test passes.</div>
               ${byRouter.length ? byRouter.map(x => `
                 <div class="acl-router">
                   <div class="acl-router-head">
                     <b>${escapeHtml(sanitizeHostname(x.r.hostname))}</b>
-                    <span class="text-muted" style="font-size:12px;">${x.acls.length} ACL${x.acls.length === 1 ? '' : 's'}</span>
+                    <span class="text-muted" style="font-size:14px;">${x.acls.length} ACL${x.acls.length === 1 ? '' : 's'}</span>
                     <button class="btn btn-xs btn-cyan acl-copy-router" data-rid="${x.r.id}" type="button" style="margin-left:auto;">Copy all for ${escapeHtml(sanitizeHostname(x.r.hostname))}</button>
                   </div>
                   ${x.acls.map(aclBoxHtml).join('')}
                 </div>
-              `).join('') : '<div class="text-muted" style="font-size:12px;">Nothing yet. Add a rule on the left.</div>'}
+              `).join('') : '<div class="text-muted" style="font-size:14px;">Nothing yet. Add a rule on the left.</div>'}
             </div>
 
             <div class="card doc-card" id="acl-tester">
@@ -7240,7 +7304,7 @@ line vty 0 4
                   </table>
                 </div>
                 <p class="doc-note">Proof on the router: <code class="cmd">clear access-list counters</code>, run the test, then <code class="cmd">show access-lists</code>. The matching line's count goes up.</p>
-              ` : '<div class="text-muted" style="font-size:12px;">Add a rule to get test steps.</div>'}
+              ` : '<div class="text-muted" style="font-size:14px;">Add a rule to get test steps.</div>'}
             </div>
           </div>
         </div>`;
