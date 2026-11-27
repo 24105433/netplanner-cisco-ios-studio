@@ -9039,7 +9039,7 @@ line vty 0 4
       Object.assign(st.initConfig, {
         enableSecretEnabled: true, enableSecret: pwd, consoleEnabled: true, consolePwd: pwd, vtyPwd: pwd, sshPwd: pwd,
         sshUser: String(o.sshUser || '').trim() || 'admin', vtyMode: 'split', telnetLogin: 'password',
-        dualStack: true, ipv6Routing: 'static'
+        dualStack: true, ipv6Routing: 'match' // RIPng / EIGRP for IPv6 / ipv6 route, like IPv4
       });
       st.exam = Object.assign(defaultExamOptions(), o);
       st.checklist = {};
