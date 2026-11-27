@@ -7365,6 +7365,7 @@ line vty 0 4
         ${ic.dualStack ? `
           <div class="sub-card">
             <div class="sub-card-header"><span>IPv6 Routing (all routers)</span></div>
+            <div class="text-muted" style="font-size:13.5px;">Pick <b>Same as IPv4</b> to get <span class="mono">ipv6 router eigrp</span> / <span class="mono">ipv6 router rip</span>; <b>Auto static</b> writes only <span class="mono">ipv6 route</span> lines. Also in Exam preset.</div>
             <div class="seg-control" style="display:grid; grid-template-columns:repeat(3, 1fr);">
               <button type="button" class="seg-btn rt-v6mode ${v6Mode === 'static' ? 'active' : ''}" data-v6mode="static">Auto static</button>
               <button type="button" class="seg-btn rt-v6mode ${v6Mode === 'ripng' ? 'active' : ''}" data-v6mode="ripng">RIPng</button>
@@ -8822,10 +8823,16 @@ line vty 0 4
 
     function defaultExamOptions() {
       return {
-        g: '1', s: '1', scenario: 's1', ispIf: 's0/0/0', password: 'GROUP5CISCO', sshUser: 'admin', acls: true,
+        g: '1', s: '1', scenario: 's1', ispIf: 's0/0/0', password: 'GROUP5CISCO', sshUser: 'admin', acls: true, v6routing: 'match',
         hosts: { reg: 60, fin: 30, lab: 120, dt: 25 }
       };
     }
+
+    const EXAM_V6_ROUTING = {
+      match: { label: 'Same as IPv4 (ipv6 router eigrp, ipv6 router rip)', why: 'Each link runs the IPv6 twin of its IPv4 protocol: EIGRP for IPv6, RIPng, or ipv6 route on static links. Edge redistributes IPv6 like IPv4.' },
+      static: { label: 'Auto static (ipv6 route lines only)', why: 'No IPv6 routing protocol: every router gets ipv6 route lines to the other LANs. Simplest, but nothing shows in show ipv6 protocols.' },
+      ripng: { label: 'RIPng on every router', why: 'ipv6 router rip on every router and every port, whatever IPv4 uses.' }
+    };
 
     /** "12G.2S.224.0/20" and "200G:DBS:ACAD::/64" worked out for one group and student. */
     function examBases(g, s) {
@@ -8997,6 +9004,13 @@ line vty 0 4
           changes.push('ACL statements');
         }
       }
+      // appState.initConfig, not ic: refreshAddressingUI above has normalized it into a new object
+      const icNow = appState.initConfig;
+      if (EXAM_V6_ROUTING[o.v6routing] && (icNow.ipv6Routing !== o.v6routing || !icNow.dualStack)) {
+        icNow.dualStack = true;
+        icNow.ipv6Routing = o.v6routing;
+        changes.push(`IPv6 routing: ${EXAM_V6_ROUTING[o.v6routing].label}`);
+      }
       appState.exam = Object.assign(prev, o, { scenario: sc ? o.scenario : prev.scenario });
       normalizeState();
       refreshAddressingUI();
@@ -9039,7 +9053,7 @@ line vty 0 4
       Object.assign(st.initConfig, {
         enableSecretEnabled: true, enableSecret: pwd, consoleEnabled: true, consolePwd: pwd, vtyPwd: pwd, sshPwd: pwd,
         sshUser: String(o.sshUser || '').trim() || 'admin', vtyMode: 'split', telnetLogin: 'password',
-        dualStack: true, ipv6Routing: 'match' // RIPng / EIGRP for IPv6 / ipv6 route, like IPv4
+        dualStack: true, ipv6Routing: EXAM_V6_ROUTING[o.v6routing] ? o.v6routing : 'match'
       });
       st.exam = Object.assign(defaultExamOptions(), o);
       st.checklist = {};
@@ -9156,6 +9170,11 @@ line vty 0 4
                 <label class="field-label" for="exIspIf">Edge port to the ISP (check the real router)</label>
                 <select id="exIspIf" class="mono">${SERIAL_INTERFACES.map(p => `<option value="${p}" ${o.ispIf === p ? 'selected' : ''}>${p}</option>`).join('')}</select>
               </div>
+              <div class="field-group" style="margin-top:10px;">
+                <label class="field-label" for="exV6">IPv6 routing</label>
+                <select id="exV6">${Object.entries(EXAM_V6_ROUTING).map(([k, v]) => `<option value="${k}" ${o.v6routing === k ? 'selected' : ''}>${escapeHtml(v.label)}</option>`).join('')}</select>
+                <div class="text-muted" id="exV6Why" style="font-size:14px; margin-top:6px;">${escapeHtml((EXAM_V6_ROUTING[o.v6routing] || EXAM_V6_ROUTING.match).why)}</div>
+              </div>
             </fieldset>
             <fieldset class="exam-set">
               <legend>4 · Access</legend>
@@ -9237,6 +9256,7 @@ line vty 0 4
         if (!scenarioMatches(o.scenario)) o.scenario = 'custom';
         o.password = appState.initConfig.vtyPwd || o.password;
         o.sshUser = appState.initConfig.sshUser || o.sshUser;
+        o.v6routing = appState.initConfig.ipv6Routing;
         const spec = examAclSpec();
         spec.telnetPcIds = spec.telnetPcIds.filter(id => findPc(id));
         spec.sshPcIds = spec.sshPcIds.filter(id => findPc(id));
@@ -9253,7 +9273,7 @@ line vty 0 4
         replies: row.querySelector('.ex-drep').checked, label: row.dataset.label || ''
       }));
       const read = () => ({
-        g: val('exG'), s: val('exS'), scenario: val('exScenario'), ispIf: val('exIspIf'),
+        g: val('exG'), s: val('exS'), scenario: val('exScenario'), ispIf: val('exIspIf'), v6routing: val('exV6'),
         password: val('exPwd'), sshUser: val('exUser'), acls: dlg.querySelector('#exAcls').checked,
         hosts: Object.fromEntries(EXAM_LANS.map(l => [l.key, val(`exH_${l.key}`)])),
         ...(mode === 'update' ? { acl: { telnetPcIds: ticked('ex-telnet'), sshPcIds: ticked('ex-ssh'), sshTargets: ticked('ex-sshr'), denies: readDenies() } } : {})
@@ -9286,6 +9306,7 @@ line vty 0 4
         const sc = ROUTING_SCENARIOS[cur.scenario] || null;
         dlg.querySelector('#exScenarioWhere').textContent = sc ? sc.where : EXAM_CUSTOM_ROUTING;
         dlg.querySelector('#exIspRow').hidden = sc ? !sc.isp : !getRouterById('r_isp');
+        dlg.querySelector('#exV6Why').textContent = (EXAM_V6_ROUTING[cur.v6routing] || EXAM_V6_ROUTING.match).why;
         const aclBox = dlg.querySelector('#exAclBox');
         if (aclBox) aclBox.hidden = !cur.acls;
       };
