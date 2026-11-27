@@ -1073,6 +1073,11 @@
     .acl-router-picks { display: flex; flex-wrap: wrap; gap: 4px 14px; padding: 8px 10px; margin-top: 6px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg-input); }
     .acl-router-picks .checkbox-row { margin: 0; }
     .acl-replies-row { font-size: 14px; color: var(--text-secondary); }
+    .pc-table { display: flex; flex-direction: column; gap: 4px; padding: 8px 10px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg-input); }
+    .pc-table-head { display: flex; justify-content: space-between; align-items: center; gap: 6px; margin-bottom: 2px; }
+    .pc-row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.6fr) auto; gap: 6px; align-items: center; }
+    .pc-hint { font-size: 13px; color: var(--text-secondary); margin: 0 0 4px 2px; }
+    .pc-hint.bad { color: var(--rose); }
     .vty-split-note { padding: 6px 10px; border: 1px solid var(--border); border-radius: 6px; background: var(--accent-soft); color: var(--accent-ink); font-size: 14px; line-height: 1.5; }
     .acl-router {
       border: 1px solid var(--border);
@@ -2931,7 +2936,8 @@ line vty 0 4
         dhcpExcludeCount: sub ? Math.min(10, Math.max(1, Math.floor(sub.usableHosts / 3))) : 10,
         dnsServerIp: '',
         dnsServerIpv6: '',
-        devices: { pc: 2, laptop: 0, server: 0, printer: 0, smartphone: 0, tablet: 0 }
+        devices: { pc: 2, laptop: 0, server: 0, printer: 0, smartphone: 0, tablet: 0 },
+        pcs: []  // PCs with a fixed IP: { id, name, ip } (blank ip = next free host)
       };
     }
 
@@ -3335,6 +3341,63 @@ line vty 0 4
         r.lans.forEach(lan => list.push({ router: r, lan }));
       });
       return list;
+    }
+
+    /* ---- PCs with a fixed IP: ACL rules pick them by name, DHCP never leases their address ---- */
+    function lanPcs(lan) {
+      if (!Array.isArray(lan.pcs)) lan.pcs = [];
+      return lan.pcs;
+    }
+    /** Blank IP = the next free host after the gateway, in list order. */
+    function pcAutoIp(lan, pc) {
+      const net = IPv4.toInt(lan.netIp);
+      if (net === null) return '';
+      const gw = IPv4.toInt(lan.gatewayIp);
+      const typed = new Set(lanPcs(lan).filter(p => String(p.ip || '').trim()).map(p => IPv4.toInt(String(p.ip).trim())));
+      const k = lanPcs(lan).filter(p => !String(p.ip || '').trim()).indexOf(pc);
+      if (k < 0) return '';
+      const size = IPv4.totalAddresses(lan.cidr);
+      let n = 0;
+      for (let off = 1; off < size - 1; off++) {
+        const ip = (net + off) >>> 0;
+        if (ip === gw || typed.has(ip)) continue;
+        if (n === k) return IPv4.fromInt(ip);
+        n++;
+      }
+      return '';
+    }
+    function pcIp(lan, pc) {
+      return String(pc.ip || '').trim() || pcAutoIp(lan, pc);
+    }
+    function getAllPcs() {
+      const list = [];
+      getAllLans().forEach(({ router, lan }) => lanPcs(lan).forEach(pc => {
+        list.push({ router, lan, pc, ip: pcIp(lan, pc), name: String(pc.name || '').trim() || 'PC' });
+      }));
+      return list;
+    }
+    function findPc(id) {
+      return getAllPcs().find(x => x.pc.id === id) || null;
+    }
+    function pcIpProblem(lan, pc) {
+      const ip = pcIp(lan, pc);
+      const n = IPv4.toInt(ip);
+      if (n === null) return ip ? `${ip} is not a valid IPv4 address.` : `${lan.name} has no free address left.`;
+      const net = IPv4.toInt(lan.netIp);
+      const size = IPv4.totalAddresses(lan.cidr);
+      if (net === null) return '';
+      if (n < net || n > net + size - 1) return `${ip} is outside ${lan.name} (${lan.netIp}/${lan.cidr}).`;
+      if (n === net) return `${ip} is the network ID.`;
+      if (n === net + size - 1) return `${ip} is the broadcast address.`;
+      if (ip === lan.gatewayIp) return `${ip} is the router's gateway address.`;
+      if (getAllPcs().some(x => x.pc !== pc && x.ip === ip)) return `Another PC already uses ${ip}.`;
+      return '';
+    }
+    function nextPcName() {
+      const used = new Set(getAllPcs().map(x => x.name.toLowerCase()));
+      let n = 0;
+      while (used.has(`pc${n}`)) n++;
+      return `PC${n}`;
     }
 
     function getInterfaceUsage(routerId) {
@@ -3844,6 +3907,8 @@ line vty 0 4
       s.rules.forEach(r => {
         if (!Array.isArray(r.dstRouterIds)) r.dstRouterIds = r.dstRouterId ? [r.dstRouterId] : [];
         if (!['all', 'telnet', 'ssh'].includes(r.loginLines)) r.loginLines = 'all';
+        if (typeof r.srcPcId !== 'string') r.srcPcId = '';
+        if (typeof r.dstPcId !== 'string') r.dstPcId = '';
         r.allowReplies = r.allowReplies === true; // older rules: off, so their ACLs stay as they were
         // Older projects had one type for every rule
         if (r.aclType !== 'standard' && r.aclType !== 'extended') {
@@ -3864,8 +3929,15 @@ line vty 0 4
       return best;
     }
 
-    function resolveRuleEndpoint(type, lanId, host) {
+    function resolveRuleEndpoint(type, lanId, host, pcId) {
       if (type === 'any') return { kind: 'any', acl: 'any', label: 'any', lo: 0, hi: 0xffffffff };
+      if (type === 'pc') {
+        const m = findPc(pcId);
+        if (!m) return { kind: 'missing', label: 'a deleted PC' };
+        const n = IPv4.toInt(m.ip);
+        if (n === null) return { kind: 'invalid', label: m.name };
+        return { kind: 'host', acl: `host ${m.ip}`, ip: m.ip, name: m.name, label: `${m.name} (${m.ip})`, router: m.router, lan: m.lan, lo: n, hi: n };
+      }
       if (type === 'lan') {
         const m = getAllLans().find(x => x.lan.id === lanId);
         if (!m) return { kind: 'missing', label: 'a deleted LAN' };
@@ -3881,7 +3953,7 @@ line vty 0 4
       const n = IPv4.toInt(ip);
       if (n === null) return { kind: 'invalid', label: ip || '(no IP)' };
       const m = findLanForIp(n);
-      return { kind: 'host', acl: `host ${ip}`, label: ip, router: m ? m.router : null, lan: m ? m.lan : null, lo: n, hi: n };
+      return { kind: 'host', acl: `host ${ip}`, ip, label: ip, router: m ? m.router : null, lan: m ? m.lan : null, lo: n, hi: n };
     }
 
     function serviceLines(rule) {
@@ -4007,7 +4079,7 @@ line vty 0 4
 
     function epText(ep) {
       if (ep.kind === 'any') return 'anyone';
-      if (ep.kind === 'host') return `host ${ep.label}`;
+      if (ep.kind === 'host') return ep.name ? ep.label : `host ${ep.label}`;
       if (ep.kind === 'lan') return `${ep.label} (${ep.lan.netIp}/${ep.lan.cidr})`;
       return ep.label;
     }
@@ -4022,7 +4094,7 @@ line vty 0 4
     /** One ACL line as labelled tokens (action, protocol, source, wildcard, destination, port). */
     function aceTokens(type, action, line, src, dst) {
       const ep = (e, role) => e.kind === 'any' ? [{ t: 'any', r: role }]
-        : e.kind === 'host' ? [{ t: 'host', r: role }, { t: e.label, r: role }]
+        : e.kind === 'host' ? [{ t: 'host', r: role }, { t: e.ip || e.label, r: role }]
         : [{ t: e.lan.netIp, r: role }, { t: IPv4.cidrToWildcard(e.lan.cidr), r: 'wc' }];
       const toks = [{ t: action, r: action }];
       if (type === 'standard') return toks.concat(ep(src, 'src'));
@@ -4084,7 +4156,7 @@ line vty 0 4
         : ['all']);
 
       const items = rules.map((rule, idx) => {
-        const src = resolveRuleEndpoint(rule.srcType, rule.srcLanId, rule.srcHost);
+        const src = resolveRuleEndpoint(rule.srcType, rule.srcLanId, rule.srcHost, rule.srcPcId);
         const isVty = rule.dstType === 'router';
         const dstRouters = isVty ? ruleRouterIds(rule).map(getRouterById).filter(Boolean) : [];
         const loginWord = isVty ? vtyLinesWord(split ? (rule.loginLines || 'all') : (rule.loginLines === 'all' ? 'all' : rule.loginLines)) : '';
@@ -4093,7 +4165,7 @@ line vty 0 4
             kind: 'router', routers: dstRouters, router: dstRouters[0] || null,
             label: dstRouters.length ? `${dstRouters.map(r => sanitizeHostname(r.hostname)).join(', ')} (${loginWord} login)` : 'a deleted router'
           }
-          : resolveRuleEndpoint(rule.dstType, rule.dstLanId, rule.dstHost);
+          : resolveRuleEndpoint(rule.dstType, rule.dstLanId, rule.dstHost, rule.dstPcId);
         const std = isVty || (rule.aclType ? rule.aclType === 'standard' : sec.mode === 'standard');
         const verb = rule.action === 'deny' ? 'Block' : (isVty ? 'Allow only' : 'Allow');
         const svc = isVty ? 'remote login' : (std ? 'all traffic (standard ACL)' : serviceLabel(rule));
@@ -4120,7 +4192,7 @@ line vty 0 4
       // 1. Validate and choose a place for every rule
       items.forEach(it => {
         const inf = info[it.rule.id];
-        if (it.src.kind === 'missing') inf.errors.push('The source LAN was deleted. Remove this rule or pick another source.');
+        if (it.src.kind === 'missing') inf.errors.push(`The source (${it.src.label === 'a deleted PC' ? 'PC' : 'LAN'}) was deleted. Remove this rule or pick another source.`);
         if (it.src.kind === 'invalid') inf.errors.push(`Source "${it.src.label}" is not a valid IPv4 address.`);
         [hostWarning(it.src, 'source'), it.isVty ? null : hostWarning(it.dst, 'destination')].forEach(w => { if (w) inf.warnings.push(w); });
         if (it.isVty) {
@@ -4132,7 +4204,7 @@ line vty 0 4
           }
           return;
         }
-        if (it.dst.kind === 'missing') inf.errors.push('The destination LAN was deleted. Remove this rule or pick another destination.');
+        if (it.dst.kind === 'missing') inf.errors.push(`The destination (${it.dst.label === 'a deleted PC' ? 'PC' : 'LAN'}) was deleted. Remove this rule or pick another destination.`);
         if (it.dst.kind === 'invalid') inf.errors.push(`Destination "${it.dst.label}" is not a valid IPv4 address.`);
         if (it.rule.service === 'custom' && !it.std && String(it.rule.customPort || '').trim() && !/^\d+$/.test(String(it.rule.customPort).trim())) {
           inf.errors.push('The custom port must be a number.');
@@ -4434,7 +4506,7 @@ line vty 0 4
 
       // 6. Test plan (each test can also be loaded into the packet tester)
       const tests = [];
-      const lanChoice = ep => (ep.kind === 'lan' ? { v: `lan:${ep.lan.id}`, host: '' } : ep.kind === 'host' ? { v: 'host', host: ep.label } : null);
+      const lanChoice = ep => (ep.kind === 'lan' ? { v: `lan:${ep.lan.id}`, host: '' } : ep.kind === 'host' ? { v: 'host', host: ep.ip || ep.label } : null);
       const otherLanChoice = exceptLanId => {
         const o = getAllLans().find(x => x.lan.id !== exceptLanId);
         return o ? { v: `lan:${o.lan.id}`, host: '' } : { v: 'host', host: '8.8.8.8' };
@@ -4444,7 +4516,7 @@ line vty 0 4
         const inf = info[it.rule.id];
         if (inf.errors.length) return;
         const from = it.src.kind === 'lan' ? `a PC in ${it.src.label}`
-          : it.src.kind === 'host' ? `host ${it.src.label}`
+          : it.src.kind === 'host' ? (it.src.name ? it.src.label : `host ${it.src.label}`)
           : 'any PC (e.g. one in another LAN)';
         const s = lanChoice(it.src) || otherLanChoice(it.dst.lan ? it.dst.lan.id : '');
         if (it.isVty) {
@@ -4461,7 +4533,7 @@ line vty 0 4
           return;
         }
         let target;
-        if (it.dst.kind === 'host') target = it.dst.label;
+        if (it.dst.kind === 'host') target = it.dst.ip || it.dst.label;
         else if (it.dst.kind === 'lan') target = aclSampleHost(it.dst.lan);
         else { const o = firstOtherLan(it.src.lan && it.src.lan.id); target = o ? aclSampleHost(o.lan) : '8.8.8.8'; }
         const d = lanChoice(it.dst) || { v: 'host', host: target };
@@ -4536,6 +4608,13 @@ line vty 0 4
      */
     function simulateAclTest(comp, t) {
       const side = (val, hostVal, role) => {
+        if (val && val.startsWith('pc:')) {
+          const m = findPc(val.slice(3));
+          if (!m) return { error: `The ${role} PC no longer exists.` };
+          const n = IPv4.toInt(m.ip);
+          if (n === null) return { error: `${m.name} has no valid IP.` };
+          return { ip: n, ipText: m.ip, label: `${m.name} (${m.ip})` };
+        }
         if (val && val.startsWith('lan:')) {
           const m = getAllLans().find(x => `lan:${x.lan.id}` === val);
           if (!m) return { error: `The ${role} LAN no longer exists.` };
@@ -4715,6 +4794,13 @@ line vty 0 4
           ['netIp', 'gatewayIp', 'mask', 'ipv6Prefix', 'ipv6Ip', 'ipv6LinkLocal', 'iface', 'dnsServerIp', 'dnsServerIpv6'].forEach(k => { lan[k] = clean(lan[k]); });
           lan.cidr = Math.min(32, Math.max(0, Number(lan.cidr) || 24));
           if (!lan.devices || typeof lan.devices !== 'object') lan.devices = {};
+          if (!Array.isArray(lan.pcs)) lan.pcs = [];
+          lan.pcs = lan.pcs.filter(p => p && typeof p === 'object');
+          lan.pcs.forEach(p => {
+            if (!p.id) p.id = uid('pc');
+            p.name = clean(p.name) || 'PC';
+            p.ip = clean(p.ip);
+          });
           if (!lan.name) lan.name = `${r.hostname} LAN`;
         });
         if (!Array.isArray(r.loopbacks)) r.loopbacks = [];
@@ -4921,6 +5007,11 @@ line vty 0 4
         return [];
       };
 
+      router.lans.forEach(lan => lanPcs(lan).forEach(pc => {
+        const p = pcIpProblem(lan, pc);
+        if (p) warn(`${pc.name || 'PC'} in ${lan.name}: ${p} Fix it in Routers & LANs.`);
+      }));
+
       // LAN Interfaces
       const v6Pools = dhcpv6Lans(router);
       router.lans.forEach(lan => {
@@ -5077,6 +5168,14 @@ line vty 0 4
           if (gw !== null && !(clamped > 0 && gw >= netInt + 1 && gw <= netInt + clamped)) {
             dhcp.push(`ip dhcp excluded-address ${lan.gatewayIp}`);
           }
+          // PCs with a fixed IP must never be leased to another PC
+          lanPcs(lan).forEach(pc => {
+            const ip = pcIp(lan, pc);
+            const n = IPv4.toInt(ip);
+            if (n === null || pcIpProblem(lan, pc)) return;
+            if (clamped > 0 && n >= netInt + 1 && n <= netInt + clamped) return; // already in the excluded range
+            dhcp.push(`ip dhcp excluded-address ${ip}`);
+          });
         });
 
         // IPv4 Pools (unique names, even when two relayed LANs share a name)
@@ -6431,6 +6530,31 @@ line vty 0 4
         });
       });
 
+      // PCs with a fixed IP
+      const pcLan = el => getRouterById(el.dataset.rid)?.lans.find(l => l.id === el.dataset.lanid) || null;
+      container.querySelectorAll('.btn-add-pc').forEach(btn => btn.addEventListener('click', () => {
+        const lan = pcLan(btn);
+        if (!lan) return;
+        lanPcs(lan).push({ id: uid('pc'), name: nextPcName(), ip: '' });
+        renderTopologyWorkspace();
+      }));
+      container.querySelectorAll('.btn-del-pc').forEach(btn => btn.addEventListener('click', () => {
+        const lan = pcLan(btn);
+        if (!lan) return;
+        lan.pcs = lanPcs(lan).filter(p => p.id !== btn.dataset.pcid);
+        renderTopologyWorkspace();
+      }));
+      container.querySelectorAll('.pc-field').forEach(inp => {
+        inp.addEventListener('input', e => {
+          const lan = pcLan(inp);
+          const pc = lan && lanPcs(lan).find(p => p.id === inp.dataset.pcid);
+          if (!pc) return;
+          pc[inp.dataset.field] = e.target.value.replace(/[<>"'&`]/g, '').trim();
+          renderCliPane();
+        });
+        inp.addEventListener('change', () => renderLeftPane());
+      });
+
       container.querySelectorAll('.btn-del-lan').forEach(btn => {
         btn.addEventListener('click', () => {
           const rt = getRouterById(btn.dataset.rid);
@@ -6589,6 +6713,25 @@ line vty 0 4
               </div>
             </div>
           ` : ''}
+
+          <!-- PCs with a fixed IP -->
+          <div class="pc-table">
+            <div class="pc-table-head">
+              <span class="field-label" style="margin:0;">PCs with a fixed IP</span>
+              <button class="btn btn-xs btn-add-pc" data-rid="${router.id}" data-lanid="${lan.id}" type="button">+ Add PC</button>
+            </div>
+            ${lanPcs(lan).map(pc => {
+              const ip = pcIp(lan, pc);
+              const prob = pcIpProblem(lan, pc);
+              return `
+                <div class="pc-row">
+                  <input type="text" class="pc-field mono" data-rid="${router.id}" data-lanid="${lan.id}" data-pcid="${pc.id}" data-field="name" value="${escapeHtml(pc.name)}" placeholder="PC0" aria-label="PC name" />
+                  <input type="text" class="pc-field mono" data-rid="${router.id}" data-lanid="${lan.id}" data-pcid="${pc.id}" data-field="ip" value="${escapeHtml(pc.ip)}" placeholder="${escapeHtml(pcAutoIp(lan, pc) || 'IP')}" title="Leave blank to use the next free address after the gateway" aria-label="Fixed IPv4 address (blank = automatic)" style="${prob ? 'border-color:var(--rose);' : ''}" />
+                  <button class="btn btn-danger btn-xs btn-del-pc" data-rid="${router.id}" data-lanid="${lan.id}" data-pcid="${pc.id}" type="button" aria-label="Remove PC">✕</button>
+                </div>
+                <div class="pc-hint ${prob ? 'bad' : ''}">${prob ? escapeHtml(prob) : `On the PC: IP <b class="mono">${escapeHtml(ip)}</b> · mask <span class="mono">${escapeHtml(lan.mask)}</span> · gateway <span class="mono">${escapeHtml(lan.gatewayIp)}</span>`}</div>`;
+            }).join('') || '<div class="text-muted" style="font-size:13px;">None. Add the PCs an ACL names (PC0 may Telnet, PC8 may SSH…). They keep the same IP, ACL rules can pick them by name, and DHCP never leases their address.</div>'}
+          </div>
 
           <!-- End Devices -->
           <div class="field-label" style="margin-top:2px;">End Devices on LAN</div>
@@ -7009,7 +7152,8 @@ line vty 0 4
           customProto: 'tcp', customPort: '', placement: 'auto', note: ''
         };
       }
-      const valid = v => v === 'any' || v === 'host' || v === 'router' || (String(v).startsWith('lan:') && lans.some(x => `lan:${x.lan.id}` === v));
+      const valid = v => v === 'any' || v === 'host' || v === 'router' || (String(v).startsWith('lan:') && lans.some(x => `lan:${x.lan.id}` === v))
+        || (String(v).startsWith('pc:') && !!findPc(String(v).slice(3)));
       if (!valid(aclDraft.src) || aclDraft.src === 'router') aclDraft.src = lanVal(0);
       if (!valid(aclDraft.dst)) aclDraft.dst = lanVal(1);
       if (!getRouterById(aclDraft.dstRouterId)) aclDraft.dstRouterId = appState.routers[0]?.id || '';
@@ -7029,7 +7173,8 @@ line vty 0 4
           svc: 'ping', customProto: 'tcp', customPort: ''
         };
       }
-      const valid = v => v === 'host' || v === 'router' || (String(v).startsWith('lan:') && lans.some(x => `lan:${x.lan.id}` === v));
+      const valid = v => v === 'host' || v === 'router' || (String(v).startsWith('lan:') && lans.some(x => `lan:${x.lan.id}` === v))
+        || (String(v).startsWith('pc:') && !!findPc(String(v).slice(3)));
       if (!valid(aclTester.src) || aclTester.src === 'router') aclTester.src = lanVal(0);
       if (!valid(aclTester.dst)) aclTester.dst = lanVal(1);
       if (!getRouterById(aclTester.dstRouterId)) aclTester.dstRouterId = appState.routers[0]?.id || '';
@@ -7041,6 +7186,7 @@ line vty 0 4
     function draftToRule(d) {
       const end = (val, hostVal) => {
         if (String(val).startsWith('lan:')) return { type: 'lan', lanId: val.slice(4), host: '' };
+        if (String(val).startsWith('pc:')) return { type: 'pc', lanId: '', host: '', pcId: val.slice(3) };
         if (val === 'host') return { type: 'host', lanId: '', host: String(hostVal || '').trim() };
         return { type: val, lanId: '', host: '' };
       };
@@ -7050,8 +7196,8 @@ line vty 0 4
       const std = vty || d.aclType === 'standard';
       return {
         id: 'draft', action: d.action,
-        srcType: s.type, srcLanId: s.lanId, srcHost: s.host,
-        dstType: t.type, dstLanId: t.lanId, dstHost: t.host,
+        srcType: s.type, srcLanId: s.lanId, srcHost: s.host, srcPcId: s.pcId || '',
+        dstType: t.type, dstLanId: t.lanId, dstHost: t.host, dstPcId: t.pcId || '',
         dstRouterId: vty ? ((d.dstRouterIds || [])[0] || '') : '',
         dstRouterIds: vty ? (d.dstRouterIds || []).filter(id => getRouterById(id)) : [],
         loginLines: vty && ['telnet', 'ssh'].includes(d.loginLines) ? d.loginLines : 'all',
@@ -7066,6 +7212,8 @@ line vty 0 4
 
     function draftProblem(rule) {
       if (rule.srcType === 'host' && IPv4.toInt(rule.srcHost) === null) return 'Type the source host IP (for example 192.168.1.10).';
+      if (rule.srcType === 'pc' && !findPc(rule.srcPcId)) return 'Pick the source PC.';
+      if (rule.dstType === 'pc' && !findPc(rule.dstPcId)) return 'Pick the destination PC.';
       if (rule.dstType === 'host' && IPv4.toInt(rule.dstHost) === null) return 'Type the destination host IP.';
       if (rule.dstType === 'router' && !ruleRouterIds(rule).some(id => getRouterById(id))) return 'Tick at least one router.';
       if (rule.srcType === 'any' && rule.dstType === 'any') return 'Pick a LAN or a host for the source or the destination.';
@@ -7077,6 +7225,11 @@ line vty 0 4
       return getAllLans().map(x =>
         `<option value="lan:${x.lan.id}" ${selected === `lan:${x.lan.id}` ? 'selected' : ''}>${escapeHtml(x.lan.name)} (${escapeHtml(sanitizeHostname(x.router.hostname))} · ${x.lan.netIp}/${x.lan.cidr})</option>`
       ).join('')
+        + (() => {
+          const pcs = getAllPcs();
+          return pcs.length ? `<optgroup label="PCs with a fixed IP">${pcs.map(x =>
+            `<option value="pc:${x.pc.id}" ${selected === `pc:${x.pc.id}` ? 'selected' : ''}>${escapeHtml(x.name)} · ${escapeHtml(x.ip)} (${escapeHtml(x.lan.name)})</option>`).join('')}</optgroup>` : '';
+        })()
         + `<option value="host" ${selected === 'host' ? 'selected' : ''}>One host (type its IP)…</option>`
         + (any ? `<option value="any" ${selected === 'any' ? 'selected' : ''}>Any (everyone)</option>` : '')
         + (router ? `<option value="router" ${selected === 'router' ? 'selected' : ''}>A router itself (SSH / Telnet login)</option>` : '');
