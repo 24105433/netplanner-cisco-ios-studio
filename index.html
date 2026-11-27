@@ -730,6 +730,8 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 8px;
       pointer-events: none;
       z-index: 10;
     }
@@ -743,6 +745,7 @@
       padding: 6px 10px;
       border-radius: var(--radius-md);
       display: flex;
+      flex-wrap: wrap;
       align-items: center;
       gap: 8px;
       font-size: 14px;
@@ -1600,6 +1603,7 @@
             <button id="btnZoomIn" class="btn btn-xs" type="button" title="Zoom In">+</button>
             <button id="btnZoomFit" class="btn btn-xs btn-cyan" type="button" title="Zoom and center so every router is visible">Fit All</button>
             <button id="btnAutoLayout" class="btn btn-xs" type="button" title="Put every router back in the automatic layout" disabled>Auto Arrange</button>
+            <button id="btnDrawio" class="btn btn-xs" type="button" title="Download this network as a draw.io file: every port with its IPv4 and IPv6 address, ready to edit and print">Download draw.io</button>
           </div>
         </div>
         <div id="svgViewport" class="svg-viewport">
@@ -9392,6 +9396,156 @@ line vty 0 4
         : (a.examG || a.examS ? '<span class="exam-bad">One digit each (0 to 9).</span>' : 'Type your group and student numbers: IPv4 <span class="mono">12G.2S.224.0/20</span>, IPv6 <span class="mono">200G:DBS:ACAD::/64</span>.');
     }
 
+    /* =========================================================================
+       draw.io export: the current network with every port's addresses
+       ========================================================================= */
+    function buildDrawioXml() {
+      const ds = appState.initConfig.dualStack;
+      const routers = appState.routers;
+      const links = appState.links.filter(l => getRouterById(l.r1Id) && getRouterById(l.r2Id));
+      const x = s => String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+      const h = s => String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+      const cells = [];
+      let n = 2;
+      const id = () => `c${n++}`;
+      const vertex = (value, style, gx, gy, w, ht) => {
+        const cid = id();
+        cells.push(`<mxCell id="${cid}" value="${x(value)}" style="${style}" vertex="1" parent="1"><mxGeometry x="${Math.round(gx)}" y="${Math.round(gy)}" width="${w}" height="${ht}" as="geometry"/></mxCell>`);
+        return cid;
+      };
+      const edge = (src, tgt, style, labels) => {
+        const cid = id();
+        cells.push(`<mxCell id="${cid}" style="${style}" edge="1" parent="1" source="${src}" target="${tgt}"><mxGeometry relative="1" as="geometry"/></mxCell>`);
+        labels.forEach(l => cells.push(`<mxCell id="${id()}" value="${x(l.text)}" style="edgeLabel;html=1;align=center;verticalAlign=${l.va || 'middle'};resizable=0;fontSize=11;fontFamily=Helvetica;labelBackgroundColor=#ffffff;spacing=2;fontColor=${l.color || '#14181f'};" vertex="1" connectable="0" parent="${cid}"><mxGeometry x="${l.at}" relative="1" as="geometry"><mxPoint x="${l.dx || 0}" y="${l.dy || 0}" as="offset"/></mxGeometry></mxCell>`));
+      };
+      const portText = (iface, v4, cidr, v6) => `<b>${h(iface)}</b> ${h(v4)}/${h(cidr)}${ds && v6 ? `<br>${h(v6)}` : ''}`;
+
+      // ---- layout: LAN routers in the bottom row (linked ones side by side), the rest above their neighbours
+      const COL = 430, ROW = 230, RW = 184, RH = 58;
+      const nb = rid => links.filter(l => l.r1Id === rid || l.r2Id === rid).map(l => (l.r1Id === rid ? l.r2Id : l.r1Id));
+      const hasLan = r => r.lans.length > 0;
+      const order = [];
+      const seen = new Set();
+      const start = routers.filter(hasLan).sort((a, b) => nb(a.id).length - nb(b.id).length)[0] || routers[0];
+      const visit = rid => {
+        if (seen.has(rid)) return;
+        seen.add(rid);
+        const r = getRouterById(rid);
+        if (r && hasLan(r)) order.push(r);
+        nb(rid).forEach(visit);
+      };
+      if (start) visit(start.id);
+      routers.forEach(r => { if (!seen.has(r.id)) visit(r.id); });
+      const pos = {};
+      const baseY = 2 * ROW + 140;
+      let cursor = 40;
+      order.forEach(r => {
+        const span = Math.max(1, r.lans.length) * COL;
+        pos[r.id] = { x: cursor + span / 2 - RW / 2, y: baseY, L: cursor };
+        cursor += span;
+      });
+      let rest = routers.filter(r => !pos[r.id]);
+      for (let guard = 0; rest.length && guard < 20; guard++) {
+        rest.forEach(r => {
+          const placed = nb(r.id).filter(o => pos[o]);
+          if (!placed.length && guard < 19) return;
+          const px = placed.length ? placed.reduce((s, o) => s + pos[o].x, 0) / placed.length : 40 + Object.keys(pos).length * COL;
+          const py = placed.length ? Math.min(...placed.map(o => pos[o].y)) - ROW : 140;
+          let gx = px;
+          while (Object.values(pos).some(p => Math.abs(p.y - py) < 10 && Math.abs(p.x - gx) < RW + 40)) gx += RW + 60;
+          pos[r.id] = { x: gx, y: py };
+        });
+        rest = routers.filter(r => !pos[r.id]);
+      }
+      const minY = Math.min(...Object.values(pos).map(p => p.y), baseY);
+      Object.values(pos).forEach(p => { p.y += 150 - minY; });
+
+      // ---- routers
+      const node = {};
+      routers.forEach(r => {
+        const plan = getRouterRoutingPlan(r.id);
+        const runs = planRunsList(plan).map(p => PROTO_LABEL[p]).join(' + ') || 'no routing';
+        const lo = routerLoopbacks(r).map(l => `${h(l.name)} ${h(l.v4 ? `${l.v4.ip}/${l.v4.cidr}` : '')}`).join('<br>');
+        node[r.id] = vertex(`<b style="font-size:15px">${h(sanitizeHostname(r.hostname))}</b><br>Cisco ${h(routerModel(r))} · ${h(runs)}${lo ? `<br>${lo}` : ''}`,
+          'rounded=1;arcSize=12;whiteSpace=wrap;html=1;fillColor=#efe8f8;strokeColor=#5b2d96;strokeWidth=2;fontFamily=Helvetica;fontSize=12;fontColor=#14181f;',
+          pos[r.id].x, pos[r.id].y, RW, lo ? RH + 16 : RH);
+      });
+
+      // ---- router to router links: protocol colour, a port label at each end
+      links.forEach(l => {
+        const color = PROTO_COLOR[l.protocol] || '#a84700';
+        const p1 = pos[l.r1Id], p2 = pos[l.r2Id];
+        const flat = Math.abs(p1.y - p2.y) < 10;
+        edge(node[l.r1Id], node[l.r2Id],
+          `endArrow=none;html=1;strokeWidth=3;strokeColor=${color};${flat ? '' : 'edgeStyle=none;'}`,
+          [
+            { text: portText(l.r1If, l.ip1, l.cidr, l.ipv6Ip1), at: -0.55, va: flat ? 'bottom' : 'middle', dy: flat ? -6 : 0 },
+            { text: portText(l.r2If, l.ip2, l.cidr, l.ipv6Ip2), at: 0.55, va: flat ? 'top' : 'middle', dy: flat ? 6 : 0 },
+            { text: `<b>${h(PROTO_LABEL[l.protocol] || l.protocol || '')}</b>`, at: 0, color }
+          ]);
+      });
+
+      // ---- LANs: switch, PCs and a LAN summary under each router
+      const v6Word = { slaac: 'SLAAC', stateless: 'SLAAC + stateless DHCPv6', stateful: 'stateful DHCPv6', none: 'static IPv6' };
+      routers.forEach(r => r.lans.forEach((lan, li) => {
+        const p = pos[r.id];
+        const L = p.L !== undefined ? p.L : p.x + RW / 2 - COL / 2;
+        const cx = L + li * COL + COL / 2; // centre of this LAN's column
+        const colX = L + li * COL + 10;
+        const sy = p.y + 190;
+        const sw = vertex(`<b>${h(lan.accessDevice || 'Switch')}</b><br>${h(lan.name)}`,
+          'rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#e4effa;strokeColor=#0a5fae;strokeWidth=2;fontFamily=Helvetica;fontSize=12;fontColor=#14181f;',
+          cx - 80, sy, 160, 48);
+        edge(node[r.id], sw, 'endArrow=none;html=1;strokeWidth=2;strokeColor=#0a5fae;',
+          [{ text: portText(lan.iface, lan.gatewayIp, lan.cidr, lan.ipv6Ip), at: -0.35, dx: 0 }]);
+        const pcs = lanPcs(lan).map(pc => ({ name: String(pc.name || 'PC'), ip: pcIp(lan, pc), fixed: true }));
+        pcs.push({ name: 'Other PCs', ip: lan.dhcpMode === 'none' ? 'static' : 'DHCP', fixed: false });
+        const pw = 118, gap = 12;
+        const total = pcs.length * pw + (pcs.length - 1) * gap;
+        pcs.forEach((pc, i) => {
+          const px = cx - total / 2 + i * (pw + gap);
+          const v = vertex(`<b>${h(pc.name)}</b><br>${h(pc.ip)}`,
+            `rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#0a5fae;${pc.fixed ? '' : 'dashed=1;'}fontFamily=Helvetica;fontSize=11;fontColor=#14181f;`,
+            px, sy + 120, pw, 40);
+          edge(sw, v, 'endArrow=none;html=1;strokeWidth=1;strokeColor=#0a5fae;', []);
+        });
+        const dhcp = lan.dhcpMode === 'central' && lan.dhcpTargetRouterId
+          ? `DHCPv4 from ${h(sanitizeHostname(getRouterById(lan.dhcpTargetRouterId)?.hostname || '?'))} (ip helper-address)`
+          : lan.dhcpMode === 'none' ? 'static IPv4' : `DHCPv4 pool on ${h(sanitizeHostname(r.hostname))}`;
+        vertex(`<b>${h(lan.name)}</b>: ${h(lan.netIp)}/${h(lan.cidr)}, gateway ${h(lan.gatewayIp)}${ds && lan.ipv6Prefix ? `<br>${h(lan.ipv6Prefix)}, gateway ${h(routerLinkLocal(r))}` : ''}<br>${dhcp}${ds ? ` · ${h(v6Word[lan.ipv6Mode] || lan.ipv6Mode)}` : ''}`,
+          'text;html=1;whiteSpace=wrap;align=left;verticalAlign=top;fontFamily=Helvetica;fontSize=11;fontColor=#424b58;',
+          colX, sy + 175, COL - 30, 56);
+      }));
+
+      // ---- title and legend
+      const a = appState.addressing;
+      const ex = appState.exam;
+      const sc = ex && ROUTING_SCENARIOS[ex.scenario];
+      vertex(`<b style="font-size:18px">Network topology</b><br>IPv4 ${h(a.baseIp)}/${h(a.baseCidr)}${ds ? ` · IPv6 ${h(a.ipv6Base)}` : ''}${a.examG && a.examS ? ` · G${h(a.examG)} S${h(a.examS)}` : ''}${sc ? `<br>Routing: ${h(sc.label)}` : ''}<br><span style="color:#5c6573">Made by NetPlanner from the project's subnet table</span>`,
+        'text;html=1;whiteSpace=wrap;align=left;verticalAlign=top;fontFamily=Helvetica;fontSize=12;fontColor=#14181f;', 40, 20, 520, 80);
+      const used = [...new Set(links.map(l => l.protocol))].filter(p => PROTO_COLOR[p]);
+      vertex(`<b>Links</b><br>${used.map(p => `<span style="color:${PROTO_COLOR[p]}">━━</span> ${h(PROTO_LABEL[p])}`).join('<br>')}<br><span style="color:#0a5fae">━━</span> LAN<br>Dashed PC = takes an address from DHCP`,
+        'rounded=1;arcSize=6;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=8;fillColor=#ffffff;strokeColor=#9aa3ae;fontFamily=Helvetica;fontSize=11;fontColor=#14181f;',
+        Math.max(cursor, 40 + COL) - 230, 20, 210, 40 + 16 * (used.length + 2));
+
+      return `<mxfile host="NetPlanner"><diagram id="topology" name="Topology"><mxGraphModel dx="1600" dy="1000" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="0" pageScale="1" math="0" shadow="0" background="#ffffff"><root><mxCell id="0"/><mxCell id="1" parent="0"/>${cells.join('')}</root></mxGraphModel></diagram></mxfile>`;
+    }
+
+    function downloadDrawio() {
+      if (!appState.routers.length) return showToast('Add routers first');
+      const a = appState.addressing;
+      const name = a.examG && a.examS ? `topology-G${a.examG}-S${a.examS}.drawio` : 'topology.drawio';
+      const url = URL.createObjectURL(new Blob([buildDrawioXml()], { type: 'application/xml' }));
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = name;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+      showToast(`${name} downloaded: open it in draw.io (app.diagrams.net or the desktop app)`);
+    }
+
     /** Keep --header-h equal to the real header height, so full-height tabs fit under it. */
     function trackHeaderHeight() {
       const header = document.querySelector('.app-header');
@@ -9501,6 +9655,7 @@ line vty 0 4
       });
 
       // Tab 1 Addressing Events
+      document.getElementById('btnDrawio').addEventListener('click', downloadDrawio);
       document.getElementById('btnPrintAddrSheet').addEventListener('click', () => {
         document.body.classList.add('print-addr-sheet');
         window.print();
