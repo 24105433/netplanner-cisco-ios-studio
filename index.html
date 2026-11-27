@@ -1082,6 +1082,11 @@
     .pc-row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.6fr) auto; gap: 6px; align-items: center; }
     .pc-hint { font-size: 13px; color: var(--text-secondary); margin: 0 0 4px 2px; }
     .pc-hint.bad { color: var(--rose); }
+    .exam-strip { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 10px 16px; padding: 12px 16px; }
+    .exam-strip .field-group { width: 92px; }
+    .exam-strip-title { font-family: var(--font-label); font-weight: 600; font-size: 17px; align-self: center; }
+    .exam-strip-working { flex: 1 1 320px; align-self: center; font-size: 15px; line-height: 1.5; color: var(--text-secondary); }
+    .exam-strip-working b { color: var(--accent-ink); }
     .doc-card h4.ws-h { margin: 18px 0 6px; padding-top: 10px; border-top: 1px solid var(--border); text-transform: none; letter-spacing: 0; font-family: var(--font-label); font-size: 17px; font-weight: 600; color: var(--accent-ink); }
 
     /* Exam preset dialog */
@@ -1325,6 +1330,21 @@
   <section id="viewAddressing" class="tab-view">
     <div class="addr-container">
 
+      <!-- CPE 3105: group and student numbers fill both bases -->
+      <div class="card exam-strip" id="examStrip">
+        <div class="exam-strip-title">Exam numbers</div>
+        <div class="field-group">
+          <label class="field-label" for="addrExamG">Group G#</label>
+          <input id="addrExamG" class="mono" type="text" inputmode="numeric" maxlength="1" placeholder="1" />
+        </div>
+        <div class="field-group">
+          <label class="field-label" for="addrExamS">Student S#</label>
+          <input id="addrExamS" class="mono" type="text" inputmode="numeric" maxlength="1" placeholder="1" />
+        </div>
+        <div class="exam-strip-working" id="addrExamWorking" aria-live="polite"></div>
+        <button id="btnExamFill" class="btn btn-primary btn-sm" type="button">Fill both bases</button>
+      </div>
+
       <!-- Top Row: Base IPv4 + IPv6 Prefix Planner -->
       <div class="grid-2">
         <!-- IPv4 Base Card -->
@@ -1362,7 +1382,7 @@
           </div>
           <div class="grid-3">
             <div class="field-group" style="grid-column: span 2;">
-              <label class="field-label" for="addrIpv6Base">Base Global Prefix (/48)</label>
+              <label class="field-label" for="addrIpv6Base">Base Global Prefix (/48, or the task's /64)</label>
               <input id="addrIpv6Base" class="mono" type="text" value="2001:db8:acad::/48" spellcheck="false" />
             </div>
             <div class="field-group">
@@ -1374,6 +1394,7 @@
             Each generated IPv4 subnet automatically receives an incremented IPv6 <span class="mono" style="color:var(--cyan);">/64</span> prefix (e.g. <span id="ipv6PreviewSample" class="mono" style="color:var(--emerald);">2001:db8:acad:1::/64</span>).
           </p>
           <div id="addrIpv6Error" class="alert alert-error hidden"></div>
+          <div id="addrIpv6Note" class="alert alert-info hidden"></div>
         </div>
       </div>
 
@@ -2292,7 +2313,7 @@ line vty 0 4
         const len = slash >= 0 ? raw.slice(slash + 1).trim() : '';
         if (!addr) return { ok: false, error: 'Enter a /48 prefix such as 2001:db8:acad::/48.' };
         if (!/^[0-9a-fA-F:]+$/.test(addr)) return { ok: false, error: 'Use only hex digits (0-9, a-f) and colons.' };
-        if (len && len !== '48') return { ok: false, error: `Use a /48 prefix (you typed /${len}).` };
+        if (len && len !== '48' && len !== '64') return { ok: false, error: `Use the /48, or the /64 the task gives (you typed /${len}).` };
         if ((addr.match(/::/g) || []).length > 1) return { ok: false, error: '"::" can appear only once in an IPv6 address.' };
         let groups;
         if (addr.includes('::')) {
@@ -2309,7 +2330,14 @@ line vty 0 4
         if (groups.some(g => !/^[0-9a-fA-F]{1,4}$/.test(g))) {
           return { ok: false, error: 'Each part must be 1 to 4 hex digits (0-9, a-f).' };
         }
-        return { ok: true, hextets: groups.slice(0, 3).map(g => parseInt(g, 16).toString(16)) };
+        const hextets = groups.slice(0, 3).map(g => parseInt(g, 16).toString(16));
+        let note = '';
+        if (len === '64') {
+          const fourth = parseInt(groups[3], 16);
+          note = `The task's /64 is read as the block ${hextets.join(':')}::/48: each LAN and link gets the next /64 by counting up the 4th part (${hextets.join(':')}:1::/64, ${hextets.join(':')}:2::/64…).`
+            + (fourth ? ` The 4th part you typed (${groups[3]}) is not used; set "Start 4th hextet" instead.` : '');
+        }
+        return { ok: true, hextets, note };
       },
       extractBase48(baseStr) {
         const p = this.parseBase48(baseStr);
@@ -2770,6 +2798,11 @@ line vty 0 4
         else if (start + Math.max(0, count - 1) > 0xffff) msg = `Only ${0xffff - start + 1} /64 prefixes fit after ${addr.ipv6StartHex.trim()} in this /48, so some prefixes would repeat. Use a smaller start hextet.`;
         v6Err.textContent = msg;
         v6Err.classList.toggle('hidden', !msg);
+        const v6Note = document.getElementById('addrIpv6Note');
+        if (v6Note) {
+          v6Note.textContent = base.ok ? base.note : '';
+          v6Note.classList.toggle('hidden', !(base.ok && base.note));
+        }
       }
 
       // Push VLSM device links (LAN ports / WAN router pairs) into the topology
@@ -4884,6 +4917,8 @@ line vty 0 4
       ['baseIp', 'baseCidr', 'flsmBasis', 'flsmValue', 'ipv6Base', 'ipv6StartHex'].forEach(k => {
         if (a[k] === undefined || a[k] === null) a[k] = d.addressing[k];
       });
+      a.examG = /^\d$/.test(String(a.examG || '')) ? String(a.examG) : (appState.exam ? String(appState.exam.g || '') : '');
+      a.examS = /^\d$/.test(String(a.examS || '')) ? String(a.examS) : (appState.exam ? String(appState.exam.s || '') : '');
       if (a.mode !== 'flsm') a.mode = 'vlsm';
       if (a.flsmBasis !== 'hosts') a.flsmBasis = 'subnets';
       a.baseCidr = Math.min(30, Math.max(8, Number(a.baseCidr) || 24));
@@ -8604,7 +8639,7 @@ line vty 0 4
       st.links = [];
       st.security = { mode: 'extended', permitRest: true, naming: 'numbered', aclIds: {}, loginHoles: true, rules: [] };
       const b = examBases(o.g, o.s);
-      Object.assign(st.addressing, { mode: 'vlsm', baseIp: b.ipv4, baseCidr: 20, ipv6Base: `${b.ipv6}/48`, ipv6StartHex: '1' });
+      Object.assign(st.addressing, { mode: 'vlsm', baseIp: b.ipv4, baseCidr: 20, ipv6Base: `${b.ipv6}/64`, ipv6StartHex: '1', examG: String(o.g), examS: String(o.s) });
       const lan = l => ({ id: `v_${l.key}`, type: 'lan', name: l.name, hosts: Math.max(1, Number(o.hosts[l.key]) || 1), routerId: rid(l.router), iface: 'g0/0', r2Id: '', r2If: 'g0/0' });
       const wan = (key, name, a, ai, bb, bi) => ({ id: `v_${key}`, type: 'wan', name, hosts: 2, routerId: rid(a), iface: ai, r2Id: rid(bb), r2If: bi });
       st.addressing.vlsmReqs = [
@@ -8883,13 +8918,15 @@ line vty 0 4
 
       // B · addressing
       const ex = appState.exam;
-      const b = ex ? examBases(ex.g, ex.s) : null;
+      const exG = appState.addressing.examG || (ex ? ex.g : '');
+      const exS = appState.addressing.examS || (ex ? ex.s : '');
+      const b = exG !== '' && exS !== '' ? examBases(exG, exS) : null;
       sections.push({
         key: 'B', title: 'IPv4 CIDR and VLSM', points: 15,
         items: [
           {
             id: 'B-plan', title: 'Write the addressing table',
-            detail: `${b && b.ok ? `Working: 12<b>G</b>.2<b>S</b>.224.0/20 with G${escapeHtml(ex.g)}, S${escapeHtml(ex.s)} = <b class="mono">${b.ipv4}/20</b>. ` : ''}VLSM gives the biggest LAN its subnet first, then the next, then the /30 WAN links. Copy the subnet table (Addressing tab) into your answer sheet.`,
+            detail: `${b && b.ok ? `Working: 12<b>G</b>.2<b>S</b>.224.0/20 with G${escapeHtml(exG)}, S${escapeHtml(exS)} = <b class="mono">${b.ipv4}/20</b>; 200<b>G</b>:DB<b>S</b>:ACAD::/64 = <b class="mono">${b.ipv6}/64</b>. ` : ''}VLSM gives the biggest LAN its subnet first, then the next, then the /30 WAN links. Copy the subnet table (Addressing tab) into your answer sheet.`,
             tab: 'addressing'
           },
           ...routers.map((r, i) => ({
@@ -9151,6 +9188,9 @@ line vty 0 4
       document.getElementById('addrBaseIp').value = addr.baseIp;
       document.getElementById('addrBaseCidr').value = addr.baseCidr;
       document.getElementById('addrIpv6Base').value = addr.ipv6Base;
+      document.getElementById('addrExamG').value = addr.examG;
+      document.getElementById('addrExamS').value = addr.examS;
+      updateExamWorking();
       document.getElementById('addrIpv6Start').value = addr.ipv6StartHex;
       document.getElementById('flsmValueInput').value = addr.flsmValue;
 
@@ -9168,6 +9208,17 @@ line vty 0 4
       renderDeviceList();
       renderVlsmReqList();
       computeAddressingSubnets();
+    }
+
+    /** The G#/S# working on the Addressing tab (12G.2S.224.0/20 and 200G:DBS:ACAD::/64). */
+    function updateExamWorking() {
+      const el = document.getElementById('addrExamWorking');
+      if (!el) return;
+      const a = appState.addressing;
+      const b = examBases(a.examG, a.examS);
+      el.innerHTML = b.ok
+        ? `G = ${escapeHtml(a.examG)}, S = ${escapeHtml(a.examS)}: <span class="mono">12G.2S.224.0/20</span> → <b class="mono">${b.ipv4}/20</b> · <span class="mono">200G:DBS:ACAD::/64</span> → <b class="mono">${b.ipv6}/64</b>`
+        : (a.examG || a.examS ? '<span class="exam-bad">One digit each (0 to 9).</span>' : 'Type your group and student numbers: IPv4 <span class="mono">12G.2S.224.0/20</span>, IPv6 <span class="mono">200G:DBS:ACAD::/64</span>.');
     }
 
     /** Keep --header-h equal to the real header height, so full-height tabs fit under it. */
@@ -9279,6 +9330,21 @@ line vty 0 4
       });
 
       // Tab 1 Addressing Events
+      ['addrExamG', 'addrExamS'].forEach(id => document.getElementById(id).addEventListener('input', e => {
+        appState.addressing[id === 'addrExamG' ? 'examG' : 'examS'] = e.target.value.trim();
+        updateExamWorking();
+      }));
+      document.getElementById('btnExamFill').addEventListener('click', () => {
+        const a = appState.addressing;
+        const b = examBases(a.examG, a.examS);
+        if (!b.ok) return showToast('Type one digit (0 to 9) for G# and for S#');
+        a.baseIp = b.ipv4;
+        a.baseCidr = 20;
+        a.ipv6Base = `${b.ipv6}/64`;
+        a.ipv6StartHex = '1';
+        refreshAddressingUI();
+        showToast(`Bases set: ${b.ipv4}/20 and ${b.ipv6}/64`);
+      });
       document.getElementById('addrBaseIp').addEventListener('input', e => {
         appState.addressing.baseIp = e.target.value;
         computeAddressingSubnets();
