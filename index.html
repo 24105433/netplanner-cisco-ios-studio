@@ -1356,7 +1356,7 @@
   <section id="viewAddressing" class="tab-view">
     <div class="addr-container">
 
-      <!-- CPE 3105 exam setup: group/student numbers, hosts, routing, access, ACL statements (renderExamPanel) -->
+      <!-- CPE 3105 exam setup: hosts, routing, access, ACL statements (renderExamPanel); addresses come from the base cards -->
       <div class="card exam-panel" id="examPanel"></div>
 
       <!-- Top Row: Base IPv4 + IPv6 Prefix Planner -->
@@ -1920,7 +1920,7 @@ line vty 0 4
         <ol class="doc-steps">
           <li><b>Reset every router</b> (see <a href="#h-reset">Reset a router</a>). Lab routers keep the last group's config.</li>
           <li><b>Cable it</b> (see <a href="#h-cables">Cables</a>). Write down which router port goes where; <code class="cmd">show cdp neighbors</code> confirms it later.</li>
-          <li><b>CPE 3105 final assessment?</b> Use <b>Exam setup</b> at the top of the <b>1. Planner</b> tab: type your group and student numbers and the host counts, pick the routing scenario. It builds steps 3 to 5 for you; then follow the <b>7. Checklist</b> tab from A to G and tick each step. If the topology on the day is different, change it in the Planner and Configure tabs: the scripts and the checklist follow. Come back to <b>Exam setup</b> to change the numbers, host counts, routing scenario, ISP or the ACL statements (a) to (d): <b>Update this project</b> keeps everything else you did.</li>
+          <li><b>CPE 3105 final assessment?</b> Use <b>Exam setup</b> at the top of the <b>1. Planner</b> tab: type the exam's base networks in <b>IPv4 Base Network &amp; Mode</b> and the <b>IPv6 Planner</b> (everything follows them), set the host counts, pick the routing scenario. It builds steps 3 to 5 for you; then follow the <b>7. Checklist</b> tab from A to G and tick each step. If the topology on the day is different, change it in the Planner and Configure tabs: the scripts and the checklist follow. Come back to <b>Exam setup</b> to change the numbers, host counts, routing scenario, ISP or the ACL statements (a) to (d): <b>Update this project</b> keeps everything else you did.</li>
           <li><b>Your work is kept in this browser:</b> close or reload the page and it opens where you left off (the first time it opens the exam for G1 S1). To move work to another PC, or keep a copy, use <b>Save project</b>.</li>
           <li><b>Planner tab:</b> type the base network and prefix, add the routers (1941, 2901 or 2911), then one <b>LAN</b> row per LAN and one <b>WAN</b> row per router-to-router link. Pick the router and port for each row. Check the Generated Subnet Table.</li>
           <li><b>Topology tab:</b> check the drawing: every router, LAN and link where you expect it, with its addresses. Click a router, then <b>Show CLI</b>.</li>
@@ -2857,6 +2857,7 @@ line vty 0 4
       }
 
       // Push VLSM device links (LAN ports / WAN router pairs) into the topology
+      syncIspSummary();
       if (addr.mode === 'vlsm') applyVlsmLinksToTopology();
       renderSubnetTable();
       updateVlsmRowHints();
@@ -5108,8 +5109,6 @@ line vty 0 4
       ['baseIp', 'baseCidr', 'flsmBasis', 'flsmValue', 'ipv6Base', 'ipv6StartHex'].forEach(k => {
         if (a[k] === undefined || a[k] === null) a[k] = d.addressing[k];
       });
-      a.examG = /^\d$/.test(String(a.examG || '')) ? String(a.examG) : (appState.exam ? String(appState.exam.g || '') : '');
-      a.examS = /^\d$/.test(String(a.examS || '')) ? String(a.examS) : (appState.exam ? String(appState.exam.s || '') : '');
       if (a.mode !== 'flsm') a.mode = 'vlsm';
       if (a.flsmBasis !== 'hosts') a.flsmBasis = 'subnets';
       a.baseCidr = Math.min(30, Math.max(8, Number(a.baseCidr) || 24));
@@ -8887,7 +8886,9 @@ line vty 0 4
 
     function defaultExamOptions() {
       return {
-        g: '1', s: '1', scenario: 's1', ispIf: 's0/0/0', password: 'GROUP5CISCO', sshUser: 'admin', acls: true, v6routing: 'match',
+        // The PDF's example block (group 1, student 1); used only when there is no project yet
+        base: { baseIp: '121.21.224.0', baseCidr: 20, ipv6Base: '2001:db1:acad::/64', ipv6StartHex: '1', mode: 'vlsm' },
+        scenario: 's1', ispIf: 's0/0/0', password: 'GROUP5CISCO', sshUser: 'admin', acls: true, v6routing: 'match',
         hosts: { reg: 60, fin: 30, lab: 120, dt: 25 }
       };
     }
@@ -8898,10 +8899,23 @@ line vty 0 4
       ripng: { label: 'RIPng on every router', why: 'ipv6 router rip on every router and every port, whatever IPv4 uses.' }
     };
 
-    /** "12G.2S.224.0/20" and "200G:DBS:ACAD::/64" worked out for one group and student. */
-    function examBases(g, s) {
-      const ok = /^\d$/.test(String(g)) && /^\d$/.test(String(s));
-      return ok ? { ipv4: `12${g}.2${s}.224.0`, ipv6: `200${g}:db${s}:acad::`, ok } : { ok };
+    /** The addresses typed in the Planner's base cards: an exam build keeps them (they are the master). */
+    function currentAddressBase() {
+      const a = appState && appState.addressing;
+      if (!a || IPv4.toInt(a.baseIp) === null) return null;
+      return { baseIp: a.baseIp, baseCidr: Number(a.baseCidr), ipv6Base: a.ipv6Base, ipv6StartHex: a.ipv6StartHex, mode: a.mode, flsmBasis: a.flsmBasis, flsmValue: a.flsmValue };
+    }
+
+    /** The ISP's summary route to the whole block follows the base card. */
+    function syncIspSummary() {
+      const a = appState.addressing;
+      const ip = IPv4.toInt(a.baseIp);
+      if (ip === null) return;
+      const dest = IPv4.fromInt(IPv4.normalize(ip, Number(a.baseCidr)));
+      const mask = IPv4.cidrToMask(Number(a.baseCidr));
+      appState.routers.forEach(r => (r.routing && r.routing.customStatics || []).forEach(cs => {
+        if (cs.auto === 'summary') { cs.dest = dest; cs.mask = mask; }
+      }));
     }
 
     /** The optional ISP router of the exam: outside the network, a loopback that stands in for "the internet". */
@@ -8924,7 +8938,8 @@ line vty 0 4
         isp.routing.stubDefault = false;
         isp.routing.autoStatics = false;
         const row = appState.addressing.vlsmReqs.find(r => r.id === 'v_edgeisp');
-        isp.routing.customStatics = [{ fam: '4', dest: appState.addressing.baseIp, mask: IPv4.cidrToMask(appState.addressing.baseCidr), nextHop: '', exitIf: row ? row.r2If : 's0/0/0', ad: '' }];
+        isp.routing.customStatics = [{ fam: '4', dest: appState.addressing.baseIp, mask: '', nextHop: '', exitIf: row ? row.r2If : 's0/0/0', ad: '', auto: 'summary' }];
+        syncIspSummary();
       }
     }
 
@@ -9005,11 +9020,6 @@ line vty 0 4
       const a = appState.addressing;
       const ic = appState.initConfig;
       const changes = [];
-      if (String(o.g) !== String(a.examG) || String(o.s) !== String(a.examS) || examBases(o.g, o.s).ipv4 !== a.baseIp) {
-        const b = examBases(o.g, o.s);
-        Object.assign(a, { baseIp: b.ipv4, baseCidr: 20, ipv6Base: `${b.ipv6}/64`, ipv6StartHex: '1', examG: String(o.g), examS: String(o.s) });
-        changes.push(`G${o.g} S${o.s}: ${b.ipv4}/20`);
-      }
       EXAM_LANS.forEach(l => {
         const row = a.vlsmReqs.find(r => r.id === `v_${l.key}`);
         if (row && o.hosts[l.key] !== undefined && Number(row.hosts) !== Number(o.hosts[l.key])) {
@@ -9101,8 +9111,7 @@ line vty 0 4
       if (sc.isp) st.routers.push(examIspRouter());
       st.links = [];
       st.security = { mode: 'extended', permitRest: true, naming: 'numbered', aclIds: {}, loginHoles: true, rules: [] };
-      const b = examBases(o.g, o.s);
-      Object.assign(st.addressing, { mode: 'vlsm', baseIp: b.ipv4, baseCidr: 20, ipv6Base: `${b.ipv6}/64`, ipv6StartHex: '1', examG: String(o.g), examS: String(o.s) });
+      Object.assign(st.addressing, defaultExamOptions().base, o.base || {});
       const lan = l => ({ id: `v_${l.key}`, type: 'lan', name: l.name, hosts: Math.max(1, Number(o.hosts[l.key]) || 1), routerId: rid(l.router), iface: 'g0/0', r2Id: '', r2If: 'g0/0' });
       const wan = (key, name, a, ai, bb, bi) => ({ id: `v_${key}`, type: 'wan', name, hosts: 2, routerId: rid(a), iface: ai, r2Id: rid(bb), r2If: bi });
       st.addressing.vlsmReqs = [
@@ -9193,22 +9202,21 @@ line vty 0 4
       aclTester = null;
       renderTopologyWorkspace();
       switchMainTab('checklist');
-      showToast(`Exam network built for G${o.g} S${o.s}: ${appState.addressing.baseIp}/20. Everything stays editable.`);
+      showToast(`Exam network built on ${appState.addressing.baseIp}/${appState.addressing.baseCidr}. Everything stays editable.`);
     }
 
     /** One line for the closed panel: what the open project is set to. */
     function examPanelSummary() {
       const a = appState.addressing;
-      if (!appState.exam) return 'This project is not the exam network. Open to build it, or only fill the address bases from G# and S#.';
+      if (!appState.exam) return 'This project is not the exam network. Open to build it on the base networks typed below.';
       const sc = ROUTING_SCENARIOS[appState.exam.scenario];
       const routing = sc && scenarioMatches(appState.exam.scenario) ? sc.label : 'routing changed by hand';
       const v6 = { match: 'IPv6 same as IPv4', static: 'IPv6 auto static', ripng: 'IPv6 RIPng' }[appState.initConfig.ipv6Routing] || '';
       const acls = appState.security.rules.some(isExamRule) ? 'exam ACLs on' : 'exam ACLs off';
-      return `<b>G${escapeHtml(a.examG)} S${escapeHtml(a.examS)}</b> · <span class="mono">${escapeHtml(a.baseIp)}/${escapeHtml(a.baseCidr)}</span> · ${escapeHtml(routing)} · ${v6} · ${acls}`;
+      return `<b class="mono">${escapeHtml(a.baseIp)}/${escapeHtml(a.baseCidr)}</b> · ${a.mode === 'flsm' ? 'FLSM' : 'VLSM'} · ${escapeHtml(routing)} · ${v6} · ${acls}`;
     }
 
     function examPanelHtml(o, mode) {
-      const b = examBases(o.g, o.s);
       const upd = mode === 'update';
       const sc = ROUTING_SCENARIOS[o.scenario] || null;
       const open = appState.ui.examPanelOpen !== false;
@@ -9217,32 +9225,21 @@ line vty 0 4
             <div class="exam-head-text">
               <h2>Exam setup · CPE 3105 final assessment</h2>
               <p id="exIntro" ${open ? '' : 'hidden'}>${upd
-                ? 'Change anything below, then <b>Update this project</b>: it changes only what you changed and keeps your own routers, LANs, PCs, rules and ticks. <b>Build fresh</b> starts again from the PDF.'
-                : 'This project is not the exam network. <b>Build the exam network</b> makes Edge, Main, R1, R2, R3 with their LANs, WAN links, DHCP on Edge, IPv6 per LAN, routing and the ACLs. It replaces the open project (save it first if you need it). Everything stays editable.'}</p>
+                ? 'Change anything below, then <b>Update this project</b>: it changes only what you changed and keeps your own routers, LANs, PCs, rules and ticks. <b>Build fresh</b> starts again from the PDF. The addresses come from the base network cards below: change them there and everything follows at once.'
+                : 'This project is not the exam network. <b>Build the exam network</b> uses the base networks typed below (IPv4 Base Network &amp; Mode, IPv6 Planner) and makes Edge, Main, R1, R2, R3 with their LANs, WAN links, DHCP on Edge, IPv6 per LAN, routing and the ACLs. It replaces the open project (save it first if you need it). Everything stays editable.'}</p>
               <p class="exam-summary" id="exSummary" ${open ? 'hidden' : ''}>${examPanelSummary()}</p>
             </div>
             <button type="button" class="btn btn-sm" id="exToggle" aria-expanded="${open}">${open ? 'Hide' : 'Show exam setup'}</button>
           </div>
           <div class="exam-body" ${open ? '' : 'hidden'}>
             <fieldset class="exam-set">
-              <legend>1 · Group and student number</legend>
-              <div class="row-2">
-                <div class="field-group"><label class="field-label" for="exG">Group number (G#)</label><input type="text" id="exG" class="mono" inputmode="numeric" maxlength="1" value="${escapeHtml(o.g)}" /></div>
-                <div class="field-group"><label class="field-label" for="exS">Student number (S#)</label><input type="text" id="exS" class="mono" inputmode="numeric" maxlength="1" value="${escapeHtml(o.s)}" /></div>
-              </div>
-              <div class="exam-working" id="exWorking">${b.ok ? `
-                IPv4 <span class="mono">12<b>G</b>.2<b>S</b>.224.0/20</span> → <b class="mono">${b.ipv4}/20</b><br>
-                IPv6 <span class="mono">200<b>G</b>:DB<b>S</b>:ACAD::/64</span> → <b class="mono">${b.ipv6}/64</b> (LANs get <span class="mono">${b.ipv6.replace(/::$/, '')}:1::/64</span>, <span class="mono">:2::/64</span>…)`
-                : '<span class="exam-bad">G# and S# are one digit each (0 to 9), so the first octet stays 120 to 129.</span>'}</div>
-            </fieldset>
-            <fieldset class="exam-set">
-              <legend>2 · Hosts per LAN (given on the day)</legend>
+              <legend>1 · Hosts per LAN (given on the day)</legend>
               <div class="exam-hosts">
                 ${EXAM_LANS.map(l => { const gone = upd && !appState.addressing.vlsmReqs.some(r => r.id === `v_${l.key}`); return `<div class="field-group"><label class="field-label" for="exH_${l.key}">${escapeHtml(l.name)} <span class="text-muted">(${gone ? 'removed from this project' : l.hint})</span></label><input type="text" id="exH_${l.key}" class="mono" inputmode="numeric" value="${escapeHtml(o.hosts[l.key])}" ${gone ? 'disabled' : ''} /></div>`; }).join('')}
               </div>
             </fieldset>
             <fieldset class="exam-set">
-              <legend>3 · Routing scenario</legend>
+              <legend>2 · Routing scenario</legend>
               <select id="exScenario">${upd ? `<option value="custom" ${o.scenario === 'custom' ? 'selected' : ''}>Keep my routing (as it is now)</option>` : ''}${Object.entries(ROUTING_SCENARIOS).map(([k, v]) => `<option value="${k}" ${o.scenario === k ? 'selected' : ''}>${escapeHtml(v.label)}</option>`).join('')}</select>
               <div class="text-muted" id="exScenarioWhere" style="font-size:14px; margin-top:6px;">${escapeHtml(sc ? sc.where : EXAM_CUSTOM_ROUTING)}</div>
               <div class="field-group" id="exIspRow" ${(sc ? sc.isp : !!getRouterById('r_isp')) ? '' : 'hidden'} style="margin-top:6px;">
@@ -9256,7 +9253,7 @@ line vty 0 4
               </div>
             </fieldset>
             <fieldset class="exam-set">
-              <legend>4 · Access</legend>
+              <legend>3 · Access</legend>
               <div class="row-2">
                 <div class="field-group"><label class="field-label" for="exPwd">Exam password</label><input type="text" id="exPwd" class="mono" value="${escapeHtml(o.password)}" /></div>
                 <div class="field-group"><label class="field-label" for="exUser">SSH username</label><input type="text" id="exUser" class="mono" value="${escapeHtml(o.sshUser)}" /></div>
@@ -9265,7 +9262,7 @@ line vty 0 4
               <label class="checkbox-row" style="margin-top:6px;"><input type="checkbox" id="exAcls" ${o.acls ? 'checked' : ''} /><span>${upd ? 'Exam ACLs (a) to (d), as set below' : 'Add the ACLs (a) to (d) and PCs PC0, PC2, PC4, PC8, PC9 with fixed IPs'}</span></label>
             </fieldset>
             ${upd ? `<fieldset class="exam-set" id="exAclBox" ${o.acls ? '' : 'hidden'}>
-              <legend>5 · ACL statements</legend>
+              <legend>4 · ACL statements</legend>
               ${examAclFieldsHtml(o.acl)}
             </fieldset>` : ''}
             <div class="exam-err" id="exErr" hidden></div>
@@ -9275,8 +9272,7 @@ line vty 0 4
             <button type="button" class="btn" id="exCancel" title="Put back the values of the open project">Undo my edits</button>
             ${upd ? `<button type="button" class="btn" id="exFresh" title="Throws the open project away (click twice)">Build fresh</button>
             <button type="button" class="btn btn-primary" id="exUpdate">Update this project</button>`
-              : `<button type="button" class="btn" id="exFill" title="Set the IPv4 and IPv6 bases from G# and S#; keeps the open project">Only fill the address bases</button>
-            <button type="button" class="btn btn-primary" id="exBuild">Build the exam network</button>`}
+              : `<button type="button" class="btn btn-primary" id="exBuild">Build the exam network</button>`}
           </div>`;
     }
 
@@ -9329,8 +9325,6 @@ line vty 0 4
       if (mode === 'update') {
         // Start from the live project: numbers and host counts may have been edited in the VLSM table
         const a = appState.addressing;
-        if (/^\d$/.test(a.examG)) o.g = a.examG;
-        if (/^\d$/.test(a.examS)) o.s = a.examS;
         EXAM_LANS.forEach(l => { const row = a.vlsmReqs.find(r => r.id === `v_${l.key}`); if (row) o.hosts[l.key] = Number(row.hosts); });
         const ispRow = a.vlsmReqs.find(r => r.id === 'v_edgeisp');
         if (ispRow) o.ispIf = ispRow.iface;
@@ -9360,7 +9354,7 @@ line vty 0 4
         replies: row.querySelector('.ex-drep').checked, label: row.dataset.label || ''
       }));
       const read = () => ({
-        g: val('exG'), s: val('exS'), scenario: val('exScenario'), ispIf: val('exIspIf'), v6routing: val('exV6'),
+        scenario: val('exScenario'), ispIf: val('exIspIf'), v6routing: val('exV6'),
         password: val('exPwd'), sshUser: val('exUser'), acls: dlg.querySelector('#exAcls').checked,
         hosts: Object.fromEntries(EXAM_LANS.map(l => [l.key, val(`exH_${l.key}`)])),
         ...(mode === 'update' ? { acl: { telnetPcIds: ticked('ex-telnet'), sshPcIds: ticked('ex-ssh'), sshTargets: ticked('ex-sshr'), denies: readDenies() } } : {})
@@ -9388,10 +9382,6 @@ line vty 0 4
       });
       const refresh = () => {
         const cur = read();
-        const b = examBases(cur.g, cur.s);
-        dlg.querySelector('#exWorking').innerHTML = b.ok
-          ? `IPv4 <span class="mono">12<b>G</b>.2<b>S</b>.224.0/20</span> → <b class="mono">${b.ipv4}/20</b><br>IPv6 <span class="mono">200<b>G</b>:DB<b>S</b>:ACAD::/64</span> → <b class="mono">${b.ipv6}/64</b> (LANs get <span class="mono">${b.ipv6.replace(/::$/, '')}:1::/64</span>, <span class="mono">:2::/64</span>…)`
-          : '<span class="exam-bad">G# and S# are one digit each (0 to 9), so the first octet stays 120 to 129.</span>';
         const sc = ROUTING_SCENARIOS[cur.scenario] || null;
         dlg.querySelector('#exScenarioWhere').textContent = sc ? sc.where : EXAM_CUSTOM_ROUTING;
         dlg.querySelector('#exIspRow').hidden = sc ? !sc.isp : !getRouterById('r_isp');
@@ -9418,20 +9408,11 @@ line vty 0 4
         t.textContent = open ? 'Hide' : 'Show exam setup';
         t.setAttribute('aria-expanded', String(open));
       });
-      dlg.querySelector('#exFill')?.addEventListener('click', () => {
-        const cur = read();
-        const b = examBases(cur.g, cur.s);
-        if (!b.ok) return showToast('Type one digit (0 to 9) for G# and for S#');
-        Object.assign(appState.addressing, { baseIp: b.ipv4, baseCidr: 20, ipv6Base: `${b.ipv6}/64`, ipv6StartHex: '1', examG: String(cur.g), examS: String(cur.s) });
-        examPanelDirty = false;
-        refreshAddressingUI();
-        showToast(`Bases set: ${b.ipv4}/20 and ${b.ipv6}/64. Your routers and LANs are unchanged.`);
-      });
       const checked = () => {
         const cur = read();
         const err = dlg.querySelector('#exErr');
         const live = l => !dlg.querySelector(`#exH_${l.key}`).disabled;
-        const bad = !examBases(cur.g, cur.s).ok ? 'G# and S# must be one digit each (0 to 9).'
+        const bad = !currentAddressBase() ? 'Fix the IPv4 base network first (Planner tab, IPv4 Base Network).'
           : EXAM_LANS.some(l => live(l) && (!/^\d+$/.test(cur.hosts[l.key]) || Number(cur.hosts[l.key]) < 1 || Number(cur.hosts[l.key]) > 2000)) ? 'Each LAN needs a host count from 1 to 2000.'
           : !cur.password ? 'Type the exam password.'
           : cur.acl && cur.acls && cur.acl.denies.some(d => d.fromLanId === d.toLanId) ? 'A denied pair needs two different LANs.' : '';
@@ -9440,6 +9421,7 @@ line vty 0 4
         return cur;
       };
       const build = cur => {
+        cur.base = currentAddressBase();
         if (!ROUTING_SCENARIOS[cur.scenario]) cur.scenario = ROUTING_SCENARIOS[(appState.exam || {}).scenario] ? appState.exam.scenario : 's1';
         examPanelDirty = false;
         applyExamPreset(cur);
@@ -9547,15 +9529,13 @@ line vty 0 4
 
       // B · addressing
       const ex = appState.exam;
-      const exG = appState.addressing.examG || (ex ? ex.g : '');
-      const exS = appState.addressing.examS || (ex ? ex.s : '');
-      const b = exG !== '' && exS !== '' ? examBases(exG, exS) : null;
+      const ad = appState.addressing;
       sections.push({
         key: 'B', title: 'IPv4 CIDR and VLSM', points: 15,
         items: [
           {
             id: 'B-plan', title: 'Write the addressing table',
-            detail: `${b && b.ok ? `Working: 12<b>G</b>.2<b>S</b>.224.0/20 with G${escapeHtml(exG)}, S${escapeHtml(exS)} = <b class="mono">${b.ipv4}/20</b>; 200<b>G</b>:DB<b>S</b>:ACAD::/64 = <b class="mono">${b.ipv6}/64</b>. ` : ''}VLSM gives the biggest LAN its subnet first, then the next, then the /30 WAN links. Copy the subnet table (Planner tab) into your answer sheet, and show the <b>CIDR working</b> card under it (block → 2<sup>h</sup> − 2 → /prefix → range).`,
+            detail: `Block <b class="mono">${escapeHtml(ad.baseIp)}/${escapeHtml(ad.baseCidr)}</b> and IPv6 <b class="mono">${escapeHtml(ad.ipv6Base)}</b>, from the base network cards on the Planner tab. VLSM gives the biggest LAN its subnet first, then the next, then the /30 WAN links. Copy the subnet table (Planner tab) into your answer sheet, and show the <b>CIDR working</b> card under it (block → 2<sup>h</sup> − 2 → /prefix → range).`,
             tab: 'addressing'
           },
           ...routers.map((r, i) => ({
@@ -9962,7 +9942,7 @@ line vty 0 4
       const a = appState.addressing;
       const ex = appState.exam;
       const sc = ex && ROUTING_SCENARIOS[ex.scenario];
-      vertex(`<b style="font-size:18px">Network topology</b><br>IPv4 ${h(a.baseIp)}/${h(a.baseCidr)}${ds ? ` · IPv6 ${h(a.ipv6Base)}` : ''}${a.examG && a.examS ? ` · G${h(a.examG)} S${h(a.examS)}` : ''}${sc ? `<br>Routing: ${h(sc.label)}` : ''}<br><span style="color:#5c6573">Made by NetPlanner from the project's subnet table</span>`,
+      vertex(`<b style="font-size:18px">Network topology</b><br>IPv4 ${h(a.baseIp)}/${h(a.baseCidr)}${ds ? ` · IPv6 ${h(a.ipv6Base)}` : ''}${sc ? `<br>Routing: ${h(sc.label)}` : ''}<br><span style="color:#5c6573">Made by NetPlanner from the project's subnet table</span>`,
         'text;html=1;whiteSpace=wrap;align=left;verticalAlign=top;fontFamily=Helvetica;fontSize=12;fontColor=#14181f;', 40, 20, 520, 80);
       const used = [...new Set(links.map(l => l.protocol))].filter(p => PROTO_COLOR[p]);
       vertex(`<b>Links</b><br>${used.map(p => `<span style="color:${PROTO_COLOR[p]}">━━</span> ${h(PROTO_LABEL[p])}`).join('<br>')}<br><span style="color:#0a5fae">━━</span> LAN<br>Dashed PC = takes an address from DHCP`,
@@ -9975,7 +9955,7 @@ line vty 0 4
     function downloadDrawio() {
       if (!appState.routers.length) return showToast('Add routers first');
       const a = appState.addressing;
-      const name = a.examG && a.examS ? `topology-G${a.examG}-S${a.examS}.drawio` : 'topology.drawio';
+      const name = `topology-${String(a.baseIp).replace(/[^0-9.]/g, '')}-${a.baseCidr}.drawio`;
       const url = URL.createObjectURL(new Blob([buildDrawioXml()], { type: 'application/xml' }));
       const link = document.createElement('a');
       link.href = url;
