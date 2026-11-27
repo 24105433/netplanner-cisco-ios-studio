@@ -180,6 +180,10 @@
     @media (max-width: 1500px) {
       .brand-text span { display: none; }
     }
+    /* One header row needs ~1610px with the title; between 1361 and 1640 show only the IOS mark */
+    @media (min-width: 1361px) and (max-width: 1640px) {
+      .brand-text { display: none; }
+    }
     @media (max-width: 1360px) {
       .app-header { justify-content: flex-start; row-gap: 6px; }
       .main-nav { order: 3; flex-basis: 100%; }
@@ -1078,6 +1082,51 @@
     .pc-row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.6fr) auto; gap: 6px; align-items: center; }
     .pc-hint { font-size: 13px; color: var(--text-secondary); margin: 0 0 4px 2px; }
     .pc-hint.bad { color: var(--rose); }
+
+    /* Exam preset dialog */
+    .exam-dialog { margin: auto; inset: 0; border: 1px solid var(--border-strong); border-radius: 12px; padding: 0; width: min(680px, calc(100% - 32px)); max-height: calc(100vh - 32px); background: var(--bg-surface); color: var(--text-primary); box-shadow: 0 18px 50px rgba(20, 24, 31, 0.28); }
+    .exam-dialog [hidden] { display: none !important; }
+    .exam-dialog::backdrop { background: rgba(20, 24, 31, 0.45); }
+    .exam-form { display: flex; flex-direction: column; max-height: calc(100vh - 34px); }
+    .exam-head { padding: 18px 22px 10px; border-bottom: 1px solid var(--border); }
+    .exam-head h2 { margin: 0 0 6px; font-family: var(--font-label); font-size: 21px; }
+    .exam-head p { margin: 0; color: var(--text-secondary); font-size: 14.5px; line-height: 1.45; }
+    .exam-body { padding: 12px 22px; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; }
+    .exam-set { border: 1px solid var(--border); border-radius: 8px; padding: 10px 14px 12px; margin: 0; display: flex; flex-direction: column; gap: 6px; }
+    .exam-set legend { font-family: var(--font-label); font-weight: 600; font-size: 15.5px; padding: 0 6px; }
+    .exam-hosts { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 6px 12px; }
+    .exam-working { padding: 8px 10px; border-radius: 6px; background: var(--accent-soft); color: var(--accent-ink); font-size: 14.5px; line-height: 1.6; }
+    .exam-working b { font-weight: 700; }
+    .exam-bad, .exam-err { color: var(--rose); font-weight: 600; }
+    .exam-foot { display: flex; justify-content: flex-end; gap: 8px; padding: 12px 22px 16px; border-top: 1px solid var(--border); }
+
+    /* Exam checklist */
+    .ck-hint { padding: 8px 12px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg-elevated); }
+    .ck-overall { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 14px; margin: 10px 0 4px; }
+    .ck-overall .ck-bar { flex: 1 1 220px; }
+    .ck-overall-text { font-size: 15px; }
+    .ck-bar { height: 12px; border-radius: 6px; background: var(--bg-elevated); border: 1px solid var(--border); overflow: hidden; }
+    .ck-bar span { display: block; height: 100%; background: var(--emerald); transition: width 0.2s ease; }
+    .ck-bar.small { height: 7px; margin: 6px 0 4px; }
+    .ck-toc-count { color: var(--text-muted); font-family: var(--font-mono); font-size: 13px; }
+    .ck-sec-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+    .ck-sec-head h3 { margin: 0; flex: 1 1 auto; }
+    .ck-letter { display: inline-grid; place-items: center; width: 34px; height: 34px; border-radius: 4px; background: var(--accent); color: #fff; font-family: var(--font-label); font-weight: 700; font-size: 18px; }
+    .ck-section.is-done .ck-letter { background: var(--emerald); }
+    .ck-points { font-family: var(--font-label); font-weight: 600; color: var(--accent-ink); background: var(--accent-soft); border-radius: 4px; padding: 2px 8px; }
+    .ck-count { font-family: var(--font-mono); font-size: 14px; color: var(--text-secondary); }
+    .ck-list { list-style: none; margin: 6px 0 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+    .ck-item { border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; background: var(--bg-surface); }
+    .ck-item.done { background: var(--emerald-soft); border-color: color-mix(in srgb, var(--emerald) 45%, var(--border)); }
+    .ck-check { display: flex; align-items: flex-start; gap: 10px; cursor: pointer; }
+    .ck-check input { width: 22px; height: 22px; margin: 1px 0 0; flex: none; accent-color: var(--emerald); }
+    .ck-title { font-weight: 600; font-size: 16px; line-height: 1.35; }
+    .ck-item.done .ck-title { color: var(--emerald-ink); }
+    .ck-body { margin: 6px 0 0 32px; display: flex; flex-direction: column; align-items: flex-start; gap: 6px; }
+    .ck-detail { margin: 0; color: var(--text-secondary); font-size: 14.5px; line-height: 1.5; }
+    .ck-cmds { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+    .ck-cmds-label { font-size: 13px; color: var(--text-muted); margin-right: 2px; }
+    @media (max-width: 600px) { .ck-body { margin-left: 0; } }
     .vty-split-note { padding: 6px 10px; border: 1px solid var(--border); border-radius: 6px; background: var(--accent-soft); color: var(--accent-ink); font-size: 14px; line-height: 1.5; }
     .acl-router {
       border: 1px solid var(--border);
@@ -1228,6 +1277,9 @@
       table.data-table { white-space: normal; font-size: 9pt; }
       table.data-table thead th { position: static; }
       a { color: inherit; }
+      .ck-item { break-inside: avoid; }
+      .ck-bar span { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+      .exam-dialog { display: none !important; }
     }
   </style>
 </head>
@@ -1238,7 +1290,7 @@
        ========================================================================= -->
   <header class="app-header">
     <div class="brand">
-      <div class="brand-icon">IOS</div>
+      <div class="brand-icon" title="NetPlanner &amp; Cisco IOS Studio">IOS</div>
       <div class="brand-text">
         <h1>NetPlanner &amp; Cisco IOS Studio</h1>
         <span>Dual-Stack Addressing, Topology &amp; CLI Generator</span>
@@ -1252,9 +1304,11 @@
       <button id="mainTabAcls" class="nav-tab" type="button" title="Access control lists: rules, explained ACLs, packet tester, lessons">4. ACLs</button>
       <button id="mainTabHelp" class="nav-tab" type="button">5. Help</button>
       <button id="mainTabTrouble" class="nav-tab" type="button">6. Troubleshooting</button>
+      <button id="mainTabChecklist" class="nav-tab" type="button" title="The exam rubric A to G: what to paste where, how to check it, ticks saved in the project">7. Checklist</button>
     </nav>
 
     <div class="header-actions">
+      <button id="btnExamPreset" class="btn btn-primary" type="button" title="Build the CPE 3105 final assessment network from your group and student numbers">Exam preset</button>
       <button id="btnLoadSample" class="btn btn-cyan" type="button" title="Load pre-configured dual-stack Cebu-Davao lab">
         Sample Lab
       </button>
@@ -1792,6 +1846,7 @@ line vty 0 4
         <ol class="doc-steps">
           <li><b>Reset every router</b> (see <a href="#h-reset">Reset a router</a>). Lab routers keep the last group's config.</li>
           <li><b>Cable it</b> (see <a href="#h-cables">Cables</a>). Write down which router port goes where; <code class="cmd">show cdp neighbors</code> confirms it later.</li>
+          <li><b>CPE 3105 final assessment?</b> Click <b>Exam preset</b> (top right), type your group and student numbers and the host counts, pick the routing scenario. It builds steps 3 to 5 for you; then follow the <b>7. Checklist</b> tab from A to G and tick each step. If the topology on the day is different, change it in the Addressing and Configure tabs: the scripts and the checklist follow.</li>
           <li><b>Addressing page:</b> type the base network and prefix, add the routers (2901 or 2911), then one <b>LAN</b> row per LAN and one <b>WAN</b> row per router-to-router link. Pick the router and port for each row. Check the Generated Subnet Table.</li>
           <li><b>Topology tab:</b> check the drawing: every router, LAN and link where you expect it, with its addresses. Click a router, then <b>Show CLI</b>.</li>
           <li><b>Configure &amp; CLI tab:</b> Init Config (passwords, banner, SSH/Telnet) → Routers &amp; LANs (DHCP, DNS, IPv6 for each LAN) → Routing (the protocol the task asks for, per router). ACLs (only if the task asks) are on the <b>4. ACLs</b> tab.</li>
@@ -1957,6 +2012,13 @@ line vty 0 4
   <!-- =========================================================================
        TAB 5: TROUBLESHOOTING (symptoms, IOS messages, show commands)
        ========================================================================= -->
+  <!-- =========================================================================
+       TAB 7: EXAM CHECKLIST (rubric A-G, built from the project)
+       ========================================================================= -->
+  <section id="viewChecklist" class="tab-view hidden">
+    <div class="doc-container" id="checklistWorkspace"></div>
+  </section>
+
   <section id="viewTrouble" class="tab-view hidden">
     <div class="doc-container">
       <div class="doc-intro">
@@ -3653,6 +3715,7 @@ line vty 0 4
       if (rt.ipv6Static === undefined) rt.ipv6Static = true;
       if (rt.ripng === undefined) rt.ripng = false;
       if (rt.stubDefault === undefined) rt.stubDefault = true;
+      if (rt.autoStatics === undefined) rt.autoStatics = true; // false = only the routes typed by hand
       if (typeof rt.routerId !== 'string') rt.routerId = '';
       return rt;
     }
@@ -3721,7 +3784,9 @@ line vty 0 4
       const statics = [];
       const statics6 = [];
       const isStub = myLinks.length === 1 && staticLinks.length === 1 && dynamic.length === 0;
-      if (isStub && rt.stubDefault !== false) {
+      if (rt.autoStatics === false) {
+        // Only the routes typed by hand (e.g. an ISP with one summary route back)
+      } else if (isStub && rt.stubDefault !== false) {
         statics.push({ net: '0.0.0.0', mask: '0.0.0.0', nextHop: staticLinks[0].nextHop, why: 'default route: stub router, one way out' });
         if (staticLinks[0].nextHop6) statics6.push({ prefix: '::/0', nextHop: staticLinks[0].nextHop6, why: 'default route: stub router, one way out' });
       } else if (staticLinks.length) {
@@ -4837,6 +4902,10 @@ line vty 0 4
       }
       appState.acls = [];
       getSecurity();
+      // Exam checklist ticks and the preset's answers (older projects have neither)
+      if (!appState.checklist || typeof appState.checklist !== 'object' || Array.isArray(appState.checklist)) appState.checklist = {};
+      if (appState.exam && typeof appState.exam !== 'object') appState.exam = null;
+      if (appState.exam) appState.exam = Object.assign(defaultExamOptions(), appState.exam);
       if (appState.initConfig && appState.initConfig.passiveLan === undefined) appState.initConfig.passiveLan = true;
     }
 
@@ -6030,6 +6099,14 @@ line vty 0 4
 
         <div class="sub-card">
           <div class="sub-card-header"><span>Console &amp; VTY Access (Telnet / SSH)</span></div>
+          <div class="field-group">
+            <label class="field-label" for="icExamPwd">Exam password (one for everything)</label>
+            <div style="display:flex; gap:6px;">
+              <input type="text" id="icExamPwd" class="mono" value="${escapeHtml(ic.enableSecret)}" style="flex:1;" />
+              <button id="btnUseExamPwd" class="btn btn-sm" type="button" title="Use it for enable secret, console, Telnet (VTY) password and the SSH user's secret">Use everywhere</button>
+            </div>
+            <div class="text-muted" style="font-size:13px;">Fills enable secret, console, Telnet and SSH passwords. You can still change each one below.</div>
+          </div>
           <label class="checkbox-row">
             <input type="checkbox" id="icConsoleEn" ${ic.consoleEnabled ? 'checked' : ''} />
             <span>Configure <span class="mono">line console 0</span></span>
@@ -6189,6 +6266,15 @@ line vty 0 4
         });
       };
 
+      const examPwdBtn = document.getElementById('btnUseExamPwd');
+      if (examPwdBtn) examPwdBtn.addEventListener('click', () => {
+        const pwd = document.getElementById('icExamPwd').value.trim();
+        if (!pwd) return showToast('Type the exam password first');
+        ['enableSecret', 'consolePwd', 'vtyPwd', 'sshPwd'].forEach(k => { appState.initConfig[k] = pwd; });
+        appState.initConfig.enableSecretEnabled = true;
+        renderTopologyWorkspace();
+        showToast(`"${pwd}" is now the enable, console, Telnet and SSH password`);
+      });
       bind('icDualStack', 'dualStack', 'checked', true);
       bind('icDomainLookup', 'domainLookup', 'checked');
       bind('icServicePwdEnc', 'servicePwdEnc', 'checked');
@@ -6902,10 +6988,16 @@ line vty 0 4
               ${plan.v6match ? plan.statics6.map(s => `<div><span class="mono">ipv6 route ${escapeHtml(s.prefix)} ${escapeHtml(s.nextHop)}</span> <span class="text-muted">${escapeHtml(s.why)}</span></div>`).join('') : ''}
             </div>
           ` : `<div class="text-muted" style="font-size:13.5px;">${plan.staticLinks.length ? 'Nothing to add.' : `None needed: ${name} has no static links, so it learns every route from a routing protocol.`}</div>`}
-          ${plan.isStub ? `
+          ${plan.isStub && rt.autoStatics !== false ? `
             <label class="checkbox-row" style="font-size:14px;">
               <input type="checkbox" id="rtStubDefault" ${rt.stubDefault !== false ? 'checked' : ''} />
               <span>One way out (stub router): use a single default route</span>
+            </label>
+          ` : ''}
+          ${plan.staticLinks.length ? `
+            <label class="checkbox-row" style="font-size:14px;">
+              <input type="checkbox" id="rtAutoStatics" ${rt.autoStatics !== false ? 'checked' : ''} />
+              <span>Write the static routes automatically (untick for routes typed by hand only, e.g. an ISP with one summary route)</span>
             </label>
           ` : ''}
           <div class="divider" style="margin:2px 0;"></div>
@@ -7061,6 +7153,8 @@ line vty 0 4
         inp.addEventListener('change', () => renderTopologyWorkspace());
       });
 
+      const autoCb = document.getElementById('rtAutoStatics');
+      if (autoCb) autoCb.addEventListener('change', e => { rt.autoStatics = e.target.checked; renderTopologyWorkspace(); });
       const stubCb = document.getElementById('rtStubDefault');
       if (stubCb) {
         stubCb.addEventListener('change', e => {
@@ -7579,6 +7673,7 @@ line vty 0 4
                       </span>
                     </div>
                     <div style="font-size:15px;">${escapeHtml(inf.sentence)}</div>
+                    ${vtyRule ? `<div class="acl-router-picks" role="group" aria-label="Routers rule #${i + 1} protects">${appState.routers.map(x => `<label class="checkbox-row"><input type="checkbox" class="acl-rule-router" data-idx="${i}" value="${x.id}" ${ruleRouterIds(rule).includes(x.id) ? 'checked' : ''} /><span>${escapeHtml(sanitizeHostname(x.hostname))}</span></label>`).join('')}</div>` : ''}
                     ${!vtyRule && rule.action === 'deny' && rule.aclType !== 'standard' ? `
                       <label class="checkbox-row acl-replies-row"><input type="checkbox" class="acl-rule-replies" data-idx="${i}" ${rule.allowReplies ? 'checked' : ''} /><span>Allow replies (the other side can still start)</span></label>` : ''}
                     ${rule.note ? `<div class="text-muted" style="font-size:13.5px;">${escapeHtml(rule.note)}</div>` : ''}
@@ -7740,6 +7835,16 @@ line vty 0 4
       if (holes) holes.addEventListener('change', e => { sec.loginHoles = e.target.checked; rerender(); });
       root.querySelectorAll('.acl-draft-router').forEach(el => el.addEventListener('change', () => {
         d.dstRouterIds = [...root.querySelectorAll('.acl-draft-router:checked')].map(x => x.value);
+        rerender();
+      }));
+      root.querySelectorAll('.acl-rule-router').forEach(el => el.addEventListener('change', () => {
+        const i = Number(el.dataset.idx);
+        const rule = sec.rules[i];
+        if (!rule) return;
+        const ids = [...root.querySelectorAll(`.acl-rule-router[data-idx="${i}"]:checked`)].map(x => x.value);
+        if (!ids.length) { el.checked = true; return showToast('A login rule needs at least one router'); }
+        rule.dstRouterIds = ids;
+        rule.dstRouterId = ids[0];
         rerender();
       }));
       root.querySelectorAll('.acl-rule-lines').forEach(sel => sel.addEventListener('change', e => {
@@ -8370,19 +8475,588 @@ line vty 0 4
     /* =========================================================================
        9. TAB SWITCHING, EVENT WIRING & INITIALIZATION
        ========================================================================= */
+    /* =========================================================================
+       9. CPE 3105 FINAL ASSESSMENT: PRESET + EXAM CHECKLIST
+          The preset only builds a normal, fully editable project. The checklist
+          is rebuilt from whatever the project holds now, so a changed topology
+          on the day changes the steps too.
+       ========================================================================= */
+    const EXAM_SMALL_MODEL = '2901'; // stands in for the 1941 (same g0/0 and g0/1)
+    const ROUTING_SCENARIOS = {
+      s1: {
+        label: 'S1 · Edge is the border (default)', links: { r1main: 'eigrp', mainedge: 'eigrp', edger2: 'ripv2', edger3: 'static' }, isp: false,
+        where: 'Edge redistributes everything: RIP into EIGRP, EIGRP into RIP, and its static route to Laboratories (plus connected links) into both.'
+      },
+      s2: {
+        label: 'S2 · S1 plus an ISP router', links: { r1main: 'eigrp', mainedge: 'eigrp', edger2: 'ripv2', edger3: 'static', edgeisp: 'static' }, isp: true,
+        where: 'As S1. Edge also reaches the ISP by a static link; the ISP has one static route back to the whole block.'
+      },
+      s3: {
+        label: 'S3 · Main is the border', links: { r1main: 'eigrp', mainedge: 'ripv2', edger2: 'ripv2', edger3: 'static' }, isp: false,
+        where: 'Main redistributes EIGRP into RIP and RIP into EIGRP. Edge runs only RIP and puts its static route to Laboratories into RIP.'
+      },
+      s4: {
+        label: 'S4 · Static Main–Edge link', links: { r1main: 'eigrp', mainedge: 'static', edger2: 'ripv2', edger3: 'static' }, isp: false,
+        where: "Main has static routes to Edge's side and puts them into EIGRP for R1. Edge has static routes to Registrar and Finance and puts them into RIP for R2."
+      }
+    };
+    const EXAM_LANS = [
+      { key: 'reg', name: 'Registrar', router: 'r1', v6: 'slaac', pcs: ['PC0'], hint: 'PC0, PC1' },
+      { key: 'fin', name: 'Finance-Accounting', router: 'main', v6: 'slaac', pcs: ['PC2'], hint: 'PC2, PC3' },
+      { key: 'lab', name: 'Laboratories', router: 'r3', v6: 'stateful', pcs: ['PC4'], hint: 'PC4, PC5' },
+      { key: 'dt', name: 'Downtown Campus', router: 'r2', v6: 'stateless', pcs: ['PC8', 'PC9'], hint: 'PC8, PC9' }
+    ];
+
+    function defaultExamOptions() {
+      return {
+        g: '1', s: '1', scenario: 's1', ispIf: 's0/0/0', password: 'GROUP5CISCO', sshUser: 'admin', acls: true,
+        hosts: { reg: 60, fin: 30, lab: 120, dt: 25 }
+      };
+    }
+
+    /** "12G.2S.224.0/20" and "200G:DBS:ACAD::/64" worked out for one group and student. */
+    function examBases(g, s) {
+      const ok = /^\d$/.test(String(g)) && /^\d$/.test(String(s));
+      return ok ? { ipv4: `12${g}.2${s}.224.0`, ipv6: `200${g}:db${s}:acad::`, ok } : { ok };
+    }
+
+    function buildExamProject(o) {
+      const sc = ROUTING_SCENARIOS[o.scenario] || ROUTING_SCENARIOS.s1;
+      const st = createSampleLabState();
+      const rid = k => `r_${k}`;
+      const mk = (k, name, model, domain) => ({
+        id: rid(k), hostname: name, model, linkLocal: '', lans: [], loopbacks: [],
+        routing: { domain, ipv6Static: true, ripng: false, customStatics: [], stubDefault: true, routerId: '' }
+      });
+      st.routers = [
+        mk('edge', 'Edge', '2911', sc.links.mainedge === 'eigrp' ? 'eigrp' : 'ripv2'),
+        mk('main', 'Main', '2911', 'eigrp'),
+        mk('r1', 'R1', EXAM_SMALL_MODEL, 'eigrp'),
+        mk('r2', 'R2', EXAM_SMALL_MODEL, 'ripv2'),
+        mk('r3', 'R3', EXAM_SMALL_MODEL, 'static')
+      ];
+      if (sc.isp) {
+        const isp = mk('isp', 'ISP', '2911', 'static');
+        // A loopback stands in for "the internet", so there is something past Edge to ping
+        isp.loopbacks = [{ id: uid('lo'), name: 'lo0', ip: '8.8.8.8/32', ipv6: '2001:4860:4860::8888/128' }];
+        st.routers.push(isp);
+      }
+      st.links = [];
+      st.security = { mode: 'extended', permitRest: true, naming: 'numbered', aclIds: {}, loginHoles: true, rules: [] };
+      const b = examBases(o.g, o.s);
+      Object.assign(st.addressing, { mode: 'vlsm', baseIp: b.ipv4, baseCidr: 20, ipv6Base: `${b.ipv6}/48`, ipv6StartHex: '1' });
+      const lan = l => ({ id: `v_${l.key}`, type: 'lan', name: l.name, hosts: Math.max(1, Number(o.hosts[l.key]) || 1), routerId: rid(l.router), iface: 'g0/0', r2Id: '', r2If: 'g0/0' });
+      const wan = (key, name, a, ai, bb, bi) => ({ id: `v_${key}`, type: 'wan', name, hosts: 2, routerId: rid(a), iface: ai, r2Id: rid(bb), r2If: bi });
+      st.addressing.vlsmReqs = [
+        ...EXAM_LANS.map(lan),
+        wan('r1main', 'WAN R1-Main', 'r1', 'g0/1', 'main', 'g0/1'),
+        wan('mainedge', 'WAN Main-Edge', 'main', 'g0/2', 'edge', 'g0/0'),
+        wan('edger2', 'WAN Edge-R2', 'edge', 'g0/1', 'r2', 'g0/1'),
+        wan('edger3', 'WAN Edge-R3', 'edge', 'g0/2', 'r3', 'g0/1'),
+        ...(sc.isp ? [wan('edgeisp', 'WAN Edge-ISP', 'edge', o.ispIf || 's0/0/0', 'isp', 's0/0/0')] : [])
+      ];
+      const pwd = String(o.password || '').trim() || 'GROUP5CISCO';
+      Object.assign(st.initConfig, {
+        enableSecretEnabled: true, enableSecret: pwd, consoleEnabled: true, consolePwd: pwd, vtyPwd: pwd, sshPwd: pwd,
+        sshUser: String(o.sshUser || '').trim() || 'admin', vtyMode: 'split', telnetLogin: 'password',
+        dualStack: true, ipv6Routing: 'static'
+      });
+      st.exam = Object.assign(defaultExamOptions(), o);
+      st.checklist = {};
+      st.ui.selectedRouterId = rid('edge');
+      st.ui.selectedRoutingRouterId = rid('edge');
+      st.ui.leftTab = 'routers';
+      return st;
+    }
+
+    /** Second pass, after the VLSM rows have made the LANs and links. */
+    function finishExamProject(o) {
+      const sc = ROUTING_SCENARIOS[o.scenario] || ROUTING_SCENARIOS.s1;
+      const lanOf = key => getAllLans().find(x => x.lan.vlsmReqId === `v_${key}`);
+      const pcIds = {};
+      EXAM_LANS.forEach(l => {
+        const m = lanOf(l.key);
+        if (!m) return;
+        m.lan.dhcpMode = 'central';
+        m.lan.dhcpTargetRouterId = 'r_edge';
+        m.lan.ipv6Mode = l.v6;
+        m.lan.pcs = l.pcs.map(name => {
+          pcIds[name] = uid('pc');
+          return { id: pcIds[name], name, ip: '' };
+        });
+      });
+      appState.links.forEach(lk => {
+        const key = String(lk.vlsmReqId || '').replace(/^v_/, '');
+        if (sc.links[key]) lk.protocol = sc.links[key];
+      });
+      const isp = getRouterById('r_isp');
+      if (isp) {
+        // The ISP knows the whole block through Edge (one summary route)
+        isp.routing.stubDefault = false;
+        isp.routing.autoStatics = false;
+        isp.routing.customStatics = [{ fam: '4', dest: appState.addressing.baseIp, mask: IPv4.cidrToMask(appState.addressing.baseCidr), nextHop: '', exitIf: 's0/0/0', ad: '' }];
+      }
+      if (o.acls) {
+        const base = {
+          srcLanId: '', srcHost: '', srcPcId: '', dstLanId: '', dstHost: '', dstPcId: '', dstRouterId: '', dstRouterIds: [], loginLines: 'all',
+          aclType: 'extended', service: 'ip', customProto: 'tcp', customPort: '', placement: 'auto', note: '', allowReplies: false
+        };
+        const internal = appState.routers.filter(r => r.id !== 'r_isp').map(r => r.id);
+        const sshTargets = ['r_edge', ...(isp ? ['r_isp'] : [])];
+        const login = (pc, ids, lines, note) => Object.assign({}, base, {
+          id: uid('sr'), action: 'permit', srcType: 'pc', srcPcId: pcIds[pc], dstType: 'router', dstRouterId: ids[0], dstRouterIds: ids, loginLines: lines, aclType: 'standard', note
+        });
+        const block = (a, bb, note) => {
+          const s = lanOf(a);
+          const d = lanOf(bb);
+          return s && d ? Object.assign({}, base, {
+            id: uid('sr'), action: 'deny', srcType: 'lan', srcLanId: s.lan.id, dstType: 'lan', dstLanId: d.lan.id, allowReplies: true, note
+          }) : null;
+        };
+        appState.security.rules = [
+          login('PC0', internal, 'telnet', '(a) Telnet: PC0'),
+          login('PC2', internal, 'telnet', '(a) Telnet: PC2'),
+          login('PC4', internal, 'telnet', '(a) Telnet: PC4'),
+          login('PC8', sshTargets, 'ssh', '(b) SSH: PC8'),
+          login('PC9', sshTargets, 'ssh', '(b) SSH: PC9'),
+          block('lab', 'reg', '(c) Laboratory denied to Registrar'),
+          block('lab', 'fin', '(c) Laboratory denied to Finance'),
+          block('fin', 'reg', '(c) Finance denied to Registrar'),
+          block('dt', 'reg', '(d) Downtown denied to Registrar'),
+          block('dt', 'fin', '(d) Downtown denied to Finance')
+        ].filter(Boolean);
+      }
+    }
+
+    function applyExamPreset(o) {
+      const st = buildExamProject(o);
+      appState = st;
+      refreshAddressingUI();     // VLSM rows -> LANs and WAN links
+      finishExamProject(o);
+      normalizeState();
+      refreshAddressingUI();
+      aclDraft = null;
+      aclTester = null;
+      renderTopologyWorkspace();
+      switchMainTab('checklist');
+      showToast(`Exam network built for G${o.g} S${o.s}: ${appState.addressing.baseIp}/20. Everything stays editable.`);
+    }
+
+    function examDialogHtml(o) {
+      const b = examBases(o.g, o.s);
+      const sc = ROUTING_SCENARIOS[o.scenario] || ROUTING_SCENARIOS.s1;
+      return `
+        <form method="dialog" class="exam-form" id="examForm">
+          <div class="exam-head">
+            <h2>Exam preset · CPE 3105 final assessment</h2>
+            <p>Builds Edge, Main, R1, R2, R3 with their LANs, WAN links, DHCP on Edge, IPv6 per LAN, routing and the ACLs. It replaces the open project (save it first if you need it). Everything stays editable.</p>
+          </div>
+          <div class="exam-body">
+            <fieldset class="exam-set">
+              <legend>1 · Group and student number</legend>
+              <div class="row-2">
+                <div class="field-group"><label class="field-label" for="exG">Group number (G#)</label><input type="text" id="exG" class="mono" inputmode="numeric" maxlength="1" value="${escapeHtml(o.g)}" /></div>
+                <div class="field-group"><label class="field-label" for="exS">Student number (S#)</label><input type="text" id="exS" class="mono" inputmode="numeric" maxlength="1" value="${escapeHtml(o.s)}" /></div>
+              </div>
+              <div class="exam-working" id="exWorking">${b.ok ? `
+                IPv4 <span class="mono">12<b>G</b>.2<b>S</b>.224.0/20</span> → <b class="mono">${b.ipv4}/20</b><br>
+                IPv6 <span class="mono">200<b>G</b>:DB<b>S</b>:ACAD::/64</span> → <b class="mono">${b.ipv6}/64</b> (LANs get <span class="mono">${b.ipv6.replace(/::$/, '')}:1::/64</span>, <span class="mono">:2::/64</span>…)`
+                : '<span class="exam-bad">G# and S# are one digit each (0 to 9), so the first octet stays 120 to 129.</span>'}</div>
+            </fieldset>
+            <fieldset class="exam-set">
+              <legend>2 · Hosts per LAN (given on the day)</legend>
+              <div class="exam-hosts">
+                ${EXAM_LANS.map(l => `<div class="field-group"><label class="field-label" for="exH_${l.key}">${escapeHtml(l.name)} <span class="text-muted">(${l.hint})</span></label><input type="text" id="exH_${l.key}" class="mono" inputmode="numeric" value="${escapeHtml(o.hosts[l.key])}" /></div>`).join('')}
+              </div>
+            </fieldset>
+            <fieldset class="exam-set">
+              <legend>3 · Routing scenario</legend>
+              <select id="exScenario">${Object.entries(ROUTING_SCENARIOS).map(([k, v]) => `<option value="${k}" ${o.scenario === k ? 'selected' : ''}>${escapeHtml(v.label)}</option>`).join('')}</select>
+              <div class="text-muted" id="exScenarioWhere" style="font-size:14px; margin-top:6px;">${escapeHtml(sc.where)}</div>
+              <div class="field-group" id="exIspRow" ${sc.isp ? '' : 'hidden'} style="margin-top:6px;">
+                <label class="field-label" for="exIspIf">Edge port to the ISP (check the real router)</label>
+                <select id="exIspIf" class="mono">${SERIAL_INTERFACES.map(p => `<option value="${p}" ${o.ispIf === p ? 'selected' : ''}>${p}</option>`).join('')}</select>
+              </div>
+            </fieldset>
+            <fieldset class="exam-set">
+              <legend>4 · Access</legend>
+              <div class="row-2">
+                <div class="field-group"><label class="field-label" for="exPwd">Exam password</label><input type="text" id="exPwd" class="mono" value="${escapeHtml(o.password)}" /></div>
+                <div class="field-group"><label class="field-label" for="exUser">SSH username</label><input type="text" id="exUser" class="mono" value="${escapeHtml(o.sshUser)}" /></div>
+              </div>
+              <div class="text-muted" style="font-size:13.5px;">Telnet on <span class="mono">line vty 0 4</span> uses the password; SSH on <span class="mono">line vty 5 15</span> uses the username and password.</div>
+              <label class="checkbox-row" style="margin-top:6px;"><input type="checkbox" id="exAcls" ${o.acls ? 'checked' : ''} /><span>Add the ACLs (a) to (d) and PCs PC0, PC2, PC4, PC8, PC9 with fixed IPs</span></label>
+            </fieldset>
+            <div class="exam-err" id="exErr" hidden></div>
+          </div>
+          <div class="exam-foot">
+            <button type="button" class="btn" id="exCancel">Cancel</button>
+            <button type="button" class="btn btn-primary" id="exBuild">Build the exam network</button>
+          </div>
+        </form>`;
+    }
+
+    function openExamPresetDialog() {
+      let dlg = document.getElementById('examDialog');
+      if (!dlg) {
+        dlg = document.createElement('dialog');
+        dlg.id = 'examDialog';
+        dlg.className = 'exam-dialog';
+        dlg.setAttribute('aria-label', 'Exam preset');
+        document.body.appendChild(dlg);
+      }
+      const o = Object.assign(defaultExamOptions(), appState.exam || {});
+      o.hosts = Object.assign({}, defaultExamOptions().hosts, (appState.exam && appState.exam.hosts) || {});
+      dlg.innerHTML = examDialogHtml(o);
+      const val = id => dlg.querySelector(`#${id}`).value.trim();
+      const read = () => ({
+        g: val('exG'), s: val('exS'), scenario: val('exScenario'), ispIf: val('exIspIf'),
+        password: val('exPwd'), sshUser: val('exUser'), acls: dlg.querySelector('#exAcls').checked,
+        hosts: Object.fromEntries(EXAM_LANS.map(l => [l.key, val(`exH_${l.key}`)]))
+      });
+      const refresh = () => {
+        const cur = read();
+        const b = examBases(cur.g, cur.s);
+        dlg.querySelector('#exWorking').innerHTML = b.ok
+          ? `IPv4 <span class="mono">12<b>G</b>.2<b>S</b>.224.0/20</span> → <b class="mono">${b.ipv4}/20</b><br>IPv6 <span class="mono">200<b>G</b>:DB<b>S</b>:ACAD::/64</span> → <b class="mono">${b.ipv6}/64</b> (LANs get <span class="mono">${b.ipv6.replace(/::$/, '')}:1::/64</span>, <span class="mono">:2::/64</span>…)`
+          : '<span class="exam-bad">G# and S# are one digit each (0 to 9), so the first octet stays 120 to 129.</span>';
+        const sc = ROUTING_SCENARIOS[cur.scenario] || ROUTING_SCENARIOS.s1;
+        dlg.querySelector('#exScenarioWhere').textContent = sc.where;
+        dlg.querySelector('#exIspRow').hidden = !sc.isp;
+      };
+      dlg.querySelectorAll('input, select').forEach(el => el.addEventListener(el.tagName === 'SELECT' ? 'change' : 'input', refresh));
+      dlg.querySelector('#exCancel').addEventListener('click', () => dlg.close());
+      dlg.querySelector('#exBuild').addEventListener('click', () => {
+        const cur = read();
+        const err = dlg.querySelector('#exErr');
+        const bad = !examBases(cur.g, cur.s).ok ? 'G# and S# must be one digit each (0 to 9).'
+          : EXAM_LANS.some(l => !/^\d+$/.test(cur.hosts[l.key]) || Number(cur.hosts[l.key]) < 1 || Number(cur.hosts[l.key]) > 2000) ? 'Each LAN needs a host count from 1 to 2000.'
+          : !cur.password ? 'Type the exam password.' : '';
+        if (bad) { err.textContent = bad; err.hidden = false; return; }
+        cur.hosts = Object.fromEntries(Object.entries(cur.hosts).map(([k, v]) => [k, Number(v)]));
+        dlg.close();
+        applyExamPreset(cur);
+      });
+      if (typeof dlg.showModal === 'function') dlg.showModal(); else dlg.setAttribute('open', '');
+      dlg.querySelector('#exG').focus();
+    }
+
+    /* ---- Checklist: rubric A-G, built from the project ---- */
+    const IPV6_MODE_TEXT = {
+      slaac: 'SLAAC: the router sends RAs, each PC makes its own address. No DHCPv6 pool.',
+      stateless: 'SLAAC + stateless DHCPv6: PCs make their own address (SLAAC) and get DNS/domain from DHCPv6 (other-config-flag).',
+      stateful: 'Stateful DHCPv6: PCs get their IPv6 address from the router\'s DHCPv6 pool (managed-config-flag).',
+      none: 'No automatic IPv6: set addresses by hand.'
+    };
+
+    function checklistOpenBtn(rid, filter, label) {
+      const r = getRouterById(rid);
+      if (!r) return '';
+      return `<button class="btn btn-sm ck-open" type="button" data-rid="${rid}" data-filter="${filter}">Open ${escapeHtml(sanitizeHostname(r.hostname))} · ${escapeHtml(label)}</button>`;
+    }
+
+    function cmdsHtml(label, cmds) {
+      if (!cmds || !cmds.length) return '';
+      return `<div class="ck-cmds"><span class="ck-cmds-label">${escapeHtml(label)}</span>${cmds.map(c => `<code class="cmd">${escapeHtml(c)}</code>`).join('')}</div>`;
+    }
+
+    /** First LAN pair that may ping each other both ways through the ACLs, for the Wireshark capture. */
+    function allowedPingPair(comp) {
+      const lans = getAllLans();
+      for (const a of lans) {
+        for (const b of lans) {
+          if (a.lan.id === b.lan.id) continue;
+          const r = simulateAclTest(comp, { src: `lan:${a.lan.id}`, dst: `lan:${b.lan.id}`, svc: 'ping' });
+          if (!r.error && r.request.allowed && r.reply && r.reply.allowed) return { a, b };
+        }
+      }
+      return null;
+    }
+
+    /** A PC (or LAN) that a login rule allows, and the router it may log in to. */
+    function allowedLogin(comp, kind) {
+      const port = kind === 'telnet' ? '23' : '22';
+      for (const v of Object.values(comp.vty)) {
+        if (vtySplit() && v.loginKind !== kind) continue;
+        const it = v.items.find(x => x.rule.action === 'permit');
+        if (!it) continue;
+        const who = it.src.kind === 'host' ? (it.src.name || `host ${it.src.label}`) : it.src.kind === 'lan' ? `a PC in ${it.src.label}` : 'any PC';
+        return { who, router: getRouterById(v.routerId), port };
+      }
+      const r = appState.routers[0];
+      return r ? { who: 'any PC', router: r, port } : null;
+    }
+
+    function buildChecklist() {
+      const ic = appState.initConfig;
+      const host = r => sanitizeHostname(r.hostname);
+      const routers = appState.routers;
+      const plans = routers.map(r => getRouterRoutingPlan(r.id));
+      const comp = compileSecurityRules();
+      const pcs = getAllPcs();
+      const sections = [];
+      const user = ic.sshUser || 'admin';
+      const mgmt = r => routerMgmtIp(r);
+
+      // A · initial config
+      const telnet = allowedLogin(comp, 'telnet');
+      const ssh = allowedLogin(comp, 'ssh');
+      const loginCmds = [];
+      if (ic.vtyMode !== 'ssh' && ic.vtyMode !== 'none' && telnet && telnet.router) loginCmds.push(`telnet ${mgmt(telnet.router)}`);
+      if (sshOn(ic) && ssh && ssh.router) loginCmds.push(`ssh -l ${user} ${mgmt(ssh.router)}`);
+      sections.push({
+        key: 'A', title: 'Initial config, SSH and Telnet', points: 15,
+        items: [
+          ...routers.map(r => ({
+            id: `A-init-${r.id}`, title: `${host(r)}: paste the Initial part`,
+            detail: `Hostname, enable secret, console, ${ic.vtyMode === 'split' ? 'Telnet on line vty 0 4 and SSH on line vty 5 15' : `line vty ${vtyAllRange()}`}, SSH keys. Start at the Router&gt; prompt (the part begins with enable).`,
+            open: checklistOpenBtn(r.id, 'initial', 'Initial'),
+            cmds: ['show running-config | section line vty', ...(sshOn(ic) ? ['show ip ssh'] : [])]
+          })),
+          {
+            id: 'A-login', title: 'Test both logins from a PC',
+            detail: `${telnet && ic.vtyMode !== 'ssh' ? `Telnet from ${escapeHtml(telnet.who)} to ${escapeHtml(host(telnet.router))}: it asks for the password. ` : ''}${ssh && sshOn(ic) ? `SSH from ${escapeHtml(ssh.who)} to ${escapeHtml(host(ssh.router))}: it asks for the username's password. ` : ''}Do this before the login ACLs go on, then again after.`,
+            pc: loginCmds
+          }
+        ]
+      });
+
+      // B · addressing
+      const ex = appState.exam;
+      const b = ex ? examBases(ex.g, ex.s) : null;
+      sections.push({
+        key: 'B', title: 'IPv4 CIDR and VLSM', points: 15,
+        items: [
+          {
+            id: 'B-plan', title: 'Write the addressing table',
+            detail: `${b && b.ok ? `Working: 12<b>G</b>.2<b>S</b>.224.0/20 with G${escapeHtml(ex.g)}, S${escapeHtml(ex.s)} = <b class="mono">${b.ipv4}/20</b>. ` : ''}VLSM gives the biggest LAN its subnet first, then the next, then the /30 WAN links. Copy the subnet table (Addressing tab) into your answer sheet.`,
+            tab: 'addressing'
+          },
+          ...routers.map((r, i) => ({
+            id: `B-if-${r.id}`, title: `${host(r)}: paste the Interfaces part`,
+            detail: `${r.lans.map(l => `${escapeHtml(l.iface)} = ${escapeHtml(l.gatewayIp)}/${escapeHtml(l.cidr)} (${escapeHtml(l.name)})`).concat(plans[i].myLinks.map(m => `${escapeHtml(m.myIf)} = ${escapeHtml(m.myIp)}/${escapeHtml(m.lnk.cidr)} (to ${escapeHtml(m.peer ? host(m.peer) : '?')})`)).join(' · ') || 'No ports yet.'}`,
+            open: checklistOpenBtn(r.id, 'interfaces', 'Interfaces'),
+            cmds: ['show ip interface brief', ...(ic.dualStack ? ['show ipv6 interface brief'] : []), ...plans[i].myLinks.map(m => `ping ${m.nextHop}`)]
+          }))
+        ]
+      });
+
+      // C · DHCPv4
+      const servers = routers.filter(r => getAllLans().some(x => (x.lan.dhcpMode === 'local' && x.router.id === r.id) || (x.lan.dhcpMode === 'central' && x.lan.dhcpTargetRouterId === r.id)));
+      const relays = routers.filter(r => r.lans.some(l => l.dhcpMode === 'central' && l.dhcpTargetRouterId && l.dhcpTargetRouterId !== r.id));
+      sections.push({
+        key: 'C', title: 'DHCPv4', points: 10,
+        items: [
+          ...servers.map(r => ({
+            id: `C-pool-${r.id}`, title: `${host(r)}: paste the DHCP part (the pools)`,
+            detail: 'Excluded addresses first (gateways and fixed-IP PCs), then one pool per LAN.',
+            open: checklistOpenBtn(r.id, 'dhcp', 'DHCP'),
+            cmds: ['show ip dhcp pool', 'show ip dhcp binding']
+          })),
+          ...(relays.length ? [{
+            id: 'C-relay', title: `Relay on ${relays.map(host).join(', ')}`,
+            detail: 'Each LAN port has ip helper-address pointing to the DHCP server (it is in the Interfaces part). Without it, PCs get a 169.254.x.x address.',
+            cmds: ['show running-config | include helper']
+          }] : []),
+          {
+            id: 'C-pc', title: 'Each DHCP PC gets an address',
+            detail: `${pcs.length ? `Set the fixed-IP PCs by hand: ${pcs.map(x => `${escapeHtml(x.name)} <span class="mono">${escapeHtml(x.ip)}</span> mask <span class="mono">${escapeHtml(x.lan.mask)}</span> gateway <span class="mono">${escapeHtml(x.lan.gatewayIp)}</span>`).join('; ')}. ` : ''}On the other PCs:`,
+            pc: ['ipconfig /release', 'ipconfig /renew', 'ipconfig /all']
+          }
+        ]
+      });
+
+      // D · IPv6
+      if (ic.dualStack) {
+        sections.push({
+          key: 'D', title: 'IPv6: SLAAC and DHCPv6', points: 15,
+          items: getAllLans().map(({ router: r, lan }) => ({
+            id: `D-${lan.id}`, title: `${lan.name} on ${host(r)}: ${({ slaac: 'SLAAC', stateless: 'SLAAC + stateless DHCPv6', stateful: 'Stateful DHCPv6', none: 'static IPv6' })[lan.ipv6Mode] || lan.ipv6Mode}`,
+            detail: `${escapeHtml(IPV6_MODE_TEXT[lan.ipv6Mode] || '')} Prefix <span class="mono">${escapeHtml(lan.ipv6Prefix)}</span>, router <span class="mono">${escapeHtml(lan.ipv6Ip)}</span>.`,
+            open: checklistOpenBtn(r.id, 'interfaces', 'Interfaces'),
+            cmds: [`show ipv6 interface ${lan.iface}`, ...(lan.ipv6Mode === 'stateless' || lan.ipv6Mode === 'stateful' ? ['show ipv6 dhcp pool'] : []), ...(lan.ipv6Mode === 'stateful' ? ['show ipv6 dhcp binding'] : [])],
+            pc: ['ipconfig /all']
+          }))
+        });
+      }
+
+      // E · routing
+      const border = plans.filter(p => p.border);
+      const sc = ex ? ROUTING_SCENARIOS[ex.scenario] : null;
+      const lans = getAllLans();
+      sections.push({
+        key: 'E', title: 'EIGRP, RIPv2, static and redistribution', points: 20,
+        items: [
+          ...plans.map(p => {
+            const r = p.router;
+            const runs = planRunsList(p).map(x => PROTO_LABEL[x]).join(' + ') || 'nothing yet';
+            const expect = p.isStub && p.statics.length ? 'S* 0.0.0.0/0 (the default route)'
+              : [p.dynamic.includes('eigrp') ? 'D routes (and D EX for networks from other protocols)' : '', p.dynamic.includes('ripv2') ? 'R routes' : '', p.statics.length ? 'S routes' : ''].filter(Boolean).join(', ');
+            return {
+              id: `E-${r.id}`, title: `${host(r)}: paste the Routing part (${runs})`,
+              detail: `${p.border ? '<b>Border router</b>: it redistributes between its protocols. ' : ''}show ip route should list ${escapeHtml(expect || 'the other networks')}.`,
+              open: checklistOpenBtn(r.id, 'routing', 'Routing'),
+              cmds: ['show ip route', ...(p.dynamic.length ? ['show ip protocols'] : []), ...(p.dynamic.includes('eigrp') ? ['show ip eigrp neighbors'] : []), ...(p.dynamic.includes('ripv2') ? ['show ip rip database'] : []), ...(ic.dualStack ? ['show ipv6 route'] : [])]
+            };
+          }),
+          {
+            id: 'E-border', title: border.length ? `Show the redistribution on ${border.map(p => host(p.router)).join(', ')}` : 'Redistribution',
+            detail: `${sc ? `${escapeHtml(sc.label)}: ${escapeHtml(sc.where)} ` : ''}${border.length ? 'show ip protocols lists each "Redistributing" source.' : 'No router runs two routing sources yet, so nothing is redistributed.'}`,
+            cmds: border.length ? ['show ip protocols'] : []
+          },
+          {
+            id: 'E-ping', title: 'Ping every LAN from every LAN (before the ACLs)',
+            detail: 'If one fails, check show ip route on each router along the way.',
+            pc: lans.map(x => `ping ${x.lan.gatewayIp}`)
+          }
+        ]
+      });
+
+      // F · ACLs
+      const aclRouters = routers.filter(r => comp.groups.some(g => g.routerId === r.id) || Object.values(comp.vty).some(v => v.routerId === r.id));
+      sections.push({
+        key: 'F', title: 'ACLs', points: 15,
+        items: aclRouters.length ? [
+          ...aclRouters.map(r => {
+            const ids = [...comp.groups.filter(g => g.routerId === r.id), ...Object.values(comp.vty).filter(v => v.routerId === r.id)].map(g => g.id);
+            return {
+              id: `F-${r.id}`, title: `${host(r)}: paste the ACLs part (ACL ${ids.join(', ')})`,
+              detail: 'Only after every ping, DHCP and login test passes.',
+              open: checklistOpenBtn(r.id, 'acls', 'ACLs'),
+              cmds: ['show access-lists', 'show running-config | section line vty']
+            };
+          }),
+          {
+            id: 'F-tests', title: `Run the ACL test plan (${comp.tests.length} tests)`,
+            detail: 'Each test should do what the plan says. The matching line\'s counter goes up in show access-lists.',
+            tab: 'acls',
+            cmds: ['clear access-list counters', 'show access-lists']
+          }
+        ] : [{ id: 'F-rules', title: 'Add the ACL rules', detail: 'Write each task (a) to (d) as a rule in the ACLs tab.', tab: 'acls' }]
+      });
+
+      // G · Wireshark
+      const pair = allowedPingPair(comp);
+      sections.push({
+        key: 'G', title: 'Wireshark', points: 10,
+        items: [
+          {
+            id: 'G-icmp', title: 'ICMP: capture a ping between two LANs',
+            detail: `Start the capture on the PC's Ethernet adapter, display filter <code class="cmd">icmp</code>, then ping. Show Echo (ping) request <b>type 8</b> and reply <b>type 0</b> with source and destination IPs.${pair ? ` The ACLs allow ${escapeHtml(pair.a.lan.name)} → ${escapeHtml(pair.b.lan.name)}:` : ''}`,
+            pc: pair ? [`ping ${aclSampleHost(pair.b.lan)}`] : []
+          },
+          {
+            id: 'G-telnet', title: 'Telnet: the password is plain text',
+            detail: `Capture a Telnet login${telnet ? ` (${escapeHtml(telnet.who)} to ${escapeHtml(host(telnet.router))})` : ''}, filter <code class="cmd">telnet</code>, right-click a packet → Follow → TCP Stream. The password shows in clear text.`,
+            pc: telnet && telnet.router ? [`telnet ${mgmt(telnet.router)}`] : []
+          },
+          {
+            id: 'G-ssh', title: 'SSH: the same login is encrypted',
+            detail: `Capture an SSH login${ssh ? ` (${escapeHtml(ssh.who)} to ${escapeHtml(host(ssh.router))})` : ''}, filter <code class="cmd">ssh</code>, Follow → TCP Stream. After the key exchange it is unreadable.`,
+            pc: ssh && ssh.router ? [`ssh -l ${user} ${mgmt(ssh.router)}`] : []
+          }
+        ]
+      });
+      return sections;
+    }
+
+    function renderChecklist() {
+      const root = document.getElementById('checklistWorkspace');
+      if (!root) return;
+      const ticks = appState.checklist || (appState.checklist = {});
+      const sections = buildChecklist();
+      let earned = 0;
+      let total = 0;
+      sections.forEach(s => {
+        s.done = s.items.filter(it => ticks[it.id]).length;
+        total += s.points;
+        earned += s.items.length ? s.points * s.done / s.items.length : 0;
+      });
+      const pct = total ? Math.round(earned / total * 100) : 0;
+      const next = sections.flatMap(s => s.items.map(it => ({ s, it }))).find(x => !ticks[x.it.id]);
+      root.innerHTML = `
+        <div class="doc-intro ck-intro">
+          <h2>Exam checklist</h2>
+          <p>The rubric in exam order. Each step says what to paste on which router and how to prove it works. Click a <code class="cmd">highlighted command</code> to copy it. Ticks are saved with the project.</p>
+          ${!appState.exam ? '<p class="ck-hint">This project was not built with the exam preset. The steps still follow your routers. For the CPE 3105 network, click <b>Exam preset</b> at the top.</p>' : ''}
+          <div class="ck-overall" role="group" aria-label="Overall progress">
+            <div class="ck-bar" aria-hidden="true"><span style="width:${pct}%"></span></div>
+            <div class="ck-overall-text"><b>${pct}%</b> of the steps ticked${next ? ` · next: <a href="#ck-${escapeHtml(next.it.id)}">${escapeHtml(next.s.key)} · ${escapeHtml(next.it.title)}</a>` : ' · all done'}</div>
+            <button class="btn btn-sm" id="ckPrint" type="button">Print</button>
+            <button class="btn btn-sm" id="ckReset" type="button">Clear ticks</button>
+          </div>
+          <nav class="doc-toc" aria-label="Rubric sections">
+            ${sections.map(s => `<a href="#ck-sec-${s.key}">${s.key} · ${escapeHtml(s.title)} <span class="ck-toc-count">${s.done}/${s.items.length}</span></a>`).join('')}
+          </nav>
+        </div>
+        ${sections.map(s => `
+          <div class="card doc-card ck-section ${s.done === s.items.length && s.items.length ? 'is-done' : ''}" id="ck-sec-${s.key}">
+            <div class="ck-sec-head">
+              <span class="ck-letter">${s.key}</span>
+              <h3>${escapeHtml(s.title)}</h3>
+              <span class="ck-points">${s.points} pts</span>
+              <span class="ck-count">${s.done} of ${s.items.length}</span>
+            </div>
+            <div class="ck-bar small" aria-hidden="true"><span style="width:${s.items.length ? Math.round(s.done / s.items.length * 100) : 0}%"></span></div>
+            <ol class="ck-list">
+              ${s.items.map(it => `
+                <li class="ck-item ${ticks[it.id] ? 'done' : ''}" id="ck-${escapeHtml(it.id)}">
+                  <label class="ck-check">
+                    <input type="checkbox" class="ck-box" data-id="${escapeHtml(it.id)}" ${ticks[it.id] ? 'checked' : ''} />
+                    <span class="ck-title">${escapeHtml(it.title)}</span>
+                  </label>
+                  <div class="ck-body">
+                    ${it.detail ? `<p class="ck-detail">${it.detail}</p>` : ''}
+                    ${it.open || ''}
+                    ${it.tab ? `<button class="btn btn-sm ck-tab" type="button" data-tab="${it.tab}">Open the ${it.tab === 'acls' ? 'ACLs' : 'Addressing'} tab</button>` : ''}
+                    ${cmdsHtml('Check on the router', it.cmds)}
+                    ${cmdsHtml('On the PC (Command Prompt)', it.pc)}
+                  </div>
+                </li>`).join('')}
+            </ol>
+          </div>`).join('')}`;
+
+      root.querySelectorAll('.ck-box').forEach(box => box.addEventListener('change', () => {
+        if (box.checked) ticks[box.dataset.id] = true;
+        else delete ticks[box.dataset.id];
+        const y = window.scrollY;
+        renderChecklist();
+        window.scrollTo(0, y);
+      }));
+      root.querySelectorAll('.ck-open').forEach(btn => btn.addEventListener('click', () => {
+        appState.ui.selectedRouterId = btn.dataset.rid;
+        appState.ui.cliFilter = btn.dataset.filter;
+        switchMainTab('topology');
+      }));
+      root.querySelectorAll('.ck-tab').forEach(btn => btn.addEventListener('click', () => switchMainTab(btn.dataset.tab)));
+      document.getElementById('ckPrint').addEventListener('click', () => window.print());
+      document.getElementById('ckReset').addEventListener('click', () => {
+        const btn = document.getElementById('ckReset');
+        if (btn.dataset.armed !== '1') {
+          btn.dataset.armed = '1';
+          btn.textContent = 'Click again to clear';
+          return;
+        }
+        appState.checklist = {};
+        renderChecklist();
+        showToast('All ticks cleared');
+      });
+    }
+
     const MAIN_TABS = {
       addressing: ['mainTabAddressing', 'viewAddressing'],
       diagram: ['mainTabDiagram', 'viewDiagram'],
       topology: ['mainTabTopology', 'viewTopology'],
       acls: ['mainTabAcls', 'viewAcls'],
       help: ['mainTabHelp', 'viewHelp'],
-      trouble: ['mainTabTrouble', 'viewTrouble']
+      trouble: ['mainTabTrouble', 'viewTrouble'],
+      checklist: ['mainTabChecklist', 'viewChecklist']
     };
 
     function switchMainTab(tabName) {
       if (!MAIN_TABS[tabName]) tabName = 'addressing';
       // Help pages are not part of the project: a saved project reopens on addressing, the drawing or the CLI
-      if (tabName === 'addressing' || tabName === 'topology' || tabName === 'diagram') appState.activeTab = tabName;
+      if (['addressing', 'topology', 'diagram', 'checklist'].includes(tabName)) appState.activeTab = tabName;
       Object.entries(MAIN_TABS).forEach(([name, [btnId, viewId]]) => {
         document.getElementById(btnId).classList.toggle('active', name === tabName);
         document.getElementById(viewId).classList.toggle('hidden', name !== tabName);
@@ -8401,6 +9075,7 @@ line vty 0 4
         });
       } else {
         if (tabName === 'acls') renderAclWorkspace();
+        if (tabName === 'checklist') renderChecklist();
         window.scrollTo(0, 0);
       }
     }
@@ -8468,6 +9143,8 @@ line vty 0 4
       wcUpdate();
       document.getElementById('mainTabHelp').addEventListener('click', () => switchMainTab('help'));
       document.getElementById('mainTabTrouble').addEventListener('click', () => switchMainTab('trouble'));
+      document.getElementById('mainTabChecklist').addEventListener('click', () => switchMainTab('checklist'));
+      document.getElementById('btnExamPreset').addEventListener('click', openExamPresetDialog);
 
       // Help pages: click a command to copy it; section links scroll without changing the address
       document.addEventListener('click', e => {
@@ -8476,7 +9153,7 @@ line vty 0 4
           copyTextToClipboard(cmd.textContent.trim(), `Copied: ${cmd.textContent.trim()}`);
           return;
         }
-        const link = e.target.closest('#viewHelp a[href^="#"], #viewTrouble a[href^="#"], #viewAcls a[href^="#"]');
+        const link = e.target.closest('#viewHelp a[href^="#"], #viewTrouble a[href^="#"], #viewAcls a[href^="#"], #viewChecklist a[href^="#"]');
         if (link) {
           const target = document.getElementById(link.getAttribute('href').slice(1));
           if (target) {
@@ -8519,7 +9196,7 @@ line vty 0 4
             appState = parsed;
             normalizeState(); // fills in anything missing from older or partial files
             refreshAddressingUI();
-            switchMainTab(appState.activeTab === 'topology' || appState.activeTab === 'diagram' ? appState.activeTab : 'addressing');
+            switchMainTab(['topology', 'diagram', 'checklist'].includes(appState.activeTab) ? appState.activeTab : 'addressing');
             renderTopologyWorkspace();
             showToast('Project loaded successfully!');
           } catch (err) {
