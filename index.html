@@ -1094,22 +1094,20 @@
     .redist-router { font-size: 14px; }
     .redist-line { font-size: 13px; margin: 2px 0 0 10px; line-height: 1.45; overflow-wrap: anywhere; }
     .redist-line .text-muted { display: block; font-family: var(--font-sans); }
-    .exam-strip { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 10px 16px; padding: 12px 16px; }
-    .exam-strip .field-group { width: 92px; }
-    .exam-strip-title { font-family: var(--font-label); font-weight: 600; font-size: 17px; align-self: center; }
-    .exam-strip-working { flex: 1 1 320px; align-self: center; font-size: 15px; line-height: 1.5; color: var(--text-secondary); }
-    .exam-strip-working b { color: var(--accent-ink); }
     .doc-card h4.ws-h { margin: 18px 0 6px; padding-top: 10px; border-top: 1px solid var(--border); text-transform: none; letter-spacing: 0; font-family: var(--font-label); font-size: 17px; font-weight: 600; color: var(--accent-ink); }
 
-    /* Exam preset dialog */
-    .exam-dialog { margin: auto; inset: 0; border: 1px solid var(--border-strong); border-radius: 12px; padding: 0; width: min(680px, calc(100% - 32px)); max-height: calc(100vh - 32px); background: var(--bg-surface); color: var(--text-primary); box-shadow: 0 18px 50px rgba(20, 24, 31, 0.28); }
-    .exam-dialog [hidden] { display: none !important; }
-    .exam-dialog::backdrop { background: rgba(20, 24, 31, 0.45); }
-    .exam-form { display: flex; flex-direction: column; max-height: calc(100vh - 34px); }
-    .exam-head { padding: 18px 22px 10px; border-bottom: 1px solid var(--border); }
+    /* Exam setup panel (top of the Planner tab) */
+    .exam-panel { padding: 0; overflow: visible; }
+    .exam-panel [hidden] { display: none !important; }
+    .exam-head { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 8px 14px; padding: 16px 20px 12px; border-bottom: 1px solid var(--border); }
+    .exam-head-text { flex: 1 1 360px; min-width: 0; }
     .exam-head h2 { margin: 0 0 6px; font-family: var(--font-label); font-size: 21px; }
-    .exam-head p { margin: 0; color: var(--text-secondary); font-size: 14.5px; line-height: 1.45; }
-    .exam-body { padding: 12px 22px; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; }
+    .exam-head p { margin: 0; color: var(--text-secondary); font-size: 15px; line-height: 1.45; }
+    .exam-summary { margin: 0; font-size: 15.5px; line-height: 1.5; }
+    .exam-summary b { color: var(--accent-ink); }
+    .exam-panel.is-closed .exam-head { border-bottom: 0; }
+    .exam-body { padding: 14px 20px; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr)); gap: 12px; align-items: start; }
+    .exam-body #exAclBox, .exam-body .exam-err { grid-column: 1 / -1; }
     .exam-set { border: 1px solid var(--border); border-radius: 8px; padding: 10px 14px 12px; margin: 0; display: flex; flex-direction: column; gap: 6px; }
     .exam-set legend { font-family: var(--font-label); font-weight: 600; font-size: 15.5px; padding: 0 6px; }
     .exam-picks { display: flex; flex-wrap: wrap; gap: 4px 16px; margin: 2px 0 8px; font-size: 15px; }
@@ -1121,7 +1119,8 @@
     .exam-working { padding: 8px 10px; border-radius: 6px; background: var(--accent-soft); color: var(--accent-ink); font-size: 14.5px; line-height: 1.6; }
     .exam-working b { font-weight: 700; }
     .exam-bad, .exam-err { color: var(--rose); font-weight: 600; }
-    .exam-foot { display: flex; justify-content: flex-end; gap: 8px; padding: 12px 22px 16px; border-top: 1px solid var(--border); }
+    .exam-foot { position: sticky; bottom: 0; z-index: 5; display: flex; flex-wrap: wrap; justify-content: flex-end; align-items: center; gap: 8px; padding: 12px 20px; border-top: 1px solid var(--border); background: var(--bg-surface); border-radius: 0 0 12px 12px; }
+    .exam-dirty { margin-right: auto; color: var(--amber-ink); font-weight: 600; font-size: 15px; }
 
     /* Exam checklist */
     .ck-hint { padding: 8px 12px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg-elevated); }
@@ -1302,7 +1301,7 @@
       a { color: inherit; }
       .ck-item { break-inside: avoid; }
       .ck-bar span { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
-      .exam-dialog { display: none !important; }
+      #examPanel { display: none !important; }
       body.print-addr-sheet #viewAddressing .addr-container > :not(#addrSheetCard):not(#cidrWorkCard) { display: none !important; }
       body.print-addr-sheet #cidrWorkCard { border: none; break-inside: avoid; }
       body.print-addr-sheet #addrSheetCard { border: none; }
@@ -1342,7 +1341,6 @@
     </nav>
 
     <div class="header-actions">
-      <button id="btnExamPreset" class="btn btn-primary" type="button" title="Build the CPE 3105 final assessment network from your group and student numbers">Exam preset</button>
       <button id="btnLoadSample" class="btn btn-cyan" type="button" title="Load pre-configured dual-stack Cebu-Davao lab">
         Sample Lab
       </button>
@@ -1358,20 +1356,8 @@
   <section id="viewAddressing" class="tab-view">
     <div class="addr-container">
 
-      <!-- CPE 3105: group and student numbers fill both bases -->
-      <div class="card exam-strip" id="examStrip">
-        <div class="exam-strip-title">Exam numbers</div>
-        <div class="field-group">
-          <label class="field-label" for="addrExamG">Group G#</label>
-          <input id="addrExamG" class="mono" type="text" inputmode="numeric" maxlength="1" placeholder="1" />
-        </div>
-        <div class="field-group">
-          <label class="field-label" for="addrExamS">Student S#</label>
-          <input id="addrExamS" class="mono" type="text" inputmode="numeric" maxlength="1" placeholder="1" />
-        </div>
-        <div class="exam-strip-working" id="addrExamWorking" aria-live="polite"></div>
-        <button id="btnExamFill" class="btn btn-primary btn-sm" type="button">Fill both bases</button>
-      </div>
+      <!-- CPE 3105 exam setup: group/student numbers, hosts, routing, access, ACL statements (renderExamPanel) -->
+      <div class="card exam-panel" id="examPanel"></div>
 
       <!-- Top Row: Base IPv4 + IPv6 Prefix Planner -->
       <div class="grid-2">
@@ -1934,7 +1920,7 @@ line vty 0 4
         <ol class="doc-steps">
           <li><b>Reset every router</b> (see <a href="#h-reset">Reset a router</a>). Lab routers keep the last group's config.</li>
           <li><b>Cable it</b> (see <a href="#h-cables">Cables</a>). Write down which router port goes where; <code class="cmd">show cdp neighbors</code> confirms it later.</li>
-          <li><b>CPE 3105 final assessment?</b> Click <b>Exam preset</b> (top right), type your group and student numbers and the host counts, pick the routing scenario. It builds steps 3 to 5 for you; then follow the <b>7. Checklist</b> tab from A to G and tick each step. If the topology on the day is different, change it in the Planner and Configure tabs: the scripts and the checklist follow. Click <b>Exam preset</b> again to change the numbers, host counts, routing scenario, ISP or the ACL statements (a) to (d): <b>Update this project</b> keeps everything else you did.</li>
+          <li><b>CPE 3105 final assessment?</b> Use <b>Exam setup</b> at the top of the <b>1. Planner</b> tab: type your group and student numbers and the host counts, pick the routing scenario. It builds steps 3 to 5 for you; then follow the <b>7. Checklist</b> tab from A to G and tick each step. If the topology on the day is different, change it in the Planner and Configure tabs: the scripts and the checklist follow. Come back to <b>Exam setup</b> to change the numbers, host counts, routing scenario, ISP or the ACL statements (a) to (d): <b>Update this project</b> keeps everything else you did.</li>
           <li><b>Your work is kept in this browser:</b> close or reload the page and it opens where you left off (the first time it opens the exam for G1 S1). To move work to another PC, or keep a copy, use <b>Save project</b>.</li>
           <li><b>Planner tab:</b> type the base network and prefix, add the routers (1941, 2901 or 2911), then one <b>LAN</b> row per LAN and one <b>WAN</b> row per router-to-router link. Pick the router and port for each row. Check the Generated Subnet Table.</li>
           <li><b>Topology tab:</b> check the drawing: every router, LAN and link where you expect it, with its addresses. Click a router, then <b>Show CLI</b>.</li>
@@ -5144,6 +5130,7 @@ line vty 0 4
       if (!['init', 'routers', 'routing'].includes(appState.ui.leftTab)) appState.ui.leftTab = 'routers';
       if (!['all', 'initial', 'interfaces', 'dhcp', 'routing', 'acls', 'verify'].includes(appState.ui.cliFilter)) appState.ui.cliFilter = 'all';
       if (appState.ui.cliComments === undefined) appState.ui.cliComments = true;
+      if (typeof appState.ui.examPanelOpen !== 'boolean') appState.ui.examPanelOpen = true;
       if (appState.ui.cliChunks === undefined) appState.ui.cliChunks = true;
       if (!CHUNK_SIZES.includes(Number(appState.ui.chunkSize))) appState.ui.chunkSize = 15;
       appState.ui.chunkSize = Number(appState.ui.chunkSize);
@@ -7238,7 +7225,7 @@ line vty 0 4
           ${appState.exam ? `
             <div class="field-group">
               <label class="field-label" for="rtScenario">Exam routing scenario</label>
-              <select id="rtScenario">${Object.entries(ROUTING_SCENARIOS).map(([k, v]) => `<option value="${k}" ${appState.exam.scenario === k ? 'selected' : ''} ${v.isp && !getRouterById('r_isp') ? 'disabled' : ''}>${escapeHtml(v.label)}${v.isp && !getRouterById('r_isp') ? ' (rebuild with Exam preset to add the ISP)' : ''}</option>`).join('')}</select>
+              <select id="rtScenario">${Object.entries(ROUTING_SCENARIOS).map(([k, v]) => `<option value="${k}" ${appState.exam.scenario === k ? 'selected' : ''} ${v.isp && !getRouterById('r_isp') ? 'disabled' : ''}>${escapeHtml(v.label)}${v.isp && !getRouterById('r_isp') ? ' (add the ISP in Exam setup, Planner tab)' : ''}</option>`).join('')}</select>
               <div class="text-muted" style="font-size:13.5px;">${escapeHtml((ROUTING_SCENARIOS[appState.exam.scenario] || ROUTING_SCENARIOS.s1).where)} Edge must run RIPv2 on its link to R2 in every scenario, or R2 has no RIP neighbour and learns nothing.</div>
             </div>` : ''}
           <div class="redist-summary">
@@ -7442,7 +7429,7 @@ line vty 0 4
         ${ic.dualStack ? `
           <div class="sub-card">
             <div class="sub-card-header"><span>IPv6 Routing (all routers)</span></div>
-            <div class="text-muted" style="font-size:13.5px;">Pick <b>Same as IPv4</b> to get <span class="mono">ipv6 router eigrp</span> / <span class="mono">ipv6 router rip</span>; <b>Auto static</b> writes only <span class="mono">ipv6 route</span> lines. Also in Exam preset.</div>
+            <div class="text-muted" style="font-size:13.5px;">Pick <b>Same as IPv4</b> to get <span class="mono">ipv6 router eigrp</span> / <span class="mono">ipv6 router rip</span>; <b>Auto static</b> writes only <span class="mono">ipv6 route</span> lines. Also in Exam setup (Planner tab).</div>
             <div class="seg-control" style="display:grid; grid-template-columns:repeat(3, 1fr);">
               <button type="button" class="seg-btn rt-v6mode ${v6Mode === 'static' ? 'active' : ''}" data-v6mode="static">Auto static</button>
               <button type="button" class="seg-btn rt-v6mode ${v6Mode === 'ripng' ? 'active' : ''}" data-v6mode="ripng">RIPng</button>
@@ -9209,19 +9196,34 @@ line vty 0 4
       showToast(`Exam network built for G${o.g} S${o.s}: ${appState.addressing.baseIp}/20. Everything stays editable.`);
     }
 
-    function examDialogHtml(o, mode) {
+    /** One line for the closed panel: what the open project is set to. */
+    function examPanelSummary() {
+      const a = appState.addressing;
+      if (!appState.exam) return 'This project is not the exam network. Open to build it, or only fill the address bases from G# and S#.';
+      const sc = ROUTING_SCENARIOS[appState.exam.scenario];
+      const routing = sc && scenarioMatches(appState.exam.scenario) ? sc.label : 'routing changed by hand';
+      const v6 = { match: 'IPv6 same as IPv4', static: 'IPv6 auto static', ripng: 'IPv6 RIPng' }[appState.initConfig.ipv6Routing] || '';
+      const acls = appState.security.rules.some(isExamRule) ? 'exam ACLs on' : 'exam ACLs off';
+      return `<b>G${escapeHtml(a.examG)} S${escapeHtml(a.examS)}</b> · <span class="mono">${escapeHtml(a.baseIp)}/${escapeHtml(a.baseCidr)}</span> · ${escapeHtml(routing)} · ${v6} · ${acls}`;
+    }
+
+    function examPanelHtml(o, mode) {
       const b = examBases(o.g, o.s);
       const upd = mode === 'update';
       const sc = ROUTING_SCENARIOS[o.scenario] || null;
+      const open = appState.ui.examPanelOpen !== false;
       return `
-        <form method="dialog" class="exam-form" id="examForm">
           <div class="exam-head">
-            <h2>${upd ? 'Exam settings · CPE 3105 final assessment' : 'Exam preset · CPE 3105 final assessment'}</h2>
-            <p>${upd
-              ? '<b>Update this project</b> changes only what you change here (numbers, host counts, routing, ISP, passwords) and keeps your own routers, LANs, PCs, rules and ticks. <b>Build fresh</b> throws the project away and starts again from the PDF.'
-              : 'Builds Edge, Main, R1, R2, R3 with their LANs, WAN links, DHCP on Edge, IPv6 per LAN, routing and the ACLs. It replaces the open project (save it first if you need it). Everything stays editable.'}</p>
+            <div class="exam-head-text">
+              <h2>Exam setup · CPE 3105 final assessment</h2>
+              <p id="exIntro" ${open ? '' : 'hidden'}>${upd
+                ? 'Change anything below, then <b>Update this project</b>: it changes only what you changed and keeps your own routers, LANs, PCs, rules and ticks. <b>Build fresh</b> starts again from the PDF.'
+                : 'This project is not the exam network. <b>Build the exam network</b> makes Edge, Main, R1, R2, R3 with their LANs, WAN links, DHCP on Edge, IPv6 per LAN, routing and the ACLs. It replaces the open project (save it first if you need it). Everything stays editable.'}</p>
+              <p class="exam-summary" id="exSummary" ${open ? 'hidden' : ''}>${examPanelSummary()}</p>
+            </div>
+            <button type="button" class="btn btn-sm" id="exToggle" aria-expanded="${open}">${open ? 'Hide' : 'Show exam setup'}</button>
           </div>
-          <div class="exam-body">
+          <div class="exam-body" ${open ? '' : 'hidden'}>
             <fieldset class="exam-set">
               <legend>1 · Group and student number</legend>
               <div class="row-2">
@@ -9268,13 +9270,14 @@ line vty 0 4
             </fieldset>` : ''}
             <div class="exam-err" id="exErr" hidden></div>
           </div>
-          <div class="exam-foot">
-            <button type="button" class="btn" id="exCancel">Cancel</button>
+          <div class="exam-foot" ${open ? '' : 'hidden'}>
+            <span class="exam-dirty" id="exDirty" hidden>Not applied yet</span>
+            <button type="button" class="btn" id="exCancel" title="Put back the values of the open project">Undo my edits</button>
             ${upd ? `<button type="button" class="btn" id="exFresh" title="Throws the open project away (click twice)">Build fresh</button>
             <button type="button" class="btn btn-primary" id="exUpdate">Update this project</button>`
-              : '<button type="button" class="btn btn-primary" id="exBuild">Build the exam network</button>'}
-          </div>
-        </form>`;
+              : `<button type="button" class="btn" id="exFill" title="Set the IPv4 and IPv6 bases from G# and S#; keeps the open project">Only fill the address bases</button>
+            <button type="button" class="btn btn-primary" id="exBuild">Build the exam network</button>`}
+          </div>`;
     }
 
     function examDenyRowsHtml(denies) {
@@ -9310,20 +9313,21 @@ line vty 0 4
 
     const EXAM_CUSTOM_ROUTING = 'Your link protocols no longer match one scenario (you changed them by hand). Update keeps them exactly as they are; pick a scenario to reset the links to it.';
 
-    function openExamPresetDialog() {
-      let dlg = document.getElementById('examDialog');
-      if (!dlg) {
-        dlg = document.createElement('dialog');
-        dlg.id = 'examDialog';
-        dlg.className = 'exam-dialog';
-        dlg.setAttribute('aria-label', 'Exam preset');
-        document.body.appendChild(dlg);
-      }
+    // Values typed in the panel but not applied yet: a re-render (tab switch, VLSM edit) must not wipe them.
+    // Tied to the project object, so opening another project or the Sample Lab starts clean.
+    let examPanelDirty = false;
+    let examPanelFor = null;
+
+    function renderExamPanel(force) {
+      const dlg = document.getElementById('examPanel');
+      if (!dlg || !appState) return;
+      if (!force && examPanelDirty && examPanelFor === appState) return;
+      examPanelDirty = false;
       const mode = appState.exam ? 'update' : 'build';
       const o = Object.assign(defaultExamOptions(), appState.exam || {});
       o.hosts = Object.assign({}, defaultExamOptions().hosts, (appState.exam && appState.exam.hosts) || {});
       if (mode === 'update') {
-        // Start from the live project: numbers and host counts may have been edited on the Addressing tab
+        // Start from the live project: numbers and host counts may have been edited in the VLSM table
         const a = appState.addressing;
         if (/^\d$/.test(a.examG)) o.g = a.examG;
         if (/^\d$/.test(a.examS)) o.s = a.examS;
@@ -9342,7 +9346,13 @@ line vty 0 4
         o.acl = spec;
         o.acls = appState.security.rules.some(isExamRule) || !!(appState.exam && appState.exam.acl && o.acls);
       }
-      dlg.innerHTML = examDialogHtml(o, mode);
+      dlg.innerHTML = examPanelHtml(o, mode);
+      dlg.classList.toggle('is-closed', appState.ui.examPanelOpen === false);
+      const markDirty = () => {
+        examPanelDirty = true;
+        examPanelFor = appState;
+        dlg.querySelector('#exDirty').hidden = false;
+      };
       const val = id => dlg.querySelector(`#${id}`).value.trim();
       const ticked = cls => [...dlg.querySelectorAll(`.${cls}:checked`)].map(x => x.value);
       const readDenies = () => [...dlg.querySelectorAll('.exam-deny')].map(row => ({
@@ -9359,6 +9369,7 @@ line vty 0 4
         const box = dlg.querySelector('#exDenies');
         if (!box) return;
         box.querySelectorAll('.ex-ddel').forEach((btn, i) => btn.addEventListener('click', () => {
+          markDirty();
           const list = readDenies();
           list.splice(i, 1);
           box.innerHTML = examDenyRowsHtml(list);
@@ -9367,6 +9378,7 @@ line vty 0 4
       };
       wireDenies();
       dlg.querySelector('#exAddDeny')?.addEventListener('click', () => {
+        markDirty();
         const box = dlg.querySelector('#exDenies');
         const lans = getAllLans();
         const list = readDenies();
@@ -9387,8 +9399,34 @@ line vty 0 4
         const aclBox = dlg.querySelector('#exAclBox');
         if (aclBox) aclBox.hidden = !cur.acls;
       };
-      dlg.querySelectorAll('input, select').forEach(el => el.addEventListener(el.tagName === 'SELECT' ? 'change' : 'input', refresh));
-      dlg.querySelector('#exCancel').addEventListener('click', () => dlg.close());
+      // Delegated, so denied-pair rows added later also count as edits. Properties, not addEventListener:
+      // the panel element stays while its contents are re-rendered, and listeners would pile up.
+      dlg.oninput = () => { markDirty(); refresh(); };
+      dlg.onchange = () => { markDirty(); refresh(); };
+      dlg.querySelector('#exCancel').addEventListener('click', () => {
+        renderExamPanel(true);
+        showToast('Exam setup reset to the open project');
+      });
+      dlg.querySelector('#exToggle').addEventListener('click', () => {
+        const open = appState.ui.examPanelOpen === false;
+        appState.ui.examPanelOpen = open;
+        dlg.classList.toggle('is-closed', !open);
+        ['.exam-body', '.exam-foot', '#exIntro'].forEach(sel => { dlg.querySelector(sel).hidden = !open; });
+        dlg.querySelector('#exSummary').hidden = open;
+        if (!open) dlg.querySelector('#exSummary').innerHTML = examPanelSummary();
+        const t = dlg.querySelector('#exToggle');
+        t.textContent = open ? 'Hide' : 'Show exam setup';
+        t.setAttribute('aria-expanded', String(open));
+      });
+      dlg.querySelector('#exFill')?.addEventListener('click', () => {
+        const cur = read();
+        const b = examBases(cur.g, cur.s);
+        if (!b.ok) return showToast('Type one digit (0 to 9) for G# and for S#');
+        Object.assign(appState.addressing, { baseIp: b.ipv4, baseCidr: 20, ipv6Base: `${b.ipv6}/64`, ipv6StartHex: '1', examG: String(cur.g), examS: String(cur.s) });
+        examPanelDirty = false;
+        refreshAddressingUI();
+        showToast(`Bases set: ${b.ipv4}/20 and ${b.ipv6}/64. Your routers and LANs are unchanged.`);
+      });
       const checked = () => {
         const cur = read();
         const err = dlg.querySelector('#exErr');
@@ -9403,14 +9441,14 @@ line vty 0 4
       };
       const build = cur => {
         if (!ROUTING_SCENARIOS[cur.scenario]) cur.scenario = ROUTING_SCENARIOS[(appState.exam || {}).scenario] ? appState.exam.scenario : 's1';
-        dlg.close();
+        examPanelDirty = false;
         applyExamPreset(cur);
       };
       dlg.querySelector('#exBuild')?.addEventListener('click', () => { const cur = checked(); if (cur) build(cur); });
       dlg.querySelector('#exUpdate')?.addEventListener('click', () => {
         const cur = checked();
         if (!cur) return;
-        dlg.close();
+        examPanelDirty = false;
         updateExamProject(cur);
       });
       const fresh = dlg.querySelector('#exFresh');
@@ -9425,8 +9463,6 @@ line vty 0 4
         }
         build(cur);
       });
-      if (typeof dlg.showModal === 'function') dlg.showModal(); else dlg.setAttribute('open', '');
-      dlg.querySelector('#exG').focus();
     }
 
     /* ---- Checklist: rubric A-G, built from the project ---- */
@@ -9668,7 +9704,7 @@ line vty 0 4
         <div class="doc-intro ck-intro">
           <h2>Exam checklist</h2>
           <p>The rubric in exam order. Each step says what to paste on which router and how to prove it works. Click a <code class="cmd">highlighted command</code> to copy it. Ticks are saved with the project.</p>
-          ${!appState.exam ? '<p class="ck-hint">This project was not built with the exam preset. The steps still follow your routers. For the CPE 3105 network, click <b>Exam preset</b> at the top.</p>' : ''}
+          ${!appState.exam ? '<p class="ck-hint">This project was not built with the exam setup. The steps still follow your routers. For the CPE 3105 network, use <b>Exam setup</b> at the top of the Planner tab.</p>' : ''}
           <div class="ck-overall" role="group" aria-label="Overall progress">
             <div class="ck-bar" aria-hidden="true"><span style="width:${pct}%"></span></div>
             <div class="ck-overall-text"><b>${pct}%</b> of the steps ticked${next ? ` · next: <a href="#ck-${escapeHtml(next.it.id)}">${escapeHtml(next.s.key)} · ${escapeHtml(next.it.title)}</a>` : ' · all done'}</div>
@@ -9781,9 +9817,6 @@ line vty 0 4
       document.getElementById('addrBaseIp').value = addr.baseIp;
       document.getElementById('addrBaseCidr').value = addr.baseCidr;
       document.getElementById('addrIpv6Base').value = addr.ipv6Base;
-      document.getElementById('addrExamG').value = addr.examG;
-      document.getElementById('addrExamS').value = addr.examS;
-      updateExamWorking();
       document.getElementById('addrIpv6Start').value = addr.ipv6StartHex;
       document.getElementById('flsmValueInput').value = addr.flsmValue;
 
@@ -9801,17 +9834,7 @@ line vty 0 4
       renderDeviceList();
       renderVlsmReqList();
       computeAddressingSubnets();
-    }
-
-    /** The G#/S# working on the Addressing tab (12G.2S.224.0/20 and 200G:DBS:ACAD::/64). */
-    function updateExamWorking() {
-      const el = document.getElementById('addrExamWorking');
-      if (!el) return;
-      const a = appState.addressing;
-      const b = examBases(a.examG, a.examS);
-      el.innerHTML = b.ok
-        ? `G = ${escapeHtml(a.examG)}, S = ${escapeHtml(a.examS)}: <span class="mono">12G.2S.224.0/20</span> → <b class="mono">${b.ipv4}/20</b> · <span class="mono">200G:DBS:ACAD::/64</span> → <b class="mono">${b.ipv6}/64</b>`
-        : (a.examG || a.examS ? '<span class="exam-bad">One digit each (0 to 9).</span>' : 'Type your group and student numbers: IPv4 <span class="mono">12G.2S.224.0/20</span>, IPv6 <span class="mono">200G:DBS:ACAD::/64</span>.');
+      renderExamPanel();
     }
 
     /* =========================================================================
@@ -10003,7 +10026,6 @@ line vty 0 4
       document.getElementById('mainTabHelp').addEventListener('click', () => switchMainTab('help'));
       document.getElementById('mainTabTrouble').addEventListener('click', () => switchMainTab('trouble'));
       document.getElementById('mainTabChecklist').addEventListener('click', () => switchMainTab('checklist'));
-      document.getElementById('btnExamPreset').addEventListener('click', openExamPresetDialog);
 
       // Help pages: click a command to copy it; section links scroll without changing the address
       document.addEventListener('click', e => {
@@ -10093,21 +10115,6 @@ line vty 0 4
           ...cidrWorkRows().map(r => [r.name, r.hosts, `2^${r.h} - 2 = ${r.fit}`, `/${r.cidr}`, r.mask, r.block, r.net, r.bcast].join('\t'))
         ];
         copyTextToClipboard(lines.join('\n'), 'CIDR working copied (paste into Word or Excel)');
-      });
-      ['addrExamG', 'addrExamS'].forEach(id => document.getElementById(id).addEventListener('input', e => {
-        appState.addressing[id === 'addrExamG' ? 'examG' : 'examS'] = e.target.value.trim();
-        updateExamWorking();
-      }));
-      document.getElementById('btnExamFill').addEventListener('click', () => {
-        const a = appState.addressing;
-        const b = examBases(a.examG, a.examS);
-        if (!b.ok) return showToast('Type one digit (0 to 9) for G# and for S#');
-        a.baseIp = b.ipv4;
-        a.baseCidr = 20;
-        a.ipv6Base = `${b.ipv6}/64`;
-        a.ipv6StartHex = '1';
-        refreshAddressingUI();
-        showToast(`Bases set: ${b.ipv4}/20 and ${b.ipv6}/64`);
       });
       document.getElementById('addrBaseIp').addEventListener('input', e => {
         appState.addressing.baseIp = e.target.value;
@@ -10625,7 +10632,8 @@ line vty 0 4
       }
       try {
         applyExamPreset(defaultExamOptions());
-        showToast('CPE 3105 exam loaded (G1 S1). Click Exam preset to type your own numbers.');
+        switchMainTab('addressing'); // first open: start where the numbers are typed
+        showToast('CPE 3105 exam loaded (G1 S1). Type your own numbers in Exam setup, then Update this project.');
       } catch (err) {
         refreshAddressingUI();
         renderTopologyWorkspace();
