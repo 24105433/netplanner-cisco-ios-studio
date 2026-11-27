@@ -1082,6 +1082,7 @@
     .pc-row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.6fr) auto; gap: 6px; align-items: center; }
     .pc-hint { font-size: 13px; color: var(--text-secondary); margin: 0 0 4px 2px; }
     .pc-hint.bad { color: var(--rose); }
+    .doc-card h4.ws-h { margin: 18px 0 6px; padding-top: 10px; border-top: 1px solid var(--border); text-transform: none; letter-spacing: 0; font-family: var(--font-label); font-size: 17px; font-weight: 600; color: var(--accent-ink); }
 
     /* Exam preset dialog */
     .exam-dialog { margin: auto; inset: 0; border: 1px solid var(--border-strong); border-radius: 12px; padding: 0; width: min(680px, calc(100% - 32px)); max-height: calc(100vh - 32px); background: var(--bg-surface); color: var(--text-primary); box-shadow: 0 18px 50px rgba(20, 24, 31, 0.28); }
@@ -1838,6 +1839,7 @@ line vty 0 4
           <a href="#h-cables">Cables</a>
           <a href="#h-pc">PC setup</a>
           <a href="#h-cli">IOS basics</a>
+          <a href="#h-wireshark">Wireshark (Part IV)</a>
         </nav>
       </div>
 
@@ -1984,6 +1986,64 @@ line vty 0 4
               <tr><td>Test</td><td><code class="cmd">ping 192.168.10.1</code> · <code class="cmd">ping -6 2001:db8:acad:1::1</code> · <code class="cmd">tracert 192.168.20.10</code> · <code class="cmd">nslookup</code></td></tr>
               <tr><td>SSH / Telnet</td><td><code class="cmd">ssh admin@192.168.10.1</code> (Windows 10/11) or PuTTY with Connection type SSH. Telnet needs the Telnet Client feature, or PuTTY → Telnet.</td></tr>
               <tr><td>Firewall</td><td>Windows Firewall blocks replies to ping, so PC-to-PC pings fail even when routing works. Lab fix (Command Prompt as administrator):<br><code class="cmd">netsh advfirewall firewall add rule name="Allow ICMPv4" protocol=icmpv4:8,any dir=in action=allow</code><br><code class="cmd">netsh advfirewall firewall add rule name="Allow ICMPv6" protocol=icmpv6:128,any dir=in action=allow</code></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="card doc-card" id="h-wireshark">
+        <h3>Wireshark (Part IV): ICMP, Telnet and SSH</h3>
+        <p class="doc-note" style="margin-top:0;">Three captures, all on a PC: a ping between two LANs, a Telnet login and an SSH login. A switch only sends a PC its own traffic, so capture on the PC that pings or logs in.</p>
+
+        <h4 class="ws-h">Before you start</h4>
+        <ol class="doc-steps">
+          <li>Open Wireshark and double-click the <b>Ethernet</b> adapter (the one with a moving line). Not Wi-Fi, not "Adapter for loopback traffic".</li>
+          <li>Let the PCs answer pings: Windows Firewall drops them. Run the two <code>netsh</code> lines in <a href="#h-pc">PC setup → Firewall</a> as administrator on <b>both</b> PCs.</li>
+          <li>Pick pairs the ACLs allow, or capture <b>before</b> you paste the ACLs. With the exam ACLs: ping <b>Downtown ↔ Laboratories</b> (rule d allows it), Telnet from <b>PC0, PC2 or PC4</b>, SSH from <b>PC8 or PC9</b> to Edge. The <b>7. Checklist</b> tab (section G) names allowed pairs from your own rules.</li>
+          <li>The Wireshark <b>display filter</b> is the green bar above the packet list: type the filter, press Enter. Green = valid, red = typo.</li>
+        </ol>
+
+        <h4 class="ws-h">1 · ICMP: Echo request and reply</h4>
+        <ol class="doc-steps">
+          <li>Start the capture (blue fin), filter <code class="cmd">icmp</code>.</li>
+          <li>Command Prompt: <code>ping &lt;IP of a PC in the other LAN&gt;</code>, e.g. <code class="cmd">ping 121.21.224.2</code>.</li>
+          <li>Stop (red square). Click an <b>Echo (ping) request</b> line. In the middle pane open:
+            <b>Internet Protocol Version 4</b> → Source and Destination;
+            <b>Internet Control Message Protocol</b> → <b>Type: 8 (Echo (ping) request)</b>.</li>
+          <li>Click the matching <b>Echo (ping) reply</b>: <b>Type: 0</b>, and Source/Destination are swapped. Same Identifier and Sequence number = the pair.</li>
+          <li>Screenshot both, then <b>File → Save As</b> <span class="mono">icmp.pcapng</span>.</li>
+        </ol>
+        <p class="doc-note">Only requests, no replies? The other PC's firewall, or an ACL that blocks the reply (ACLs tab → Packet tester). Filters to narrow it down: <code class="cmd">icmp.type == 8</code> · <code class="cmd">icmp.type == 0</code> · <code>ip.addr == 121.21.224.2</code>.</p>
+
+        <h4 class="ws-h">2 · Telnet: the password in clear text</h4>
+        <ol class="doc-steps">
+          <li>Windows has no Telnet client until you turn it on (as administrator): <code class="cmd">dism /online /Enable-Feature /FeatureName:TelnetClient</code>. Or use PuTTY with Connection type <b>Telnet</b>.</li>
+          <li>Start the capture, filter <code class="cmd">telnet</code>.</li>
+          <li>From an allowed PC: <code>telnet &lt;router IP&gt;</code>, type the password, run <code class="cmd">show ip interface brief</code>, then <code class="cmd">exit</code>.</li>
+          <li>Stop. Right-click any Telnet packet → <b>Follow → TCP Stream</b>. The window shows the whole session as text: the <b>Password:</b> prompt and the password you typed (your keystrokes in one colour, the router's in another).</li>
+          <li>Screenshot the stream window, save <span class="mono">telnet.pcapng</span>.</li>
+        </ol>
+        <p class="doc-note">Each typed character is its own small packet, which is why the password also shows letter by letter in the packet list (Data field).</p>
+
+        <h4 class="ws-h">3 · SSH: the same login, encrypted</h4>
+        <ol class="doc-steps">
+          <li>Start the capture, filter <code class="cmd">ssh</code> (or <code class="cmd">tcp.port == 22</code>).</li>
+          <li>From an allowed PC: <code>ssh -l admin &lt;router IP&gt;</code>, accept the key (yes), type the password, <code class="cmd">show ip interface brief</code>, <code class="cmd">exit</code>.</li>
+          <li>Stop. Follow → TCP Stream. Only the version lines are readable (<span class="mono">SSH-2.0-Cisco-1.25</span> and the PC's); after the <b>Key Exchange</b> packets everything is random bytes. In the packet list the lines say <b>Encrypted packet</b>.</li>
+          <li>Screenshot, save <span class="mono">ssh.pcapng</span>.</li>
+        </ol>
+        <p class="doc-note">Windows ssh says "no matching key exchange method" or "no matching host key type"? Older IOS offers older algorithms. Try:<br><code class="cmd">ssh -oKexAlgorithms=+diffie-hellman-group14-sha1 -oHostKeyAlgorithms=+ssh-rsa -l admin 121.21.225.5</code><br>(change the IP), or log in with PuTTY (Connection type SSH). "Connection refused": SSH is not on (<code class="cmd">show ip ssh</code>) or the login ACL refused this PC.</p>
+
+        <h4 class="ws-h">What to point out</h4>
+        <div class="doc-table-wrap">
+          <table class="doc-table">
+            <thead><tr><th></th><th>Telnet</th><th>SSH</th></tr></thead>
+            <tbody>
+              <tr><td>Port</td><td class="mono">TCP 23</td><td class="mono">TCP 22</td></tr>
+              <tr><td>VTY lines in this lab</td><td class="mono">line vty 0 4</td><td class="mono">line vty 5 15</td></tr>
+              <tr><td>Follow TCP Stream</td><td>Readable: prompts, password, commands, output</td><td>Version banner, then unreadable</td></tr>
+              <tr><td>Password on the wire</td><td>Plain text: anyone on the path can read it</td><td>Encrypted with the session key</td></tr>
+              <tr><td>Router side</td><td><code>password</code> + <code>login</code>, <code>transport input telnet</code></td><td><code>ip domain-name</code>, <code>crypto key generate rsa</code>, <code>username … secret …</code>, <code>login local</code>, <code>transport input ssh</code></td></tr>
             </tbody>
           </table>
         </div>
@@ -8941,17 +9001,17 @@ line vty 0 4
         key: 'G', title: 'Wireshark', points: 10,
         items: [
           {
-            id: 'G-icmp', title: 'ICMP: capture a ping between two LANs',
+            id: 'G-icmp', title: 'ICMP: capture a ping between two LANs', help: 'h-wireshark',
             detail: `Start the capture on the PC's Ethernet adapter, display filter <code class="cmd">icmp</code>, then ping. Show Echo (ping) request <b>type 8</b> and reply <b>type 0</b> with source and destination IPs.${pair ? ` The ACLs allow ${escapeHtml(pair.a.lan.name)} → ${escapeHtml(pair.b.lan.name)}:` : ''}`,
             pc: pair ? [`ping ${aclSampleHost(pair.b.lan)}`] : []
           },
           {
-            id: 'G-telnet', title: 'Telnet: the password is plain text',
+            id: 'G-telnet', title: 'Telnet: the password is plain text', help: 'h-wireshark',
             detail: `Capture a Telnet login${telnet ? ` (${escapeHtml(telnet.who)} to ${escapeHtml(host(telnet.router))})` : ''}, filter <code class="cmd">telnet</code>, right-click a packet → Follow → TCP Stream. The password shows in clear text.`,
             pc: telnet && telnet.router ? [`telnet ${mgmt(telnet.router)}`] : []
           },
           {
-            id: 'G-ssh', title: 'SSH: the same login is encrypted',
+            id: 'G-ssh', title: 'SSH: the same login is encrypted', help: 'h-wireshark',
             detail: `Capture an SSH login${ssh ? ` (${escapeHtml(ssh.who)} to ${escapeHtml(host(ssh.router))})` : ''}, filter <code class="cmd">ssh</code>, Follow → TCP Stream. After the key exchange it is unreadable.`,
             pc: ssh && ssh.router ? [`ssh -l ${user} ${mgmt(ssh.router)}`] : []
           }
@@ -9009,6 +9069,7 @@ line vty 0 4
                     ${it.detail ? `<p class="ck-detail">${it.detail}</p>` : ''}
                     ${it.open || ''}
                     ${it.tab ? `<button class="btn btn-sm ck-tab" type="button" data-tab="${it.tab}">Open the ${it.tab === 'acls' ? 'ACLs' : 'Addressing'} tab</button>` : ''}
+                    ${it.help ? `<button class="btn btn-sm ck-help" type="button" data-help="${it.help}">Full steps: Help · Wireshark</button>` : ''}
                     ${cmdsHtml('Check on the router', it.cmds)}
                     ${cmdsHtml('On the PC (Command Prompt)', it.pc)}
                   </div>
@@ -9029,6 +9090,10 @@ line vty 0 4
         switchMainTab('topology');
       }));
       root.querySelectorAll('.ck-tab').forEach(btn => btn.addEventListener('click', () => switchMainTab(btn.dataset.tab)));
+      root.querySelectorAll('.ck-help').forEach(btn => btn.addEventListener('click', () => {
+        switchMainTab('help');
+        requestAnimationFrame(() => document.getElementById(btn.dataset.help)?.scrollIntoView({ block: 'start' }));
+      }));
       document.getElementById('ckPrint').addEventListener('click', () => window.print());
       document.getElementById('ckReset').addEventListener('click', () => {
         const btn = document.getElementById('ckReset');
