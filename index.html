@@ -1453,7 +1453,7 @@
         <div class="grid-5" style="align-items:end;">
           <div class="field-group">
             <label id="flsmInputLabel" class="field-label" for="flsmValueInput">Required Subnets</label>
-            <input id="flsmValueInput" class="mono" type="number" min="1" value="4" />
+            <input id="flsmValueInput" class="mono" type="number" min="1" value="" />
           </div>
           <div class="stat-box">
             <div class="stat-label">New CIDR</div>
@@ -1477,14 +1477,15 @@
 
       <div id="panelVlsm" class="card">
         <div class="card-title">
-          <span>VLSM Requirements (Auto-Sorted Largest to Smallest)</span>
+          <span>Subnet rows (LANs and WAN links)</span>
           <div style="display:flex; gap:8px; flex-wrap:wrap;">
             <button id="btnAddVlsmLan" class="btn btn-primary btn-sm" type="button">+ Add LAN Subnet</button>
-            <button id="btnAddVlsmWan" class="btn btn-cyan btn-sm" type="button">+ Add /30 WAN Link</button>
+            <button id="btnAddVlsmWan" class="btn btn-cyan btn-sm" type="button">+ Add WAN link</button>
             <button id="btnResetVlsm" class="btn btn-sm" type="button">Reset Defaults</button>
           </div>
         </div>
 
+        <p id="vlsmModeNote" class="text-muted" style="margin:0 0 10px; font-size:14.5px;"></p>
         <div class="grid-4" style="margin-bottom:12px;">
           <div class="stat-box">
             <div class="stat-label">Allocated Space</div>
@@ -1942,7 +1943,7 @@ line vty 0 4
               <tr class="doc-group"><td colspan="3">Planner tab</td></tr>
               <tr><td>Base Network IP</td><td class="mono">192.168.10.0</td><td>The block the task gives. Any address inside it works; the app shows the real network ID.</td></tr>
               <tr><td>Base Prefix</td><td class="mono">/24</td><td>Size of that block. Every subnet must fit inside it.</td></tr>
-              <tr><td>Mode</td><td>VLSM</td><td>VLSM sizes each subnet to its host count (largest first); FLSM makes equal-size subnets. Both are CIDR (classless /prefix). The <b>CIDR working</b> card under the subnet table shows the computation.</td></tr>
+              <tr><td>Mode</td><td>VLSM</td><td>Both modes size the same LAN and WAN rows, so routers and scripts follow either one. VLSM sizes each subnet to its host count (largest first); FLSM gives every row the same size (required subnets or hosts → borrowed bits → new mask → block size). Both are CIDR (classless /prefix). The <b>CIDR working</b> card under the subnet table shows the computation.</td></tr>
               <tr><td>Hosts (LAN row)</td><td class="mono">50</td><td>Usable addresses the LAN needs, <b>router gateway included</b>. If the task's count leaves out the router, add 1. The app picks the smallest block where hosts + 2 fits (e.g. 50 → /26, 62 usable).</td></tr>
               <tr><td>Hosts (WAN row)</td><td class="mono">2</td><td>A link between two routers is always a /30 (2 usable).</td></tr>
               <tr><td>Router · Port</td><td class="mono">Main · g0/0</td><td>LAN: the port facing the switch (gets the first usable IP). WAN: Router A gets the first IP, Router B the second. 2901 has g0/0–g0/1, 2911 has g0/0–g0/2; serial ports s0/x/x need an HWIC-2T card.</td></tr>
@@ -2497,7 +2498,7 @@ line vty 0 4
           baseIp: '198.15.224.0',
           baseCidr: 20,
           flsmBasis: 'subnets',
-          flsmValue: 4,
+          flsmValue: '',           // blank = from the subnet rows (count, or the biggest row)
           ipv6Base: '2001:db8:acad::/48',
           ipv6StartHex: '1',
           // Each VLSM row can be linked to a router port (LAN) or two router ports (WAN).
@@ -2661,6 +2662,9 @@ line vty 0 4
        ========================================================================= */
     const MAX_TABLE_ROWS = 512;
 
+    /** The FLSM steps of the last computation (for the CIDR working card), or null. */
+    let flsmWork = null;
+
     function computeAddressingSubnets() {
       const addr = appState.addressing;
       const baseInt = IPv4.toInt(addr.baseIp);
@@ -2693,38 +2697,47 @@ line vty 0 4
 
       const subnets = [];
 
+      flsmWork = null;
       if (addr.mode === 'flsm') {
-        const val = Number(addr.flsmValue);
-        if (!Number.isInteger(val) || val < 1) {
-          flsmErrEl.textContent = 'Enter a valid positive integer.';
-          flsmErrEl.classList.remove('hidden');
+        // FLSM, the way it is taught: required subnets (or hosts) -> borrowed bits -> new mask -> block size -> list all.
+        // With subnet rows, the rows give the number (blank box) and every row gets one of the equal subnets.
+        const fail = (msg, el = flsmErrEl) => {
+          el.textContent = msg;
+          el.classList.remove('hidden');
           addr.generatedSubnets = [];
           renderSubnetTable();
-          return;
+        };
+        const rows = [];
+        for (let i = 0; i < addr.vlsmReqs.length; i++) {
+          const r = addr.vlsmReqs[i];
+          const h = Number(r.hosts);
+          if (!Number.isInteger(h) || h < 1) return fail(`Row #${i + 1} ("${r.name || 'Unnamed'}") requires at least 1 host.`, vlsmErrEl);
+          rows.push({ id: r.id, type: getReqType(r), name: (r.name || `Subnet ${i + 1}`).trim(), hosts: h });
         }
+        rows.sort((a, b) => b.hosts - a.hosts); // same order as VLSM, so the IPv6 /64 numbers stay put
+        const bySubnets = addr.flsmBasis === 'subnets';
+        const biggest = rows[0];
+        const input = document.getElementById('flsmValueInput');
+        if (input) input.placeholder = rows.length ? (bySubnets ? `${rows.length} (your rows)` : `${biggest.hosts} (biggest row)`) : '';
+        const typed = String(addr.flsmValue === undefined || addr.flsmValue === null ? '' : addr.flsmValue).trim();
+        const val = typed === '' ? null : Number(typed);
+        if (typed !== '' && (!Number.isInteger(val) || val < 1)) return fail('Type a whole number, or leave the box empty to use your subnet rows.');
+        if (val === null && !rows.length) return fail(`Type the required ${bySubnets ? 'number of subnets' : 'hosts per subnet'}, or add LAN and WAN rows below.`);
+        const need = val !== null ? val : (bySubnets ? rows.length : biggest.hosts);
+        if (rows.length && val !== null && bySubnets && val < rows.length) return fail(`You have ${rows.length} subnet rows, so you need at least ${rows.length} subnets. Leave the box empty to use the rows.`);
+        if (rows.length && val !== null && !bySubnets && val < biggest.hosts) return fail(`${biggest.name} needs ${biggest.hosts} hosts, so each subnet needs at least that many. Leave the box empty to use the biggest row.`);
 
-        let newCidr, borrowed;
-        if (addr.flsmBasis === 'subnets') {
-          borrowed = val === 1 ? 0 : Math.ceil(Math.log2(val));
-          newCidr = addr.baseCidr + borrowed;
-          if (newCidr > 30) {
-            flsmErrEl.textContent = `Cannot create ${val.toLocaleString()} usable subnets from /${addr.baseCidr}. Max usable subnets (up to /30) is ${Math.pow(2, 30 - addr.baseCidr).toLocaleString()}.`;
-            flsmErrEl.classList.remove('hidden');
-            addr.generatedSubnets = [];
-            renderSubnetTable();
-            return;
-          }
+        const baseCidr = Number(addr.baseCidr);
+        let newCidr, borrowed, hostBits = 0;
+        if (bySubnets) {
+          borrowed = need === 1 ? 0 : Math.ceil(Math.log2(need));
+          newCidr = baseCidr + borrowed;
+          if (newCidr > 30) return fail(`Cannot make ${need.toLocaleString()} subnets from /${baseCidr}: at most ${Math.pow(2, 30 - baseCidr).toLocaleString()} (down to /30).`);
         } else {
-          const hostBits = Math.max(2, Math.ceil(Math.log2(val + 2)));
+          hostBits = Math.max(2, Math.ceil(Math.log2(need + 2)));
           newCidr = 32 - hostBits;
-          borrowed = newCidr - addr.baseCidr;
-          if (newCidr < addr.baseCidr) {
-            flsmErrEl.textContent = `A /${addr.baseCidr} network only supports up to ${(baseTotal - 2).toLocaleString()} usable hosts.`;
-            flsmErrEl.classList.remove('hidden');
-            addr.generatedSubnets = [];
-            renderSubnetTable();
-            return;
-          }
+          borrowed = newCidr - baseCidr;
+          if (newCidr < baseCidr) return fail(`A /${baseCidr} block only holds ${(baseTotal - 2).toLocaleString()} usable hosts in one subnet.`);
         }
 
         const totalSubnets = Math.pow(2, borrowed);
@@ -2738,20 +2751,35 @@ line vty 0 4
         document.getElementById('flsmStatSubnets').textContent = totalSubnets.toLocaleString();
         document.getElementById('flsmStatHosts').textContent = usable.toLocaleString();
 
-        const limit = Math.min(totalSubnets, MAX_TABLE_ROWS);
-        if (totalSubnets > MAX_TABLE_ROWS) {
-          capWarnEl.textContent = `Showing first ${MAX_TABLE_ROWS} of ${totalSubnets.toLocaleString()} subnets to keep the UI instant.`;
+        if (rows.length > totalSubnets) return fail(`${rows.length} subnet rows do not fit: /${newCidr} only makes ${totalSubnets} subnets. Use Required Subnets, or a bigger block.`);
+        const tooBig = rows.find(r => r.hosts > usable);
+        if (tooBig) return fail(`${tooBig.name} needs ${tooBig.hosts} hosts, but each /${newCidr} gives only ${usable}. Switch to Required Hosts / Subnet, or use a bigger block.`);
+
+        const used = rows.length * blockSize;
+        document.getElementById('vlsmStatUsed').textContent = `${used.toLocaleString()} / ${baseTotal.toLocaleString()}`;
+        document.getElementById('vlsmStatRemain').textContent = `${(baseTotal - used).toLocaleString()} IPs`;
+        document.getElementById('vlsmStatPct').textContent = `${((used / baseTotal) * 100).toFixed(1)}%`;
+        const bar = document.getElementById('vlsmProgressBar');
+        bar.style.width = `${Math.min(100, (used / baseTotal) * 100)}%`;
+        bar.classList.remove('overflow');
+
+        const limit = Math.max(rows.length, Math.min(totalSubnets, MAX_TABLE_ROWS));
+        if (totalSubnets > limit) {
+          capWarnEl.textContent = `Showing first ${limit} of ${totalSubnets.toLocaleString()} subnets to keep the UI instant.`;
           capWarnEl.classList.remove('hidden');
         }
+        flsmWork = { bySubnets, need, fromRows: val === null && rows.length > 0, rows: rows.length, biggest, borrowed, hostBits, newCidr, mask, blockSize, usable, totalSubnets, baseCidr };
 
         for (let i = 0; i < limit; i++) {
           const net = (normInt + i * blockSize) >>> 0;
           const bcast = (net + blockSize - 1) >>> 0;
+          const row = rows[i];
           subnets.push({
             id: `sub_${i + 1}`,
             index: i + 1,
-            name: `Subnet ${i + 1}`,
-            reqHosts: usable,
+            name: row ? row.name : (rows.length ? `Spare ${i + 1}` : `Subnet ${i + 1}`),
+            ...(row ? { reqId: row.id, reqType: row.type } : {}),
+            reqHosts: row ? row.hosts : usable,
             netIp: IPv4.fromInt(net),
             cidr: newCidr,
             mask,
@@ -2858,7 +2886,7 @@ line vty 0 4
 
       // Push VLSM device links (LAN ports / WAN router pairs) into the topology
       syncIspSummary();
-      if (addr.mode === 'vlsm') applyVlsmLinksToTopology();
+      applyVlsmLinksToTopology(); // both modes: the rows keep their routers, only the sizes differ
       renderSubnetTable();
       updateVlsmRowHints();
       updateVlsmLinkedStat();
@@ -3020,6 +3048,43 @@ line vty 0 4
       return { cidr, net: IPv4.fromInt(net), mask: IPv4.cidrToMask(cidr), total, last: IPv4.fromInt((net + total - 1) >>> 0), netInt: net };
     }
 
+    /** "+2 in the 3rd octet": how a block size shows up in dotted decimal. */
+    function blockIncrement(cidr) {
+      const octet = Math.min(4, Math.max(1, Math.ceil(cidr / 8)));
+      return { octet, step: Math.pow(2, octet * 8 - cidr), word: ['1st', '2nd', '3rd', '4th'][octet - 1] };
+    }
+
+    /** FLSM working, in the order it is taught: required -> borrowed bits -> new mask -> block size -> ranges -> all subnets. */
+    function flsmWorkHtml(blk, cls, firstOctet) {
+      const w = flsmWork;
+      const a = appState.addressing;
+      const pow = n => `2<sup>${n}</sup>`;
+      const inc = blockIncrement(w.newCidr);
+      const subs = a.generatedSubnets;
+      const shown = subs.slice(0, 64);
+      const src = w.fromRows ? (w.bySubnets ? ' (your subnet rows)' : ` (${escapeHtml(w.biggest.name)}, the biggest row)`) : ' (typed)';
+      return `
+        <div class="cw-step">The block: <b class="mono">${escapeHtml(blk.net)}/${blk.cidr}</b> → ${pow(32 - blk.cidr)} = <b>${blk.total.toLocaleString()}</b> addresses, <span class="mono">${escapeHtml(blk.net)}</span> to <span class="mono">${escapeHtml(blk.last)}</span>.
+          ${cls && cls[1] !== blk.cidr ? `<div class="cw-note">CIDR is classless: ${firstOctet}.x is class ${cls[0]} (/${cls[1]}), but the given prefix /${blk.cidr} is what counts.</div>` : ''}</div>
+        <div class="cw-step"><b class="cw-n">1.</b> Required ${w.bySubnets ? 'subnets' : 'hosts per subnet'}: <b>${w.need.toLocaleString()}</b>${src}.</div>
+        <div class="cw-step"><b class="cw-n">2.</b> Borrowed bits: ${w.bySubnets
+          ? `smallest <i>s</i> with ${pow('s')} ≥ ${w.need} → <b>s = ${w.borrowed}</b> (${pow(w.borrowed)} = ${w.totalSubnets.toLocaleString()} subnets).`
+          : `host bits: smallest <i>h</i> with ${pow('h')} − 2 ≥ ${w.need} → h = ${w.hostBits}; <b>s = 32 − ${w.baseCidr} − ${w.hostBits} = ${w.borrowed}</b> (${pow(w.borrowed)} = ${w.totalSubnets.toLocaleString()} subnets).`}</div>
+        <div class="cw-step"><b class="cw-n">3.</b> New subnet mask: /${w.baseCidr} + ${w.borrowed} = <b class="mono">/${w.newCidr}</b> → <b class="mono">${w.mask}</b>.</div>
+        <div class="cw-step"><b class="cw-n">4.</b> Block size (increment): ${pow(32 - w.newCidr)} = <b>${w.blockSize.toLocaleString()}</b> addresses → the network number goes up by <b>${inc.step}</b> in the ${inc.word} octet. Each subnet has ${pow(32 - w.newCidr)} − 2 = <b>${w.usable.toLocaleString()}</b> usable hosts${w.rows ? `; the biggest row needs ${w.biggest.hosts}` : ''}.</div>
+        <div class="cw-step"><b class="cw-n">5.</b> Network and broadcast ranges, and <b class="cw-n">6.</b> all subnets${w.rows ? ` (the ${w.rows} rows take the first ${w.rows}, largest first; the rest are spare)` : ''}:</div>
+        <div class="table-scroll-wrap"><table class="data-table">
+          <thead><tr><th>#</th><th>Network</th><th>First usable</th><th>Last usable</th><th>Broadcast</th><th>Used by</th></tr></thead>
+          <tbody>${shown.map(s => `<tr>
+            <td>${s.index}</td><td class="mono">${escapeHtml(s.netIp)}/${s.cidr}</td><td class="mono">${escapeHtml(s.firstUsable)}</td>
+            <td class="mono">${escapeHtml(s.lastUsable)}</td><td class="mono">${escapeHtml(s.broadcast)}</td>
+            <td class="name-col">${s.reqId ? `${escapeHtml(s.name)} <span class="text-muted">(${Number(s.reqHosts).toLocaleString()} hosts)</span>` : '<span class="text-muted">spare</span>'}</td>
+          </tr>`).join('')}</tbody>
+        </table></div>
+        ${w.totalSubnets > shown.length ? `<div class="cw-note">${(w.totalSubnets - shown.length).toLocaleString()} more subnets follow the same way, every ${inc.step} in the ${inc.word} octet.</div>` : ''}
+        <div class="cw-step">Used ${w.rows ? `<b>${(w.rows * w.blockSize).toLocaleString()}</b>` : '0'} of ${blk.total.toLocaleString()} addresses (${w.rows} × ${w.blockSize.toLocaleString()}). IPv6: each row still gets its own /64 from <span class="mono">${escapeHtml(a.ipv6Base)}</span>, the same numbers as in VLSM.</div>`;
+    }
+
     function renderCidrWork() {
       const card = document.getElementById('cidrWorkCard');
       const body = document.getElementById('cidrWorkBody');
@@ -3027,10 +3092,15 @@ line vty 0 4
       const a = appState.addressing;
       const rows = cidrWorkRows();
       const blk = cidrWorkBlock();
-      card.classList.toggle('hidden', a.mode !== 'vlsm' || !rows.length || !blk);
-      if (a.mode !== 'vlsm' || !rows.length || !blk) return;
+      const flsm = a.mode === 'flsm';
+      const show = !!blk && rows.length > 0 && (!flsm || !!flsmWork);
+      card.classList.toggle('hidden', !show);
+      const title = card.querySelector('.table-toolbar strong');
+      if (title) title.textContent = flsm ? 'CIDR working (FLSM)' : 'CIDR working (VLSM)';
+      if (!show) return;
       const firstOctet = Number(blk.net.split('.')[0]);
       const cls = firstOctet < 128 ? ['A', 8] : firstOctet < 192 ? ['B', 16] : firstOctet < 224 ? ['C', 24] : null;
+      if (flsm) { body.innerHTML = flsmWorkHtml(blk, cls, firstOctet); return; }
       const used = rows.reduce((n, r) => n + r.block, 0);
       const lastB = IPv4.toInt(rows[rows.length - 1].bcast);
       const nextFree = lastB !== null && used < blk.total ? IPv4.fromInt((lastB + 1) >>> 0) : '';
@@ -3099,12 +3169,11 @@ line vty 0 4
 
     function syncPoolToTopology(showNotification) {
       const pool = appState.addressing.generatedSubnets;
-      const vlsm = appState.addressing.mode === 'vlsm';
       let lanCount = 0;
       let linkCount = 0;
-      // VLSM mode: a linked LAN/link follows its VLSM row (not the sorted subnet position).
-      // FLSM (equal size) mode has no rows, so everything matches by subnet number instead.
-      const findFor = item => (vlsm && item.vlsmReqId)
+      // A LAN/link made from a subnet row follows that row in both modes (not the sorted position);
+      // anything picked from the pool by hand matches by subnet number.
+      const findFor = item => item.vlsmReqId
         ? pool.find(s => s.reqId === item.vlsmReqId)
         : (item.subnetId ? pool.find(s => s.id === item.subnetId) : null);
 
@@ -3121,7 +3190,7 @@ line vty 0 4
       appState.links.forEach(lnk => {
         const m = findFor(lnk);
         if (!m) return;
-        if (!(vlsm && lnk.vlsmReqId) && m.cidr !== 30) return; // plain links only take /30 subnets
+        if (!lnk.vlsmReqId && m.cidr !== 30) return; // plain links only take /30 subnets
         applySubnetToLink(lnk, m);
         linkCount++;
       });
@@ -3529,9 +3598,7 @@ line vty 0 4
       const badge = document.getElementById('deviceCountBadge');
       const help = document.getElementById('deviceHelpText');
       if (help) {
-        help.textContent = appState.addressing.mode === 'vlsm'
-          ? 'These are the same routers shown in the Topology and Configure & CLI tabs. Attach subnets to their ports in the VLSM table below.'
-          : 'These are the same routers shown in the Topology and Configure & CLI tabs. Linking subnets to router ports works in VLSM mode; in FLSM (equal size) mode, attach LANs in the Configure & CLI tab.';
+        help.textContent = 'These are the same routers shown in the Topology and Configure & CLI tabs. Attach subnets to their ports in the subnet rows below (VLSM or FLSM).';
       }
       if (!list) return;
       const n = appState.routers.length;
@@ -5110,6 +5177,11 @@ line vty 0 4
         if (a[k] === undefined || a[k] === null) a[k] = d.addressing[k];
       });
       if (a.mode !== 'flsm') a.mode = 'vlsm';
+      // FLSM's box used to default to 4; blank now means "from the rows", so drop that old default once
+      if (a.flsmRowsV !== 1) {
+        if (Number(a.flsmValue) === 4 && Array.isArray(a.vlsmReqs) && a.vlsmReqs.length) a.flsmValue = '';
+        a.flsmRowsV = 1;
+      }
       if (a.flsmBasis !== 'hosts') a.flsmBasis = 'subnets';
       a.baseCidr = Math.min(30, Math.max(8, Number(a.baseCidr) || 24));
       if (!Array.isArray(a.vlsmReqs)) a.vlsmReqs = [];
@@ -9804,12 +9876,15 @@ line vty 0 4
       document.getElementById('btnModeFlsm').classList.toggle('active', isFlsm);
       document.getElementById('btnModeVlsm').classList.toggle('active', !isFlsm);
       document.getElementById('panelFlsm').classList.toggle('hidden', !isFlsm);
-      document.getElementById('panelVlsm').classList.toggle('hidden', isFlsm);
+      document.getElementById('panelVlsm').classList.remove('hidden'); // the rows drive both modes
+      document.getElementById('vlsmModeNote').textContent = isFlsm
+        ? 'FLSM: every row gets the same subnet size (set in the FLSM card above). Rows keep their routers and ports.'
+        : 'VLSM: each row gets the smallest subnet that fits its hosts, largest first.';
 
       const isSub = addr.flsmBasis === 'subnets';
       document.getElementById('btnFlsmSubnets').classList.toggle('active', isSub);
       document.getElementById('btnFlsmHosts').classList.toggle('active', !isSub);
-      document.getElementById('flsmInputLabel').textContent = isSub ? 'Required Subnets' : 'Required Hosts / Subnet';
+      document.getElementById('flsmInputLabel').textContent = `${isSub ? 'Required Subnets' : 'Required Hosts / Subnet'}${addr.vlsmReqs.length ? ' (empty = from the rows)' : ''}`;
 
       renderDeviceList();
       renderVlsmReqList();
@@ -10089,6 +10164,20 @@ line vty 0 4
       document.getElementById('btnCopyCidrWork').addEventListener('click', () => {
         const blk = cidrWorkBlock();
         if (!blk) return;
+        if (appState.addressing.mode === 'flsm' && flsmWork) {
+          const w = flsmWork;
+          const fl = [
+            `Block\t${blk.net}/${blk.cidr}\t2^${32 - blk.cidr} = ${blk.total} addresses\t${blk.net} - ${blk.last}`,
+            `1. Required ${w.bySubnets ? 'subnets' : 'hosts'}\t${w.need}`,
+            `2. Borrowed bits\ts = ${w.borrowed}\t2^${w.borrowed} = ${w.totalSubnets} subnets`,
+            `3. New mask\t/${w.newCidr}\t${w.mask}`,
+            `4. Block size\t${w.blockSize}\t+${blockIncrement(w.newCidr).step} in the ${blockIncrement(w.newCidr).word} octet\t${w.usable} usable hosts`,
+            ['#', 'Network', 'First usable', 'Last usable', 'Broadcast', 'Used by'].join('\t'),
+            ...appState.addressing.generatedSubnets.map(s => [s.index, `${s.netIp}/${s.cidr}`, s.firstUsable, s.lastUsable, s.broadcast, s.reqId ? s.name : 'spare'].join('\t'))
+          ];
+          copyTextToClipboard(fl.join('\n'), 'FLSM working copied (paste into Word or Excel)');
+          return;
+        }
         const lines = [
           `Block\t${blk.net}/${blk.cidr}\tmask ${blk.mask}\t2^${32 - blk.cidr} = ${blk.total} addresses\t${blk.net} - ${blk.last}`,
           ['Subnet', 'Hosts needed', '2^h - 2 >= hosts', 'Prefix', 'Mask', 'Block', 'Network', 'Broadcast'].join('\t'),
