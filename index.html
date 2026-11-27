@@ -1082,6 +1082,10 @@
     .pc-row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.6fr) auto; gap: 6px; align-items: center; }
     .pc-hint { font-size: 13px; color: var(--text-secondary); margin: 0 0 4px 2px; }
     .pc-hint.bad { color: var(--rose); }
+    .redist-summary { display: flex; flex-direction: column; gap: 6px; padding: 8px 10px; border: 1px solid var(--border); border-radius: 6px; background: var(--amber-soft); }
+    .redist-router { font-size: 14px; }
+    .redist-line { font-size: 13px; margin: 2px 0 0 10px; line-height: 1.45; overflow-wrap: anywhere; }
+    .redist-line .text-muted { display: block; font-family: var(--font-sans); }
     .exam-strip { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 10px 16px; padding: 12px 16px; }
     .exam-strip .field-group { width: 92px; }
     .exam-strip-title { font-family: var(--font-label); font-weight: 600; font-size: 17px; align-self: center; }
@@ -3809,6 +3813,7 @@ line vty 0 4
       if (rt.ripng === undefined) rt.ripng = false;
       if (rt.stubDefault === undefined) rt.stubDefault = true;
       if (rt.autoStatics === undefined) rt.autoStatics = true; // false = only the routes typed by hand
+      if (typeof rt.defaultOut !== 'string') rt.defaultOut = ''; // '' | 'null0' | a link id: default route out of the network
       if (typeof rt.routerId !== 'string') rt.routerId = '';
       return rt;
     }
@@ -3921,6 +3926,16 @@ line vty 0 4
           add(l.netIp, l.mask, hop, `WAN link ${n1}-${n2}`);
           add6(l.ipv6Prefix, hop, `WAN link ${n1}-${n2}`);
         });
+      }
+      // Default route out of the network (e.g. Edge to the ISP, or to Null0 when there is no ISP)
+      if (rt.defaultOut && !statics.some(s => s.net === '0.0.0.0' && s.mask === '0.0.0.0')) {
+        const via = rt.defaultOut === 'null0' ? null : myLinks.find(m => m.lnk.id === rt.defaultOut);
+        if (rt.defaultOut === 'null0' || via) {
+          statics.unshift({
+            net: '0.0.0.0', mask: '0.0.0.0', nextHop: via ? via.nextHop : 'Null0', defaultOut: true,
+            why: via ? `default route out, to ${via.peer ? via.peer.hostname : 'the peer'}` : 'default route out (Null0: no ISP here; drops traffic for unknown networks)'
+          });
+        }
       }
       const parsedCustoms = (rt.customStatics || []).map(cs => customRouteLine(cs));
       const customs = parsedCustoms.filter(c => !c.error && c.fam === '4');
@@ -5386,11 +5401,17 @@ line vty 0 4
         routing.push(`! Border router: runs ${planRunsList(plan).map(p => PROTO_LABEL[p]).join(' + ')}, so it redistributes between them`);
       }
 
-      if (plan.statics.length) {
-        routing.push(plan.statics[0].net === '0.0.0.0' && plan.isStub
+      const dOut = plan.statics.find(s => s.defaultOut);
+      if (dOut) {
+        routing.push(`! Default route out of the network; the routing protocols pass it on (show ip route: S* 0.0.0.0/0)`);
+        routing.push(`ip route 0.0.0.0 0.0.0.0 ${dOut.nextHop}`);
+      }
+      const restStatics = plan.statics.filter(s => !s.defaultOut);
+      if (restStatics.length) {
+        routing.push(restStatics[0].net === '0.0.0.0' && plan.isStub
           ? `! Stub router: one default route covers every remote network`
           : `! Static routes for networks reached through a static link`);
-        plan.statics.forEach(s => routing.push(`ip route ${s.net} ${s.mask} ${s.nextHop}`));
+        restStatics.forEach(s => routing.push(`ip route ${s.net} ${s.mask} ${s.nextHop}`));
       }
       if (plan.customs.length) routing.push(`! Static routes typed by hand`);
       plan.customs.forEach(c => routing.push(c.line));
@@ -6988,6 +7009,21 @@ line vty 0 4
             `).join('')}
           </div>
           ${warnings.map(w => `<div class="alert alert-warn" style="margin-top:0;">${escapeHtml(w)}</div>`).join('')}
+          ${appState.exam ? `
+            <div class="field-group">
+              <label class="field-label" for="rtScenario">Exam routing scenario</label>
+              <select id="rtScenario">${Object.entries(ROUTING_SCENARIOS).map(([k, v]) => `<option value="${k}" ${appState.exam.scenario === k ? 'selected' : ''} ${v.isp && !getRouterById('r_isp') ? 'disabled' : ''}>${escapeHtml(v.label)}${v.isp && !getRouterById('r_isp') ? ' (rebuild with Exam preset to add the ISP)' : ''}</option>`).join('')}</select>
+              <div class="text-muted" style="font-size:13.5px;">${escapeHtml((ROUTING_SCENARIOS[appState.exam.scenario] || ROUTING_SCENARIOS.s1).where)} Edge must run RIPv2 on its link to R2 in every scenario, or R2 has no RIP neighbour and learns nothing.</div>
+            </div>` : ''}
+          <div class="redist-summary">
+            <div class="field-label">Where redistribution happens</div>
+            ${plans.filter(p => p.border).map(p => `
+              <div class="redist-router">
+                <b>${escapeHtml(sanitizeHostname(p.router.hostname))}</b> <span class="text-muted">runs ${planRunsList(p).map(x => PROTO_LABEL[x]).join(' + ')}</span>
+                ${p.dynamic.map(dp => (p.redist[dp] || []).map(x => `<div class="redist-line"><span class="mono">router ${dp === 'ripv2' ? 'rip' : dp === 'eigrp' ? `eigrp ${escapeHtml(ids.eigrp)}` : `ospf ${escapeHtml(ids.ospf)}`} → ${escapeHtml(x.cmd)}</span> <span class="text-muted">${escapeHtml(x.why)}</span></div>`).join('')).join('')}
+              </div>`).join('') || '<div class="text-muted" style="font-size:13.5px;">Nowhere: no router runs two routing sources.</div>'}
+            <div class="text-muted" style="font-size:13px;">Check it on the router with <code class="cmd">show ip protocols</code> (look for "Redistributing").</div>
+          </div>
           <label class="checkbox-row" style="font-size:14px;">
             <input type="checkbox" id="rtPassiveLan" ${ic.passiveLan !== false ? 'checked' : ''} />
             <span><span class="mono">passive-interface</span> on LAN ports (no routing updates sent to PCs)</span>
@@ -7089,6 +7125,15 @@ line vty 0 4
               <span>One way out (stub router): use a single default route</span>
             </label>
           ` : ''}
+          <div class="field-group">
+            <label class="field-label" for="rtDefaultOut">Default route out (0.0.0.0/0) from ${name}</label>
+            <select id="rtDefaultOut" class="mono">
+              <option value="" ${!rt.defaultOut ? 'selected' : ''}>Off</option>
+              <option value="null0" ${rt.defaultOut === 'null0' ? 'selected' : ''}>ip route 0.0.0.0 0.0.0.0 Null0 (no ISP)</option>
+              ${plan.myLinks.map(m => `<option value="${m.lnk.id}" ${rt.defaultOut === m.lnk.id ? 'selected' : ''}>via ${escapeHtml(m.nextHop)} (${escapeHtml(m.peer ? sanitizeHostname(m.peer.hostname) : '?')}, ${escapeHtml(m.myIf)})</option>`).join('')}
+            </select>
+            <div class="text-muted" style="font-size:13px;">For the router at the edge of the network (Edge). EIGRP gets it by <span class="mono">redistribute static</span>, RIP by <span class="mono">default-information originate</span>. Never point two routers' defaults at each other: unknown traffic would bounce between them.</div>
+          </div>
           ${plan.staticLinks.length ? `
             <label class="checkbox-row" style="font-size:14px;">
               <input type="checkbox" id="rtAutoStatics" ${rt.autoStatics !== false ? 'checked' : ''} />
@@ -7248,6 +7293,14 @@ line vty 0 4
         inp.addEventListener('change', () => renderTopologyWorkspace());
       });
 
+      const dOutSel = document.getElementById('rtDefaultOut');
+      if (dOutSel) dOutSel.addEventListener('change', e => { rt.defaultOut = e.target.value; renderTopologyWorkspace(); });
+      const scSel = document.getElementById('rtScenario');
+      if (scSel) scSel.addEventListener('change', e => {
+        applyRoutingScenario(e.target.value);
+        renderTopologyWorkspace();
+        showToast(`Routing scenario: ${ROUTING_SCENARIOS[e.target.value].label}`);
+      });
       const autoCb = document.getElementById('rtAutoStatics');
       if (autoCb) autoCb.addEventListener('change', e => { rt.autoStatics = e.target.checked; renderTopologyWorkspace(); });
       const stubCb = document.getElementById('rtStubDefault');
@@ -8584,7 +8637,7 @@ line vty 0 4
       },
       s2: {
         label: 'S2 · S1 plus an ISP router', links: { r1main: 'eigrp', mainedge: 'eigrp', edger2: 'ripv2', edger3: 'static', edgeisp: 'static' }, isp: true,
-        where: 'As S1. Edge also reaches the ISP by a static link; the ISP has one static route back to the whole block.'
+        where: 'As S1. Edge has its default route to the ISP and passes it on (EIGRP: redistribute static, RIP: default-information originate); the ISP has one static route back to the whole block.'
       },
       s3: {
         label: 'S3 · Main is the border', links: { r1main: 'eigrp', mainedge: 'ripv2', edger2: 'ripv2', edger3: 'static' }, isp: false,
@@ -8592,7 +8645,7 @@ line vty 0 4
       },
       s4: {
         label: 'S4 · Static Main–Edge link', links: { r1main: 'eigrp', mainedge: 'static', edger2: 'ripv2', edger3: 'static' }, isp: false,
-        where: "Main has static routes to Edge's side and puts them into EIGRP for R1. Edge has static routes to Registrar and Finance and puts them into RIP for R2."
+        where: "Main has static routes to Edge's side and puts them into EIGRP for R1. Edge has static routes to Registrar and Finance and puts them into RIP for R2. Both use specific routes, never a default pointing at each other, so unknown traffic cannot bounce between them."
       }
     };
     const EXAM_LANS = [
@@ -8685,6 +8738,9 @@ line vty 0 4
         if (sc.links[key]) lk.protocol = sc.links[key];
       });
       const isp = getRouterById('r_isp');
+      const edgeR = getRouterById('r_edge');
+      // The PDF lists Edge under "default static route": S* 0.0.0.0/0, to the ISP if there is one
+      if (edgeR) edgeR.routing.defaultOut = isp && appState.links.some(l => l.id === 'lnk_v_edgeisp') ? 'lnk_v_edgeisp' : 'null0';
       if (isp) {
         // The ISP knows the whole block through Edge (one summary route)
         isp.routing.stubDefault = false;
@@ -8721,6 +8777,19 @@ line vty 0 4
           block('dt', 'fin', '(d) Downtown denied to Finance')
         ].filter(Boolean);
       }
+    }
+
+    /** Sets the link protocols of a preset-built network to one scenario (keeps everything else). */
+    function applyRoutingScenario(key) {
+      const sc = ROUTING_SCENARIOS[key];
+      if (!sc || (sc.isp && !getRouterById('r_isp'))) return;
+      appState.links.forEach(lk => {
+        const k = String(lk.vlsmReqId || '').replace(/^v_/, '');
+        if (sc.links[k]) lk.protocol = sc.links[k];
+      });
+      const edge = getRouterById('r_edge');
+      if (edge) normalizeRouting(edge).domain = sc.links.mainedge === 'eigrp' ? 'eigrp' : 'ripv2';
+      if (appState.exam) appState.exam.scenario = key;
     }
 
     function applyExamPreset(o) {
@@ -8987,7 +9056,7 @@ line vty 0 4
           ...plans.map(p => {
             const r = p.router;
             const runs = planRunsList(p).map(x => PROTO_LABEL[x]).join(' + ') || 'nothing yet';
-            const expect = p.isStub && p.statics.length ? 'S* 0.0.0.0/0 (the default route)'
+            const expect = (p.isStub && p.statics.length) || p.statics.some(s => s.defaultOut) ? `S* 0.0.0.0/0 (the default route)${p.dynamic.length ? ' plus D/R routes from its protocols' : ''}`
               : [p.dynamic.includes('eigrp') ? 'D routes (and D EX for networks from other protocols)' : '', p.dynamic.includes('ripv2') ? 'R routes' : '', p.statics.length ? 'S routes' : ''].filter(Boolean).join(', ');
             return {
               id: `E-${r.id}`, title: `${host(r)}: paste the Routing part (${runs})`,
