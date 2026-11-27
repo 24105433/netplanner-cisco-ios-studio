@@ -1072,6 +1072,7 @@
     .acl-rule-head select { width: auto; padding: 2px 6px; font-size: 13.5px; }
     .acl-router-picks { display: flex; flex-wrap: wrap; gap: 4px 14px; padding: 8px 10px; margin-top: 6px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg-input); }
     .acl-router-picks .checkbox-row { margin: 0; }
+    .acl-replies-row { font-size: 14px; color: var(--text-secondary); }
     .vty-split-note { padding: 6px 10px; border: 1px solid var(--border); border-radius: 6px; background: var(--accent-soft); color: var(--accent-ink); font-size: 14px; line-height: 1.5; }
     .acl-router {
       border: 1px solid var(--border);
@@ -3836,12 +3837,14 @@ line vty 0 4
       const s = appState.security;
       if (s.mode !== 'standard') s.mode = 'extended';          // type for NEW rules
       if (s.permitRest === undefined) s.permitRest = true;
+      if (s.loginHoles === undefined) s.loginHoles = true; // login exceptions above LAN blocks
       if (s.naming !== 'named') s.naming = 'numbered';          // automatic IDs: 100 / 10 or EXT_G0_0_IN
       if (!s.aclIds || typeof s.aclIds !== 'object') s.aclIds = {}; // typed ACL numbers/names, by port
       if (!Array.isArray(s.rules)) s.rules = [];
       s.rules.forEach(r => {
         if (!Array.isArray(r.dstRouterIds)) r.dstRouterIds = r.dstRouterId ? [r.dstRouterId] : [];
         if (!['all', 'telnet', 'ssh'].includes(r.loginLines)) r.loginLines = 'all';
+        r.allowReplies = r.allowReplies === true; // older rules: off, so their ACLs stay as they were
         // Older projects had one type for every rule
         if (r.aclType !== 'standard' && r.aclType !== 'extended') {
           r.aclType = r.dstType === 'router' || s.mode === 'standard' ? 'standard' : 'extended';
@@ -4026,6 +4029,7 @@ line vty 0 4
       toks.push({ t: line.proto, r: 'proto' }, ...ep(src, 'src'), ...ep(dst, 'dst'));
       if (line.proto === 'icmp' && line.icmpType) toks.push({ t: line.icmpType, r: 'port' });
       if ((line.proto === 'tcp' || line.proto === 'udp') && line.port) toks.push({ t: 'eq', r: 'port' }, { t: line.port, r: 'port' });
+      if (line.proto === 'tcp' && line.established) toks.push({ t: 'established', r: 'port' });
       return toks;
     }
 
@@ -4271,6 +4275,46 @@ line vty 0 4
         };
       };
 
+      // Lines that let replies through a block: the other side may still start the conversation
+      const replyLinesFor = it => {
+        const out = [];
+        it.lines.forEach(line => {
+          if (line.proto === 'ip' || (line.proto === 'tcp' && !line.port)) out.push({ proto: 'tcp', established: true });
+          if (line.proto === 'ip' || (line.proto === 'icmp' && !line.icmpType)) out.push({ proto: 'icmp', icmpType: 'echo-reply' });
+        });
+        return out;
+      };
+      // Login exceptions: a PC that a login rule allows into a router must still reach that router's
+      // own IPs when a LAN block below would stop it (host to host, that port only)
+      const loginPorts = v => (v.loginKind === 'telnet' ? ['23'] : v.loginKind === 'ssh' ? ['22']
+        : ({ telnet: ['23'], ssh: ['22'], both: ['22', '23'], split: ['22', '23'] }[appState.initConfig.vtyMode] || []));
+      const routerOwnIps = r => [
+        ...r.lans.map(l => l.gatewayIp),
+        ...routerLinks(r.id).map(l => (l.r1Id === r.id ? l.ip1 : l.ip2))
+      ].filter(ip => IPv4.toInt(ip) !== null);
+      const loginHolesFor = it => {
+        if (sec.loginHoles === false || it.rule.action !== 'deny') return [];
+        const out = [];
+        vtyList.forEach(v => {
+          const r = getRouterById(v.routerId);
+          if (!r) return;
+          v.items.filter(p => p.rule.action === 'permit' && p.src.kind === 'host').forEach(p => {
+            if (p.src.lo < it.src.lo || p.src.hi > it.src.hi) return;
+            routerOwnIps(r).forEach(ip => {
+              const n = IPv4.toInt(ip);
+              if (n < it.dst.lo || n > it.dst.hi) return;
+              loginPorts(v).forEach(port => {
+                if (!it.lines.some(l => lineOverlaps(l, { proto: 'tcp', port }))) return;
+                const key = `${p.src.lo}|${n}|${port}`;
+                if (out.some(o => o.key === key)) return;
+                out.push({ key, src: p.src, ip, n, port, router: r, ruleNo: p.idx + 1 });
+              });
+            });
+          });
+        });
+        return out;
+      };
+
       // 5. Write the lines; warn when an earlier line already matches a later rule
       groups.forEach(g => {
         const host = getRouterById(g.routerId)?.hostname || '?';
@@ -4298,6 +4342,45 @@ line vty 0 4
             if (!inf.warnings.includes(msg)) inf.warnings.push(msg);
           }
           g.entries.push({ kind: 'remark', text: remarkFor(it), ruleIdx: it.idx });
+          if (it.rule.action === 'deny' && !asStd && !stdInExt) {
+            loginHolesFor(it).forEach(h => {
+              const hostEp = { kind: 'host', label: h.ip, ip: h.ip, lo: h.n, hi: h.n };
+              const line = { proto: 'tcp', port: h.port };
+              const toks = aceTokens('extended', 'permit', line, h.src, hostEp);
+              const how = h.port === '23' ? 'Telnet' : 'SSH';
+              g.entries.push({
+                kind: 'ace', tokens: toks, text: toks.map(x => x.t).join(' '), action: 'permit', ruleIdx: it.idx, auto: true,
+                explain: `Login exception: ${epText(h.src)} may ${how} to ${sanitizeHostname(h.router.hostname)}'s own address ${h.ip} (login rule #${h.ruleNo}). Without it, the block below stops that login.`,
+                match: { std: false, proto: 'tcp', srcLo: h.src.lo, srcHi: h.src.hi, dstLo: h.n, dstHi: h.n, port: h.port, icmpType: '' }
+              });
+              const note = `Login exception above this block: ${epText(h.src)} → ${sanitizeHostname(h.router.hostname)} ${h.ip} (${how}), from login rule #${h.ruleNo}.`;
+              if (!inf.notes.includes(note)) inf.notes.push(note);
+            });
+            if (it.rule.allowReplies) {
+              const rl = replyLinesFor(it);
+              rl.forEach(line => {
+                const toks = aceTokens('extended', 'permit', line, it.src, dstUsed);
+                g.entries.push({
+                  kind: 'ace', tokens: toks, text: toks.map(x => x.t).join(' '), action: 'permit', ruleIdx: it.idx, auto: true,
+                  explain: line.proto === 'tcp'
+                    ? `Let ${epText(it.src)} answer TCP connections that ${epText(dstUsed)} started (established = replies only, never a new connection)`
+                    : `Let ${epText(it.src)} answer pings from ${epText(dstUsed)} (echo-reply only, not a new ping)`,
+                  match: {
+                    std: false, proto: line.proto, srcLo: it.src.lo, srcHi: it.src.hi, dstLo: dstUsed.lo, dstHi: dstUsed.hi,
+                    port: '', icmpType: line.icmpType || '', established: !!line.established
+                  }
+                });
+              });
+              if (rl.length) {
+                const n = `Replies allowed: ${epText(dstUsed)} can still start a connection or a ping to ${epText(it.src)}; only ${epText(it.src)} starting one is blocked.`;
+                if (!inf.notes.includes(n)) inf.notes.push(n);
+              } else {
+                inf.notes.push('Replies already pass: this block only matches new requests to that port, so "allow replies" adds nothing here.');
+              }
+            }
+          } else if (it.rule.action === 'deny' && it.rule.allowReplies) {
+            inf.warnings.push('A standard ACL cannot tell a reply from a new connection, so "allow replies" is ignored. Make this rule extended to use it.');
+          }
           it.lines.forEach(line => {
             const toks = aceTokens(g.type, it.rule.action, line, it.src, dstUsed);
             g.entries.push({
@@ -4383,6 +4466,13 @@ line vty 0 4
         else { const o = firstOtherLan(it.src.lan && it.src.lan.id); target = o ? aclSampleHost(o.lan) : '8.8.8.8'; }
         const d = lanChoice(it.dst) || { v: 'host', host: target };
         const where = inf.placeText.split(' (')[0];
+        if (it.rule.action === 'deny' && it.rule.allowReplies && !it.std && it.src.lan && it.dst.lan && replyLinesFor(it).length) {
+          tests.push({
+            rule: it.idx + 1, from: `a PC in ${it.dst.label}`, cmd: `ping ${aclSampleHost(it.src.lan)}`,
+            expect: `works (${it.dst.label} may start; replies are allowed)`,
+            tester: { src: `lan:${it.dst.lan.id}`, srcHost: '', dst: `lan:${it.src.lan.id}`, dstHost: '', dstRouterId: '', svc: 'ping', customProto: 'tcp', customPort: '' }
+          });
+        }
         tests.push({
           rule: it.idx + 1, from,
           cmd: it.std ? `ping ${target}` : aclTestCommand(it.rule, target),
@@ -4426,6 +4516,7 @@ line vty 0 4
       if (m.proto === 'ip') return true;
       if (m.proto !== p.proto) return false;
       if (m.proto === 'icmp') return !m.icmpType || m.icmpType === p.icmpType;
+      if (m.established && !p.established) return false; // only TCP segments with ACK or RST set (replies)
       return !m.port || String(m.port) === String(p.dport || '');
     }
 
@@ -4521,7 +4612,7 @@ line vty 0 4
       const request = runLeg(pkt, reqChecks);
       let reply = null;
       if (!router && request.allowed) {
-        const rp = { proto, src: dst.ip, dst: src.ip, dport: '', icmpType: proto === 'icmp' ? 'echo-reply' : '' };
+        const rp = { proto, src: dst.ip, dst: src.ip, dport: '', icmpType: proto === 'icmp' ? 'echo-reply' : '', established: proto === 'tcp' };
         const back = [];
         if (dLan) back.push(portCheck(dLan, 'in'));
         if (sLan) back.push(portCheck(sLan, 'out'));
@@ -6902,7 +6993,7 @@ line vty 0 4
       src: 'Source: who sends the packet (host X = one device, any = everyone)',
       dst: 'Destination: where the packet is going',
       wc: 'Wildcard mask: 0 = this part must match, 255 = any value',
-      port: 'Destination port (eq 80 = web) or ICMP type (echo = ping)',
+      port: 'Destination port (eq 80 = web), ICMP type (echo = ping, echo-reply = its answer) or established (TCP replies only)',
       kw: 'The ACL this line belongs to'
     };
 
@@ -6913,7 +7004,7 @@ line vty 0 4
       if (!aclDraft) {
         aclDraft = {
           action: 'deny', src: lanVal(0), srcHost: '', dst: lanVal(1), dstHost: '',
-          dstRouterId: appState.routers[0]?.id || '', dstRouterIds: appState.routers[0] ? [appState.routers[0].id] : [], loginLines: 'all', service: 'web',
+          dstRouterId: appState.routers[0]?.id || '', dstRouterIds: appState.routers[0] ? [appState.routers[0].id] : [], loginLines: 'all', allowReplies: true, service: 'web',
           aclType: sec.mode === 'standard' ? 'standard' : 'extended',
           customProto: 'tcp', customPort: '', placement: 'auto', note: ''
         };
@@ -6964,6 +7055,7 @@ line vty 0 4
         dstRouterId: vty ? ((d.dstRouterIds || [])[0] || '') : '',
         dstRouterIds: vty ? (d.dstRouterIds || []).filter(id => getRouterById(id)) : [],
         loginLines: vty && ['telnet', 'ssh'].includes(d.loginLines) ? d.loginLines : 'all',
+        allowReplies: !vty && !std && d.action === 'deny' && d.allowReplies !== false,
         aclType: std ? 'standard' : 'extended',
         service: std ? 'ip' : d.service,  // a standard ACL cannot pick a service
         customProto: d.customProto === 'udp' ? 'udp' : 'tcp', customPort: String(d.customPort || '').trim(),
@@ -7224,6 +7316,10 @@ line vty 0 4
                 <input type="checkbox" id="aclPermitRest" ${sec.permitRest ? 'checked' : ''} />
                 <span>End every ACL with <span class="mono">permit any</span> / <span class="mono">permit ip any any</span> (allow everything else)</span>
               </label>
+              <label class="checkbox-row" style="font-size:14.5px;">
+                <input type="checkbox" id="aclLoginHoles" ${sec.loginHoles !== false ? 'checked' : ''} />
+                <span>Login exceptions: when a login rule allows a PC into a router, let that PC reach the router's own IPs through LAN blocks (<span class="mono">permit tcp host PC host router eq 23</span>)</span>
+              </label>
               ${!sec.permitRest ? '<div class="acl-msg warn">⚠ Without it, the hidden deny any at the end of every ACL blocks everything you did not allow, including DHCP, DNS and ping replies.</div>' : ''}
               <div class="text-muted" style="font-size:13.5px;">Each rule can still be switched between standard and extended in the list below. If the task gives an ACL number or name, type it on the ACL itself (Generated ACLs).</div>
             </div>
@@ -7291,6 +7387,11 @@ line vty 0 4
                   </div>
                 ` : ''}
               `}
+              ${!isVtyDraft && !stdDraft && d.action === 'deny' ? `
+                <label class="checkbox-row acl-replies-row" style="margin-top:8px;">
+                  <input type="checkbox" id="aclDraftReplies" ${d.allowReplies !== false ? 'checked' : ''} />
+                  <span>Allow replies, so the other side can still start (adds <span class="mono">established</span> and <span class="mono">echo-reply</span> above the block)</span>
+                </label>` : ''}
               <input type="text" class="acl-draft-text" data-key="note" value="${escapeHtml(d.note)}" placeholder="Note for the report (optional), e.g. Objective (a)" style="margin-top:8px;" />
               <div class="acl-preview">
                 <div class="acl-preview-title">This rule becomes</div>
@@ -7325,6 +7426,8 @@ line vty 0 4
                       </span>
                     </div>
                     <div style="font-size:15px;">${escapeHtml(inf.sentence)}</div>
+                    ${!vtyRule && rule.action === 'deny' && rule.aclType !== 'standard' ? `
+                      <label class="checkbox-row acl-replies-row"><input type="checkbox" class="acl-rule-replies" data-idx="${i}" ${rule.allowReplies ? 'checked' : ''} /><span>Allow replies (the other side can still start)</span></label>` : ''}
                     ${rule.note ? `<div class="text-muted" style="font-size:13.5px;">${escapeHtml(rule.note)}</div>` : ''}
                     ${inf.placeText ? `<div class="mono" style="font-size:13.5px; color:var(--cyan);">→ ${escapeHtml(inf.placeText)}</div>` : ''}
                     ${inf.notes.map(n => `<div class="acl-msg note">${escapeHtml(n)}</div>`).join('')}
@@ -7473,6 +7576,15 @@ line vty 0 4
         showToast(`Rule #${sec.rules.length} added`);
       });
 
+      const draftReplies = document.getElementById('aclDraftReplies');
+      if (draftReplies) draftReplies.addEventListener('change', e => { d.allowReplies = e.target.checked; refreshPreview(); });
+      root.querySelectorAll('.acl-rule-replies').forEach(el => el.addEventListener('change', e => {
+        const rule = sec.rules[Number(el.dataset.idx)];
+        if (rule) rule.allowReplies = e.target.checked;
+        rerender();
+      }));
+      const holes = document.getElementById('aclLoginHoles');
+      if (holes) holes.addEventListener('change', e => { sec.loginHoles = e.target.checked; rerender(); });
       root.querySelectorAll('.acl-draft-router').forEach(el => el.addEventListener('change', () => {
         d.dstRouterIds = [...root.querySelectorAll('.acl-draft-router:checked')].map(x => x.value);
         rerender();
