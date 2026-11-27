@@ -8826,6 +8826,103 @@ line vty 0 4
       return ok ? { ipv4: `12${g}.2${s}.224.0`, ipv6: `200${g}:db${s}:acad::`, ok } : { ok };
     }
 
+    /** The optional ISP router of the exam: outside the network, a loopback that stands in for "the internet". */
+    function examIspRouter() {
+      return {
+        id: 'r_isp', hostname: 'ISP', model: '2911', linkLocal: '', lans: [], external: true,
+        loopbacks: [{ id: uid('lo'), name: 'lo0', ip: '8.8.8.8/32', ipv6: '2001:4860:4860::8888/128' }],
+        routing: { domain: 'static', ipv6Static: true, ripng: false, customStatics: [], stubDefault: true, routerId: '' }
+      };
+    }
+
+    /** ISP routing and Edge's default route, once the Edge-ISP link exists (or not). */
+    function examWireIsp() {
+      const isp = getRouterById('r_isp');
+      const edgeR = getRouterById('r_edge');
+      // The PDF lists Edge under "default static route": S* 0.0.0.0/0, to the ISP if there is one
+      if (edgeR) edgeR.routing.defaultOut = isp && appState.links.some(l => l.id === 'lnk_v_edgeisp') ? 'lnk_v_edgeisp' : 'null0';
+      if (isp) {
+        // The ISP knows the whole block through Edge (one summary route)
+        isp.routing.stubDefault = false;
+        isp.routing.autoStatics = false;
+        const row = appState.addressing.vlsmReqs.find(r => r.id === 'v_edgeisp');
+        isp.routing.customStatics = [{ fam: '4', dest: appState.addressing.baseIp, mask: IPv4.cidrToMask(appState.addressing.baseCidr), nextHop: '', exitIf: row ? row.r2If : 's0/0/0', ad: '' }];
+      }
+    }
+
+    /** True when every preset link still uses the protocol this scenario gives it. */
+    function scenarioMatches(key) {
+      const sc = ROUTING_SCENARIOS[key];
+      if (!sc || !!sc.isp !== !!getRouterById('r_isp')) return false;
+      return appState.links.every(lk => {
+        const k = String(lk.vlsmReqId || '').replace(/^v_/, '');
+        return !sc.links[k] || lk.protocol === sc.links[k];
+      });
+    }
+
+    /**
+     * Applies changed exam settings to the open project in place: numbers, host counts, passwords,
+     * routing scenario and the ISP. Added routers, LANs, PCs, rules and checklist ticks are kept.
+     */
+    function updateExamProject(o) {
+      const prev = Object.assign(defaultExamOptions(), appState.exam || {});
+      const a = appState.addressing;
+      const ic = appState.initConfig;
+      const changes = [];
+      if (String(o.g) !== String(a.examG) || String(o.s) !== String(a.examS) || examBases(o.g, o.s).ipv4 !== a.baseIp) {
+        const b = examBases(o.g, o.s);
+        Object.assign(a, { baseIp: b.ipv4, baseCidr: 20, ipv6Base: `${b.ipv6}/64`, ipv6StartHex: '1', examG: String(o.g), examS: String(o.s) });
+        changes.push(`G${o.g} S${o.s}: ${b.ipv4}/20`);
+      }
+      EXAM_LANS.forEach(l => {
+        const row = a.vlsmReqs.find(r => r.id === `v_${l.key}`);
+        if (row && o.hosts[l.key] !== undefined && Number(row.hosts) !== Number(o.hosts[l.key])) {
+          row.hosts = Number(o.hosts[l.key]);
+          changes.push(`${l.name} ${row.hosts} hosts`);
+        }
+      });
+      if (o.password !== prev.password) {
+        Object.assign(ic, { enableSecret: o.password, consolePwd: o.password, vtyPwd: o.password, sshPwd: o.password });
+        changes.push('password');
+      }
+      if (o.sshUser !== prev.sshUser) { ic.sshUser = o.sshUser; changes.push('SSH username'); }
+
+      const sc = ROUTING_SCENARIOS[o.scenario];
+      const applyScenario = sc && !scenarioMatches(o.scenario);
+      if (sc) {
+        const hasIsp = !!getRouterById('r_isp');
+        if (sc.isp && !hasIsp) {
+          appState.routers.push(examIspRouter());
+          a.vlsmReqs.push({ id: 'v_edgeisp', type: 'wan', name: 'WAN Edge-ISP', hosts: 2, routerId: 'r_edge', iface: o.ispIf || 's0/0/0', r2Id: 'r_isp', r2If: 's0/0/0' });
+          appState.security.rules.forEach(r => { if (/^\(b\)/.test(r.note || '') && !r.dstRouterScope && !r.dstRouterIds.includes('r_isp')) r.dstRouterIds.push('r_isp'); });
+          changes.push('ISP router added');
+        } else if (!sc.isp && hasIsp) {
+          deleteRouter('r_isp');
+          a.vlsmReqs = a.vlsmReqs.filter(r => r.id !== 'v_edgeisp');
+          appState.security.rules.forEach(r => {
+            r.dstRouterIds = (r.dstRouterIds || []).filter(id => id !== 'r_isp');
+            if (r.dstRouterId === 'r_isp') r.dstRouterId = r.dstRouterIds[0] || '';
+          });
+          changes.push('ISP router removed');
+        }
+      }
+      const ispRow = a.vlsmReqs.find(r => r.id === 'v_edgeisp');
+      if (ispRow && o.ispIf && ispRow.iface !== o.ispIf) { ispRow.iface = o.ispIf; changes.push(`Edge ${o.ispIf} to the ISP`); }
+
+      refreshAddressingUI(); // VLSM rows -> LANs and links with the new numbers
+      examWireIsp();
+      if (applyScenario) {
+        applyRoutingScenario(o.scenario);
+        changes.push(sc.label.split(' · ')[0]);
+      }
+      appState.exam = Object.assign(prev, o, { scenario: sc ? o.scenario : prev.scenario });
+      normalizeState();
+      refreshAddressingUI();
+      renderTopologyWorkspace();
+      if (!document.getElementById('viewChecklist').classList.contains('hidden')) renderChecklist();
+      showToast(changes.length ? `Updated: ${changes.join(', ')}. Everything else is unchanged.` : 'Nothing changed.');
+    }
+
     function buildExamProject(o) {
       const sc = ROUTING_SCENARIOS[o.scenario] || ROUTING_SCENARIOS.s1;
       const st = createSampleLabState();
@@ -8841,13 +8938,7 @@ line vty 0 4
         mk('r2', 'R2', EXAM_SMALL_MODEL, 'ripv2'),
         mk('r3', 'R3', EXAM_SMALL_MODEL, 'static')
       ];
-      if (sc.isp) {
-        const isp = mk('isp', 'ISP', '2911', 'static');
-        // A loopback stands in for "the internet", so there is something past Edge to ping
-        isp.loopbacks = [{ id: uid('lo'), name: 'lo0', ip: '8.8.8.8/32', ipv6: '2001:4860:4860::8888/128' }];
-        isp.external = true;
-        st.routers.push(isp);
-      }
+      if (sc.isp) st.routers.push(examIspRouter());
       st.links = [];
       st.security = { mode: 'extended', permitRest: true, naming: 'numbered', aclIds: {}, loginHoles: true, rules: [] };
       const b = examBases(o.g, o.s);
@@ -8897,15 +8988,7 @@ line vty 0 4
         if (sc.links[key]) lk.protocol = sc.links[key];
       });
       const isp = getRouterById('r_isp');
-      const edgeR = getRouterById('r_edge');
-      // The PDF lists Edge under "default static route": S* 0.0.0.0/0, to the ISP if there is one
-      if (edgeR) edgeR.routing.defaultOut = isp && appState.links.some(l => l.id === 'lnk_v_edgeisp') ? 'lnk_v_edgeisp' : 'null0';
-      if (isp) {
-        // The ISP knows the whole block through Edge (one summary route)
-        isp.routing.stubDefault = false;
-        isp.routing.autoStatics = false;
-        isp.routing.customStatics = [{ fam: '4', dest: appState.addressing.baseIp, mask: IPv4.cidrToMask(appState.addressing.baseCidr), nextHop: '', exitIf: 's0/0/0', ad: '' }];
-      }
+      examWireIsp();
       if (o.acls) {
         const base = {
           srcLanId: '', srcHost: '', srcPcId: '', dstLanId: '', dstHost: '', dstPcId: '', dstRouterId: '', dstRouterIds: [], loginLines: 'all',
@@ -8965,14 +9048,17 @@ line vty 0 4
       showToast(`Exam network built for G${o.g} S${o.s}: ${appState.addressing.baseIp}/20. Everything stays editable.`);
     }
 
-    function examDialogHtml(o) {
+    function examDialogHtml(o, mode) {
       const b = examBases(o.g, o.s);
-      const sc = ROUTING_SCENARIOS[o.scenario] || ROUTING_SCENARIOS.s1;
+      const upd = mode === 'update';
+      const sc = ROUTING_SCENARIOS[o.scenario] || null;
       return `
         <form method="dialog" class="exam-form" id="examForm">
           <div class="exam-head">
-            <h2>Exam preset · CPE 3105 final assessment</h2>
-            <p>Builds Edge, Main, R1, R2, R3 with their LANs, WAN links, DHCP on Edge, IPv6 per LAN, routing and the ACLs. It replaces the open project (save it first if you need it). Everything stays editable.</p>
+            <h2>${upd ? 'Exam settings · CPE 3105 final assessment' : 'Exam preset · CPE 3105 final assessment'}</h2>
+            <p>${upd
+              ? '<b>Update this project</b> changes only what you change here (numbers, host counts, routing, ISP, passwords) and keeps your own routers, LANs, PCs, rules and ticks. <b>Build fresh</b> throws the project away and starts again from the PDF.'
+              : 'Builds Edge, Main, R1, R2, R3 with their LANs, WAN links, DHCP on Edge, IPv6 per LAN, routing and the ACLs. It replaces the open project (save it first if you need it). Everything stays editable.'}</p>
           </div>
           <div class="exam-body">
             <fieldset class="exam-set">
@@ -8989,14 +9075,14 @@ line vty 0 4
             <fieldset class="exam-set">
               <legend>2 · Hosts per LAN (given on the day)</legend>
               <div class="exam-hosts">
-                ${EXAM_LANS.map(l => `<div class="field-group"><label class="field-label" for="exH_${l.key}">${escapeHtml(l.name)} <span class="text-muted">(${l.hint})</span></label><input type="text" id="exH_${l.key}" class="mono" inputmode="numeric" value="${escapeHtml(o.hosts[l.key])}" /></div>`).join('')}
+                ${EXAM_LANS.map(l => { const gone = upd && !appState.addressing.vlsmReqs.some(r => r.id === `v_${l.key}`); return `<div class="field-group"><label class="field-label" for="exH_${l.key}">${escapeHtml(l.name)} <span class="text-muted">(${gone ? 'removed from this project' : l.hint})</span></label><input type="text" id="exH_${l.key}" class="mono" inputmode="numeric" value="${escapeHtml(o.hosts[l.key])}" ${gone ? 'disabled' : ''} /></div>`; }).join('')}
               </div>
             </fieldset>
             <fieldset class="exam-set">
               <legend>3 · Routing scenario</legend>
-              <select id="exScenario">${Object.entries(ROUTING_SCENARIOS).map(([k, v]) => `<option value="${k}" ${o.scenario === k ? 'selected' : ''}>${escapeHtml(v.label)}</option>`).join('')}</select>
-              <div class="text-muted" id="exScenarioWhere" style="font-size:14px; margin-top:6px;">${escapeHtml(sc.where)}</div>
-              <div class="field-group" id="exIspRow" ${sc.isp ? '' : 'hidden'} style="margin-top:6px;">
+              <select id="exScenario">${upd ? `<option value="custom" ${o.scenario === 'custom' ? 'selected' : ''}>Keep my routing (as it is now)</option>` : ''}${Object.entries(ROUTING_SCENARIOS).map(([k, v]) => `<option value="${k}" ${o.scenario === k ? 'selected' : ''}>${escapeHtml(v.label)}</option>`).join('')}</select>
+              <div class="text-muted" id="exScenarioWhere" style="font-size:14px; margin-top:6px;">${escapeHtml(sc ? sc.where : EXAM_CUSTOM_ROUTING)}</div>
+              <div class="field-group" id="exIspRow" ${(sc ? sc.isp : !!getRouterById('r_isp')) ? '' : 'hidden'} style="margin-top:6px;">
                 <label class="field-label" for="exIspIf">Edge port to the ISP (check the real router)</label>
                 <select id="exIspIf" class="mono">${SERIAL_INTERFACES.map(p => `<option value="${p}" ${o.ispIf === p ? 'selected' : ''}>${p}</option>`).join('')}</select>
               </div>
@@ -9008,16 +9094,20 @@ line vty 0 4
                 <div class="field-group"><label class="field-label" for="exUser">SSH username</label><input type="text" id="exUser" class="mono" value="${escapeHtml(o.sshUser)}" /></div>
               </div>
               <div class="text-muted" style="font-size:13.5px;">Telnet on <span class="mono">line vty 0 4</span> uses the password; SSH on <span class="mono">line vty 5 15</span> uses the username and password.</div>
-              <label class="checkbox-row" style="margin-top:6px;"><input type="checkbox" id="exAcls" ${o.acls ? 'checked' : ''} /><span>Add the ACLs (a) to (d) and PCs PC0, PC2, PC4, PC8, PC9 with fixed IPs</span></label>
+              <label class="checkbox-row" style="margin-top:6px;" ${upd ? 'hidden' : ''}><input type="checkbox" id="exAcls" ${o.acls ? 'checked' : ''} /><span>Add the ACLs (a) to (d) and PCs PC0, PC2, PC4, PC8, PC9 with fixed IPs</span></label>
             </fieldset>
             <div class="exam-err" id="exErr" hidden></div>
           </div>
           <div class="exam-foot">
             <button type="button" class="btn" id="exCancel">Cancel</button>
-            <button type="button" class="btn btn-primary" id="exBuild">Build the exam network</button>
+            ${upd ? `<button type="button" class="btn" id="exFresh" title="Throws the open project away (click twice)">Build fresh</button>
+            <button type="button" class="btn btn-primary" id="exUpdate">Update this project</button>`
+              : '<button type="button" class="btn btn-primary" id="exBuild">Build the exam network</button>'}
           </div>
         </form>`;
     }
+
+    const EXAM_CUSTOM_ROUTING = 'Your link protocols no longer match one scenario (you changed them by hand). Update keeps them exactly as they are; pick a scenario to reset the links to it.';
 
     function openExamPresetDialog() {
       let dlg = document.getElementById('examDialog');
@@ -9028,9 +9118,22 @@ line vty 0 4
         dlg.setAttribute('aria-label', 'Exam preset');
         document.body.appendChild(dlg);
       }
+      const mode = appState.exam ? 'update' : 'build';
       const o = Object.assign(defaultExamOptions(), appState.exam || {});
       o.hosts = Object.assign({}, defaultExamOptions().hosts, (appState.exam && appState.exam.hosts) || {});
-      dlg.innerHTML = examDialogHtml(o);
+      if (mode === 'update') {
+        // Start from the live project: numbers and host counts may have been edited on the Addressing tab
+        const a = appState.addressing;
+        if (/^\d$/.test(a.examG)) o.g = a.examG;
+        if (/^\d$/.test(a.examS)) o.s = a.examS;
+        EXAM_LANS.forEach(l => { const row = a.vlsmReqs.find(r => r.id === `v_${l.key}`); if (row) o.hosts[l.key] = Number(row.hosts); });
+        const ispRow = a.vlsmReqs.find(r => r.id === 'v_edgeisp');
+        if (ispRow) o.ispIf = ispRow.iface;
+        if (!scenarioMatches(o.scenario)) o.scenario = 'custom';
+        o.password = appState.initConfig.vtyPwd || o.password;
+        o.sshUser = appState.initConfig.sshUser || o.sshUser;
+      }
+      dlg.innerHTML = examDialogHtml(o, mode);
       const val = id => dlg.querySelector(`#${id}`).value.trim();
       const read = () => ({
         g: val('exG'), s: val('exS'), scenario: val('exScenario'), ispIf: val('exIspIf'),
@@ -9043,22 +9146,46 @@ line vty 0 4
         dlg.querySelector('#exWorking').innerHTML = b.ok
           ? `IPv4 <span class="mono">12<b>G</b>.2<b>S</b>.224.0/20</span> → <b class="mono">${b.ipv4}/20</b><br>IPv6 <span class="mono">200<b>G</b>:DB<b>S</b>:ACAD::/64</span> → <b class="mono">${b.ipv6}/64</b> (LANs get <span class="mono">${b.ipv6.replace(/::$/, '')}:1::/64</span>, <span class="mono">:2::/64</span>…)`
           : '<span class="exam-bad">G# and S# are one digit each (0 to 9), so the first octet stays 120 to 129.</span>';
-        const sc = ROUTING_SCENARIOS[cur.scenario] || ROUTING_SCENARIOS.s1;
-        dlg.querySelector('#exScenarioWhere').textContent = sc.where;
-        dlg.querySelector('#exIspRow').hidden = !sc.isp;
+        const sc = ROUTING_SCENARIOS[cur.scenario] || null;
+        dlg.querySelector('#exScenarioWhere').textContent = sc ? sc.where : EXAM_CUSTOM_ROUTING;
+        dlg.querySelector('#exIspRow').hidden = sc ? !sc.isp : !getRouterById('r_isp');
       };
       dlg.querySelectorAll('input, select').forEach(el => el.addEventListener(el.tagName === 'SELECT' ? 'change' : 'input', refresh));
       dlg.querySelector('#exCancel').addEventListener('click', () => dlg.close());
-      dlg.querySelector('#exBuild').addEventListener('click', () => {
+      const checked = () => {
         const cur = read();
         const err = dlg.querySelector('#exErr');
+        const live = l => !dlg.querySelector(`#exH_${l.key}`).disabled;
         const bad = !examBases(cur.g, cur.s).ok ? 'G# and S# must be one digit each (0 to 9).'
-          : EXAM_LANS.some(l => !/^\d+$/.test(cur.hosts[l.key]) || Number(cur.hosts[l.key]) < 1 || Number(cur.hosts[l.key]) > 2000) ? 'Each LAN needs a host count from 1 to 2000.'
+          : EXAM_LANS.some(l => live(l) && (!/^\d+$/.test(cur.hosts[l.key]) || Number(cur.hosts[l.key]) < 1 || Number(cur.hosts[l.key]) > 2000)) ? 'Each LAN needs a host count from 1 to 2000.'
           : !cur.password ? 'Type the exam password.' : '';
-        if (bad) { err.textContent = bad; err.hidden = false; return; }
-        cur.hosts = Object.fromEntries(Object.entries(cur.hosts).map(([k, v]) => [k, Number(v)]));
+        if (bad) { err.textContent = bad; err.hidden = false; return null; }
+        cur.hosts = Object.fromEntries(Object.entries(cur.hosts).map(([k, v]) => [k, Number(v) || o.hosts[k]]));
+        return cur;
+      };
+      const build = cur => {
+        if (!ROUTING_SCENARIOS[cur.scenario]) cur.scenario = ROUTING_SCENARIOS[(appState.exam || {}).scenario] ? appState.exam.scenario : 's1';
         dlg.close();
         applyExamPreset(cur);
+      };
+      dlg.querySelector('#exBuild')?.addEventListener('click', () => { const cur = checked(); if (cur) build(cur); });
+      dlg.querySelector('#exUpdate')?.addEventListener('click', () => {
+        const cur = checked();
+        if (!cur) return;
+        dlg.close();
+        updateExamProject(cur);
+      });
+      const fresh = dlg.querySelector('#exFresh');
+      if (fresh) fresh.addEventListener('click', () => {
+        const cur = checked();
+        if (!cur) return;
+        if (fresh.dataset.armed !== '1') {
+          fresh.dataset.armed = '1';
+          fresh.textContent = 'Click again: replace the project';
+          fresh.classList.add('btn-danger');
+          return;
+        }
+        build(cur);
       });
       if (typeof dlg.showModal === 'function') dlg.showModal(); else dlg.setAttribute('open', '');
       dlg.querySelector('#exG').focus();
