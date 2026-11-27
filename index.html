@@ -1923,7 +1923,7 @@ line vty 0 4
           <li><b>CLI pane:</b> pick a router, keep <b>Copy in parts</b> on, then for each part: <b>Copy</b> → right-click in PuTTY → wait for the prompt to come back → next part. Ticks show what you have pasted. Watch for <code>% Invalid input</code>.</li>
           <li><b>PCs:</b> set them to DHCP (or the static values from the subnet table). See <a href="#h-pc">PC setup</a>.</li>
           <li><b>Verify:</b> click <b>Verify</b> in the CLI pane and run those commands. If something fails, open the Troubleshooting tab.</li>
-          <li><b>Save:</b> each script already ends with <code>end</code> + <code>write memory</code> (Init Config → Save at the end).</li>
+          <li><b>Save:</b> each script already ends with <code>end</code> + <code>copy running-config startup-config</code> (Init Config → Save at the end). At <code>Destination filename [startup-config]?</code> press Enter.</li>
         </ol>
         <p class="doc-note">Save the project (.json) when you finish the addressing, so you can reload it if the browser closes.</p>
       </div>
@@ -2129,7 +2129,7 @@ line vty 0 4
               <tr><td><code class="cmd">terminal length 0</code></td><td>No <code>--More--</code> pauses (at --More--: Space = next page, q = stop)</td></tr>
               <tr><td><code class="cmd">show running-config | section interface</code></td><td>Show only part of the config (also <code>| include ip route</code>)</td></tr>
               <tr><td><code class="cmd">default interface g0/0</code></td><td>Clear all settings on one port (in config mode)</td></tr>
-              <tr><td><code class="cmd">write memory</code></td><td>Save; same as <code>copy running-config startup-config</code></td></tr>
+              <tr><td><code class="cmd">copy running-config startup-config</code></td><td>Save. At <code>Destination filename [startup-config]?</code> press Enter</td></tr>
             </tbody>
           </table>
         </div>
@@ -2222,7 +2222,7 @@ line vty 0 4
               <tr><td class="mono">%OSPF-5-ADJCHG … from LOADING to FULL</td><td>Good: OSPF neighbour formed.</td></tr>
               <tr><td class="mono">%DUAL-5-NBRCHANGE … Neighbor … is up</td><td>Good: EIGRP neighbour formed.</td></tr>
               <tr><td class="mono">%DHCPD-4-PING_CONFLICT</td><td>An address in the pool is already used (static PC/printer). Exclude it: <code>ip dhcp excluded-address</code>.</td></tr>
-              <tr><td class="mono">[OK]</td><td>After <code>write memory</code>: saved.</td></tr>
+              <tr><td class="mono">[OK]</td><td>After <code>copy running-config startup-config</code> and Enter: saved.</td></tr>
             </tbody>
           </table>
         </div>
@@ -2269,7 +2269,7 @@ line vty 0 4
         <div class="cmd-section">
           <h4>Router &amp; config</h4>
           <div class="cmd-grid">
-            <code class="cmd">show version</code><code class="cmd">show running-config</code><code class="cmd">show startup-config</code><code class="cmd">show flash</code><code class="cmd">terminal length 0</code><code class="cmd">write memory</code>
+            <code class="cmd">show version</code><code class="cmd">show running-config</code><code class="cmd">show startup-config</code><code class="cmd">show flash</code><code class="cmd">terminal length 0</code><code class="cmd">copy running-config startup-config</code>
           </div>
         </div>
       </div>
@@ -5666,13 +5666,13 @@ line vty 0 4
       });
 
       // ---- SECTION 6: SAVE ----
-      // "write memory" saves like "copy running-config startup-config" but asks no filename question,
-      // so a pasted script cannot answer that question with its next line by mistake
+      // IOS asks "Destination filename [startup-config]?": the Copy buttons send an extra Enter for it
       const save = [];
       if (ic.copyRunStart) {
         save.push(`! --- Save Configuration ---`);
         save.push(`end`);
-        save.push(`write memory`);
+        save.push(`! At "Destination filename [startup-config]?" press Enter (Copy sends it for you)`);
+        save.push(`copy running-config startup-config`);
       } else {
         save.push(`end`);
       }
@@ -5742,7 +5742,7 @@ line vty 0 4
       'redistribute', 'default-information originate', 'passive-interface', 'access-list', 'no access-list',
       'ip access-list', 'ip access-group', 'no ip access-group', 'access-class', 'line console', 'line vty', 'banner motd',
       'crypto key', 'ip ssh version', 'ip domain-name', 'username', 'transport input', 'clock rate', 'no shutdown',
-      'write memory', 'end', 'ipv6 unicast-routing', 'show', 'ping'
+      'copy running-config startup-config', 'end', 'ipv6 unicast-routing', 'show', 'ping'
     ].sort((a, b) => b.length - a.length);
     const CLI_KW_RE = new RegExp(`^(\\s*)(${CLI_KEYWORDS.map(k => k.replace(/[-]/g, '\\-')).join('|')})(?=\\s|$)`);
 
@@ -6472,9 +6472,9 @@ line vty 0 4
           <div class="divider"></div>
           <label class="checkbox-row">
             <input type="checkbox" id="icCopyRunStart" ${ic.copyRunStart ? 'checked' : ''} />
-            <span>Save at the end (<span class="mono" style="font-size:14px;">end</span> + <span class="mono" style="font-size:14px;">write memory</span>)</span>
+            <span>Save at the end (<span class="mono" style="font-size:14px;">end</span> + <span class="mono" style="font-size:14px;">copy running-config startup-config</span>)</span>
           </label>
-          <div class="text-muted" style="font-size:13px;">Same as copy running-config startup-config, without the filename question that would swallow the next pasted line.</div>
+          <div class="text-muted" style="font-size:13px;">IOS then asks <span class="mono">Destination filename [startup-config]?</span>: press Enter. The Copy buttons send that Enter for you.</div>
         </div>
 
         <div class="sub-card">
@@ -8330,6 +8330,11 @@ line vty 0 4
     /* ---- Copy in parts: small blocks for a slow (9600 baud) console paste ---- */
     const CHUNK_SIZES = [10, 15, 20, 30];
     const chunkTicks = new Set(); // parts already copied (cleared when the script changes)
+    /** An extra Enter when the text ends with copy running-config startup-config: it answers "Destination filename [startup-config]?". */
+    function saveEnter(text) {
+      return /copy running-config startup-config\s*$/.test(text) ? '\n' : '';
+    }
+
     let chunkSig = '';
     let currentChunks = [];
 
@@ -10442,7 +10447,7 @@ line vty 0 4
         const part = currentChunks[i];
         if (!part) return;
         // Trailing newline so PuTTY also runs the last line of the part
-        copyTextToClipboard(`${part.lines.join('\n')}\n`, `Part ${i + 1} of ${currentChunks.length} copied: right-click in PuTTY to paste`);
+        copyTextToClipboard(`${part.lines.join('\n')}\n${saveEnter(part.lines.join('\n'))}`, `Part ${i + 1} of ${currentChunks.length} copied: right-click in PuTTY to paste`);
         chunkTicks.add(i);
         const box = btn.closest('.cli-chunk');
         box.classList.add('done');
@@ -10454,7 +10459,7 @@ line vty 0 4
       document.getElementById('btnCopyCli').addEventListener('click', () => {
         const txt = getFilteredCliText(appState.ui.selectedRouterId, appState.ui.cliFilter);
         // Trailing newline so PuTTY also runs the last line
-        copyTextToClipboard(`${txt}\n`, 'Cisco IOS script copied to clipboard!');
+        copyTextToClipboard(`${txt}\n${saveEnter(txt)}`, 'Cisco IOS script copied to clipboard!');
       });
 
       document.getElementById('btnDownloadCli').addEventListener('click', () => {
