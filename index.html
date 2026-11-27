@@ -3096,6 +3096,7 @@ line vty 0 4
         dnsServerIp: '',
         dnsServerIpv6: '',
         devices: { pc: 2, laptop: 0, server: 0, printer: 0, smartphone: 0, tablet: 0 },
+        ipv6NoAutoconfig: true, // stateful DHCPv6: ipv6 nd prefix ... no-autoconfig
         pcs: []  // PCs with a fixed IP: { id, name, ip } (blank ip = next free host)
       };
     }
@@ -4969,6 +4970,7 @@ line vty 0 4
           ['netIp', 'gatewayIp', 'mask', 'ipv6Prefix', 'ipv6Ip', 'ipv6LinkLocal', 'iface', 'dnsServerIp', 'dnsServerIpv6'].forEach(k => { lan[k] = clean(lan[k]); });
           lan.cidr = Math.min(32, Math.max(0, Number(lan.cidr) || 24));
           if (!lan.devices || typeof lan.devices !== 'object') lan.devices = {};
+          if (lan.ipv6NoAutoconfig !== false) lan.ipv6NoAutoconfig = true; // stateful DHCPv6: PCs use only the DHCPv6 address
           if (!Array.isArray(lan.pcs)) lan.pcs = [];
           lan.pcs = lan.pcs.filter(p => p && typeof p === 'object');
           lan.pcs.forEach(p => {
@@ -5212,6 +5214,11 @@ line vty 0 4
             interfaces.push(` ipv6 nd other-config-flag`);
           } else if (lan.ipv6Mode === 'stateful') {
             interfaces.push(` ipv6 nd managed-config-flag`);
+            // Without this, Windows also builds its own SLAAC address next to the DHCPv6 one
+            if (lan.ipv6NoAutoconfig !== false) interfaces.push(` ipv6 nd prefix ${lan.ipv6Prefix} no-autoconfig`);
+          }
+          if (lan.ipv6Mode === 'stateless' && !(lan.dnsServerIpv6 || '').trim()) {
+            note(`${lan.name}: stateless DHCPv6 only hands out the domain name. Add an IPv6 DNS server (Routers & LANs) so ipconfig /all shows a DNS server that came from DHCPv6.`);
           }
           if (v6) interfaces.push(` ipv6 dhcp server ${v6.pool}`);
           v6RouteLines(plan.dynamic).forEach(l => interfaces.push(l));
@@ -6688,7 +6695,7 @@ line vty 0 4
           if (field === 'ipv6Prefix') {
             lan.ipv6Ip = IPv6.hostAddr(lan.ipv6Prefix, '1');
           }
-          if (field === 'dhcpMode' || field === 'accessDevice' || field === 'iface') {
+          if (field === 'dhcpMode' || field === 'accessDevice' || field === 'iface' || field === 'ipv6Mode') {
             renderTopologyWorkspace();
           } else {
             renderTopologySvg();
@@ -6731,6 +6738,13 @@ line vty 0 4
           renderCliPane();
         });
       });
+
+      container.querySelectorAll('.lan-check').forEach(el => el.addEventListener('change', e => {
+        const lan = getRouterById(el.dataset.rid)?.lans.find(l => l.id === el.dataset.lanid);
+        if (!lan) return;
+        lan[el.dataset.field] = e.target.checked;
+        renderCliPane();
+      }));
 
       // PCs with a fixed IP
       const pcLan = el => getRouterById(el.dataset.rid)?.lans.find(l => l.id === el.dataset.lanid) || null;
@@ -6904,6 +6918,12 @@ line vty 0 4
                 </select>
               </div>
             </div>
+            ${lan.ipv6Mode === 'stateful' ? `
+              <label class="checkbox-row" style="font-size:14px;">
+                <input type="checkbox" class="lan-check" data-rid="${router.id}" data-lanid="${lan.id}" data-field="ipv6NoAutoconfig" ${lan.ipv6NoAutoconfig !== false ? 'checked' : ''} />
+                <span>PCs use only the DHCPv6 address (<span class="mono">ipv6 nd prefix … no-autoconfig</span>). Untick and Windows also makes its own SLAAC address.</span>
+              </label>` : ''}
+            ${lan.ipv6Mode === 'stateless' && !(lan.dnsServerIpv6 || '').trim() ? '<div class="text-muted" style="font-size:13px;">Stateless DHCPv6 gives PCs only DNS and the domain name: add an IPv6 DNS server below so there is something to hand out.</div>' : ''}
             <div class="row-2">
               <div class="field-group">
                 <label class="field-label">Link-Local</label>
@@ -8909,7 +8929,7 @@ line vty 0 4
     const IPV6_MODE_TEXT = {
       slaac: 'SLAAC: the router sends RAs, each PC makes its own address. No DHCPv6 pool.',
       stateless: 'SLAAC + stateless DHCPv6: PCs make their own address (SLAAC) and get DNS/domain from DHCPv6 (other-config-flag).',
-      stateful: 'Stateful DHCPv6: PCs get their IPv6 address from the router\'s DHCPv6 pool (managed-config-flag).',
+      stateful: 'Stateful DHCPv6: PCs get their IPv6 address from the router\'s DHCPv6 pool (managed-config-flag, and no-autoconfig so they do not also make a SLAAC address).',
       none: 'No automatic IPv6: set addresses by hand.'
     };
 
